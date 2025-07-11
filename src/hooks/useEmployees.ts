@@ -24,6 +24,10 @@ export function useEmployees() {
       const employees: Employee[] = data.map(emp => ({
         id: emp.id,
         name: emp.name,
+        firstName: emp.first_name || undefined,
+        lastName: emp.last_name || undefined,
+        tussenvoegsel: emp.tussenvoegsel || undefined,
+        roepnaam: emp.roepnaam || undefined,
         email: emp.email,
         department: emp.department,
         employeeNumber: emp.employee_number,
@@ -120,6 +124,10 @@ export function useEmployee(id: string) {
       const employee: Employee = {
         id: data.id,
         name: data.name,
+        firstName: data.first_name || undefined,
+        lastName: data.last_name || undefined,
+        tussenvoegsel: data.tussenvoegsel || undefined,
+        roepnaam: data.roepnaam || undefined,
         email: data.email,
         department: data.department,
         employeeNumber: data.employee_number,
