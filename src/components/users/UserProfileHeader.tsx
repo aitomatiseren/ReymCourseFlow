@@ -429,7 +429,15 @@ export function UserProfileHeader({ userId }: UserProfileHeaderProps) {
                   <div className="flex flex-col space-y-2">
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className="w-fit">Code 95</Badge>
-                      <span className="text-lg">{getCode95StatusEmoji(code95Status)}</span>
+                      {code95Status === 'expiring' && (
+                        <div className="w-4 h-4 rounded-full bg-yellow-400 border border-yellow-500"></div>
+                      )}
+                      {code95Status === 'expired' && (
+                        <div className="w-4 h-4 rounded-full bg-red-500 border border-red-600"></div>
+                      )}
+                      {code95Status === 'compliant' && (
+                        <div className="w-4 h-4 rounded-full bg-green-500 border border-green-600"></div>
+                      )}
                       <Badge className={getCode95StatusColor(code95Status)}>
                         {code95Status.replace('_', ' ')}
                       </Badge>
@@ -478,108 +486,6 @@ export function UserProfileHeader({ userId }: UserProfileHeaderProps) {
             </div>
           )}
 
-          {/* Code 95 Compliance Section */}
-          {hasCode95License && (
-            <div className="mt-6 pt-6 border-t">
-              <div className="flex items-center gap-2 mb-4">
-                <Award className="h-5 w-5 text-blue-600" />
-                <h3 className="font-semibold text-gray-900">Code 95 Professional Certification</h3>
-                <span className="text-xl">{getCode95StatusEmoji(code95Status)}</span>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* Status Overview */}
-                <div className="space-y-3">
-                  <h4 className="font-medium text-gray-700">Current Status</h4>
-                  <Badge className={`${getCode95StatusColor(code95Status)} text-sm px-3 py-1`}>
-                    {getCode95StatusDescription(code95Status, code95Progress.daysUntilExpiry)}
-                  </Badge>
-                  {needsCode95 && (
-                    <div className="flex items-center gap-2 text-sm text-yellow-700 bg-yellow-50 p-2 rounded">
-                      <AlertTriangle className="h-4 w-4" />
-                      Immediate training required
-                    </div>
-                  )}
-                </div>
-
-                {/* Training Progress */}
-                <div className="space-y-3">
-                  <h4 className="font-medium text-gray-700">Training Progress</h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Points Earned</span>
-                      <span className="font-medium">{code95Progress.pointsEarned}/{code95Progress.pointsRequired}</span>
-                    </div>
-                    <Progress 
-                      value={(code95Progress.pointsEarned / code95Progress.pointsRequired) * 100} 
-                      className="w-full h-3"
-                    />
-                    <div className="text-xs text-gray-500">
-                      {code95Progress.pointsRequired - code95Progress.pointsEarned > 0 
-                        ? `${code95Progress.pointsRequired - code95Progress.pointsEarned} points remaining`
-                        : 'Training requirement met'
-                      }
-                    </div>
-                  </div>
-                </div>
-
-                {/* Renewal Information */}
-                <div className="space-y-3">
-                  <h4 className="font-medium text-gray-700">Renewal Schedule</h4>
-                  {code95Progress.expiryDate ? (
-                    <div className="space-y-2">
-                      <div className="text-sm">
-                        <span className="text-gray-600">Expires:</span>
-                        <div className="font-medium">
-                          {format(new Date(code95Progress.expiryDate), 'MMMM dd, yyyy')}
-                        </div>
-                      </div>
-                      {code95Progress.daysUntilExpiry !== null && (
-                        <div className="text-sm">
-                          <span className="text-gray-600">Time remaining:</span>
-                          <div className={`font-medium ${code95Progress.daysUntilExpiry <= 90 ? 'text-red-600' : 'text-green-600'}`}>
-                            {code95Progress.daysUntilExpiry > 0 
-                              ? `${code95Progress.daysUntilExpiry} days`
-                              : `${Math.abs(code95Progress.daysUntilExpiry)} days overdue`
-                            }
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-sm text-red-600">
-                      <AlertTriangle className="h-4 w-4 inline mr-1" />
-                      Expiry date not set
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Recent Code 95 Certificates */}
-              {employeeCertificates.filter(cert => cert.code95Points && cert.code95Points > 0).length > 0 && (
-                <div className="mt-6 pt-4 border-t border-gray-100">
-                  <h4 className="font-medium text-gray-700 mb-3">Recent Code 95 Training</h4>
-                  <div className="space-y-2">
-                    {employeeCertificates
-                      .filter(cert => cert.code95Points && cert.code95Points > 0)
-                      .slice(0, 3)
-                      .map((cert, index) => (
-                        <div key={index} className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
-                          <div>
-                            <div className="font-medium">{cert.courseName}</div>
-                            <div className="text-gray-500">{format(new Date(cert.issueDate), 'MMM dd, yyyy')}</div>
-                          </div>
-                          <Badge variant="outline" className="text-xs">
-                            {cert.code95Points} pts
-                          </Badge>
-                        </div>
-                      ))
-                    }
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Emergency Contact Section */}
           {employee.emergencyContact && (employee.emergencyContact.name || employee.emergencyContact.phone) && (
