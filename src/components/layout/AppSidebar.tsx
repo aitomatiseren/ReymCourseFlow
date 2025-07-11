@@ -1,18 +1,19 @@
 
 import { NavLink, useLocation } from "react-router-dom";
-import { 
-  Home, 
-  BookOpen, 
-  Users, 
-  Award, 
-  Building2, 
-  MessageSquare, 
-  Settings, 
+import {
+  Home,
+  BookOpen,
+  Users,
+  Award,
+  Building2,
+  MessageSquare,
+  Settings,
   Calendar,
   FileText,
   Bell,
   User
 } from "lucide-react";
+import { usePermissions } from "@/context/PermissionsContext";
 import {
   Sidebar,
   SidebarContent,
@@ -28,24 +29,25 @@ import {
 } from "@/components/ui/sidebar";
 
 const menuItems = [
-  { title: "Dashboard", url: "/", icon: Home },
-  { title: "Courses", url: "/courses", icon: BookOpen },
-  { title: "Participants", url: "/participants", icon: Users },
-  { title: "Certifications", url: "/certifications", icon: Award },
-  { title: "Training Scheduler", url: "/scheduling", icon: Calendar },
-  { title: "Employee Portal", url: "/employee-dashboard", icon: User },
-  { title: "Providers", url: "/providers", icon: Building2 },
-  { title: "Notifications", url: "/communications", icon: Bell },
-  { title: "Reports", url: "/reports", icon: FileText },
-  { title: "Settings", url: "/settings", icon: Settings },
+  { title: "Dashboard", url: "/", icon: Home, permissions: [] },
+  { title: "Courses", url: "/courses", icon: BookOpen, permissions: ["view_courses"] },
+  { title: "Participants", url: "/participants", icon: Users, permissions: ["view_employees"] },
+  { title: "Certifications", url: "/certifications", icon: Award, permissions: ["view_own_certificates"] },
+  { title: "Training Scheduler", url: "/scheduling", icon: Calendar, permissions: ["view_schedules"] },
+  { title: "Employee Portal", url: "/employee-dashboard", icon: User, permissions: ["view_own_profile"] },
+  { title: "Providers", url: "/providers", icon: Building2, permissions: ["view_courses"] },
+  { title: "Notifications", url: "/communications", icon: Bell, permissions: [] },
+  { title: "Reports", url: "/reports", icon: FileText, permissions: ["view_basic_reports"] },
+  { title: "Settings", url: "/settings", icon: Settings, permissions: ["manage_system_settings"] },
 ];
 
 export function AppSidebar() {
   const location = useLocation();
   const { state } = useSidebar();
+  const { hasAnyPermission, isAdmin } = usePermissions();
 
   return (
-    <Sidebar 
+    <Sidebar
       className="border-r"
       collapsible="icon"
     >
@@ -66,6 +68,11 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => {
+                // Check if user has permission to see this menu item
+                // Admin users can see everything, others need specific permissions
+                const hasPermission = isAdmin || item.permissions.length === 0 || hasAnyPermission(item.permissions as any);
+                if (!hasPermission) return null;
+
                 const isActive = location.pathname === item.url;
                 return (
                   <SidebarMenuItem key={item.title}>

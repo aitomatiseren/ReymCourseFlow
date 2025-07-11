@@ -24,7 +24,7 @@ export interface UserPermissions {
 
 export class SecureDatabaseService {
   private static instance: SecureDatabaseService;
-  
+
   public static getInstance(): SecureDatabaseService {
     if (!SecureDatabaseService.instance) {
       SecureDatabaseService.instance = new SecureDatabaseService();
@@ -45,22 +45,51 @@ export class SecureDatabaseService {
 
   /**
    * Check user permissions for specific operations
-   * This would integrate with your role-based access control system
+   * This integrates with the role-based access control system
    */
   private async getUserPermissions(): Promise<UserPermissions> {
     try {
       const user = await this.getCurrentUser();
-      
-      // For now, assuming all authenticated users have basic permissions
-      // This should be replaced with actual role checking from your system
+
+      // Get user permissions from the database
+      const { data: userPermissions, error } = await supabase
+        .rpc('get_user_permissions', { user_id: user.id });
+
+      if (error) {
+        console.error('Error fetching user permissions:', error);
+        throw error;
+      }
+
+      const permissionNames = userPermissions?.map((p: any) => p.permission_name) || [];
+      const permissionSet = new Set(permissionNames);
+
+      // Get user profile with role information
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('role_id')
+        .eq('id', user.id)
+        .single();
+
+      // Get role information if user has a role
+      let isAdmin = false;
+      if (profile?.role_id) {
+        const { data: role } = await supabase
+          .from('user_roles')
+          .select('name')
+          .eq('id', profile.role_id)
+          .single();
+        isAdmin = role?.name === 'admin';
+      }
+
       return {
-        canEditEmployees: true,
-        canCreateTrainings: true,
-        canEditTrainings: true,
-        canManageCertificates: true,
-        isAdmin: false // This should come from user roles
+        canEditEmployees: permissionSet.has('edit_employees'),
+        canCreateTrainings: permissionSet.has('create_trainings'),
+        canEditTrainings: permissionSet.has('edit_trainings'),
+        canManageCertificates: permissionSet.has('view_own_certificates'), // Simplified
+        isAdmin
       };
     } catch (error) {
+      console.error('Error checking permissions:', error);
       return {
         canEditEmployees: false,
         canCreateTrainings: false,
@@ -77,7 +106,7 @@ export class SecureDatabaseService {
   private async logAIOperation(operation: string, table: string, recordId: string, changes: Record<string, unknown>) {
     try {
       const user = await this.getCurrentUser();
-      
+
       // Insert audit log - you might want to create an audit_logs table
       console.log('🔍 AI Operation:', {
         userId: user.id,
@@ -89,7 +118,7 @@ export class SecureDatabaseService {
         timestamp: new Date().toISOString(),
         source: 'AI_ASSISTANT'
       });
-      
+
       // TODO: Insert into actual audit_logs table when created
     } catch (error) {
       console.error('Failed to log AI operation:', error);
@@ -101,8 +130,8 @@ export class SecureDatabaseService {
    */
   private validateEmployeeData(data: Partial<EmployeeUpdate>): OperationResult {
     const allowedFields = [
-      'first_name', 'last_name', 'tussenvoegsel', 'roepnaam', 'email', 
-      'phone', 'mobile_phone', 'date_of_birth', 'address', 'city', 
+      'first_name', 'last_name', 'tussenvoegsel', 'roepnaam', 'email',
+      'phone', 'mobile_phone', 'date_of_birth', 'address', 'city',
       'country', 'nationality', 'job_title', 'department', 'notes'
     ];
 
@@ -170,7 +199,7 @@ export class SecureDatabaseService {
       // Check authentication and permissions
       const user = await this.getCurrentUser();
       const permissions = await this.getUserPermissions();
-      
+
       if (!permissions.canEditEmployees) {
         return {
           success: false,
@@ -241,7 +270,7 @@ export class SecureDatabaseService {
     try {
       const user = await this.getCurrentUser();
       const permissions = await this.getUserPermissions();
-      
+
       if (!permissions.canCreateTrainings) {
         return {
           success: false,
@@ -251,10 +280,10 @@ export class SecureDatabaseService {
       }
 
       // Validate required fields
-      if (!trainingData.course_id || !trainingData.start_date) {
+      if (!trainingData.course_id || !trainingData.date) {
         return {
           success: false,
-          message: 'Course ID and start date are required',
+          message: 'Course ID and date are required',
           error: 'MISSING_REQUIRED_FIELDS'
         };
       }
@@ -299,7 +328,7 @@ export class SecureDatabaseService {
     try {
       const user = await this.getCurrentUser();
       const permissions = await this.getUserPermissions();
-      
+
       if (!permissions.canEditTrainings) {
         return {
           success: false,
@@ -364,7 +393,7 @@ export class SecureDatabaseService {
     try {
       const user = await this.getCurrentUser();
       const permissions = await this.getUserPermissions();
-      
+
       if (!permissions.canEditTrainings) {
         return {
           success: false,
@@ -442,7 +471,7 @@ export class SecureDatabaseService {
     try {
       const user = await this.getCurrentUser();
       const permissions = await this.getUserPermissions();
-      
+
       if (!permissions.canManageCertificates) {
         return {
           success: false,

@@ -7,12 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CertificateExpiryReport } from "@/components/reports/CertificateExpiryReport";
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  Calendar, 
-  User, 
+import {
+  Plus,
+  Search,
+  Filter,
+  Calendar,
+  User,
   AlertTriangle,
   CheckCircle,
   Clock,
@@ -21,53 +21,8 @@ import {
   Award,
   FileText
 } from "lucide-react";
-
-const certifications = [
-  {
-    id: 1,
-    participantName: "John Doe",
-    courseName: "VCA Safety Training",
-    provider: "Safety First B.V.",
-    issueDate: "2024-01-15",
-    expiryDate: "2027-01-15",
-    status: "valid",
-    certificateNumber: "VCA-2024-001",
-    category: "Safety"
-  },
-  {
-    id: 2,
-    participantName: "Sarah Wilson",
-    courseName: "Forklift Operation Certification",
-    provider: "Heavy Equipment Training",
-    issueDate: "2023-08-20",
-    expiryDate: "2024-08-20",
-    status: "expiring",
-    certificateNumber: "FLT-2023-045",
-    category: "Equipment"
-  },
-  {
-    id: 3,
-    participantName: "Mike Johnson",
-    courseName: "First Aid & CPR",
-    provider: "Emergency Response Training",
-    issueDate: "2023-05-10",
-    expiryDate: "2024-05-10",
-    status: "expired",
-    certificateNumber: "FA-2023-078",
-    category: "Medical"
-  },
-  {
-    id: 4,
-    participantName: "Emma Brown",
-    courseName: "Chemical Handling Safety",
-    provider: "ChemSafe Institute",
-    issueDate: "2024-03-12",
-    expiryDate: "2026-03-12",
-    status: "valid",
-    certificateNumber: "CHS-2024-012",
-    category: "Safety"
-  }
-];
+import { useCertificates } from "@/hooks/useCertificates";
+import { format } from "date-fns";
 
 const statusColors = {
   valid: "bg-green-100 text-green-800",
@@ -85,22 +40,24 @@ export default function Certifications() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
 
-  const filteredCertifications = certifications.filter(cert => {
-    const matchesSearch = cert.participantName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         cert.courseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         cert.provider.toLowerCase().includes(searchTerm.toLowerCase());
-    
+  const { data: certificates = [], isLoading } = useCertificates();
+
+  const filteredCertifications = certificates.filter(cert => {
+    const matchesSearch = cert.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cert.licenseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cert.certificateNumber.toLowerCase().includes(searchTerm.toLowerCase());
+
     const matchesStatus = selectedStatus === "all" || cert.status === selectedStatus;
-    
+
     return matchesSearch && matchesStatus;
   });
 
-  const handleDownloadCertificate = (certId: number) => {
+  const handleDownloadCertificate = (certId: string) => {
     console.log(`Downloading certificate ${certId}`);
     // In a real app, this would trigger a file download
   };
 
-  const handleViewCertificate = (certId: number) => {
+  const handleViewCertificate = (certId: string) => {
     console.log(`Viewing certificate ${certId}`);
     // In a real app, this would open a modal or new page
   };
@@ -135,110 +92,122 @@ export default function Certifications() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="all" className="space-y-6">
-            {/* Search and Filter Bar */}
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <Input
-                      placeholder="Search by participant, course, or provider..."
-                      className="pl-10"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </div>
-                  <select 
-                    className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-                    value={selectedStatus}
-                    onChange={(e) => setSelectedStatus(e.target.value)}
-                  >
-                    <option value="all">All Status</option>
-                    <option value="valid">Valid</option>
-                    <option value="expiring">Expiring Soon</option>
-                    <option value="expired">Expired</option>
-                  </select>
-                  <Button variant="outline">
-                    <Filter className="h-4 w-4 mr-2" />
-                    More Filters
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+          <TabsContent value="all" className="space-y-4">
+            <div className="flex items-center space-x-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search certificates, employees, or certificate numbers..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="px-3 py-2 border rounded-md bg-white"
+              >
+                <option value="all">All Status</option>
+                <option value="valid">Valid</option>
+                <option value="expiring">Expiring</option>
+                <option value="expired">Expired</option>
+              </select>
+            </div>
 
-            {/* Certifications List */}
-            <div className="space-y-4">
-              {filteredCertifications.map((cert) => {
-                const StatusIcon = statusIcons[cert.status as keyof typeof statusIcons];
-                
-                return (
-                  <Card key={cert.id} className="hover:shadow-md transition-shadow">
+            {isLoading ? (
+              <div className="space-y-4">
+                {[...Array(5)].map((_, i) => (
+                  <Card key={i}>
                     <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-3 mb-2">
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              {cert.courseName}
-                            </h3>
-                            <Badge className={statusColors[cert.status as keyof typeof statusColors]}>
-                              <StatusIcon className="h-3 w-3 mr-1" />
-                              {cert.status}
-                            </Badge>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-600">
-                            <div className="flex items-center">
-                              <User className="h-4 w-4 mr-2" />
-                              {cert.participantName}
-                            </div>
-                            <div className="flex items-center">
-                              <Calendar className="h-4 w-4 mr-2" />
-                              Issued: {cert.issueDate}
-                            </div>
-                            <div className="flex items-center">
-                              <Calendar className="h-4 w-4 mr-2" />
-                              Expires: {cert.expiryDate}
-                            </div>
-                            <div className="text-xs">
-                              #{cert.certificateNumber}
-                            </div>
-                          </div>
-                          
-                          <p className="text-sm text-gray-500 mt-2">
-                            Provided by {cert.provider}
-                          </p>
-                        </div>
-                        
-                        <div className="flex space-x-2 ml-4">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleViewCertificate(cert.id)}
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleDownloadCertificate(cert.id)}
-                          >
-                            <Download className="h-4 w-4 mr-1" />
-                            Download
-                          </Button>
-                        </div>
+                      <div className="animate-pulse space-y-2">
+                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                        <div className="h-3 bg-gray-200 rounded w-1/4"></div>
                       </div>
                     </CardContent>
                   </Card>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredCertifications.map((cert) => {
+                  const StatusIcon = statusIcons[cert.status as keyof typeof statusIcons];
 
-            {filteredCertifications.length === 0 && (
+                  return (
+                    <Card key={cert.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <StatusIcon className="h-5 w-5 text-gray-600" />
+                              <h3 className="text-lg font-semibold text-gray-900">
+                                {cert.licenseName}
+                              </h3>
+                              <Badge className={statusColors[cert.status as keyof typeof statusColors]}>
+                                {cert.status.charAt(0).toUpperCase() + cert.status.slice(1)}
+                              </Badge>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 mb-3">
+                              <div className="flex items-center gap-2">
+                                <User className="h-4 w-4" />
+                                <span>{cert.employeeName}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4" />
+                                <span>
+                                  Expires: {cert.expiryDate ? format(new Date(cert.expiryDate), 'MMM dd, yyyy') : 'N/A'}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <FileText className="h-4 w-4" />
+                                <span>#{cert.certificateNumber || 'N/A'}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                              <span>Category: {cert.category}</span>
+                              {cert.issueDate && (
+                                <span>• Issued: {format(new Date(cert.issueDate), 'MMM dd, yyyy')}</span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex space-x-2 ml-4">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewCertificate(cert.id)}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              View
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDownloadCertificate(cert.id)}
+                            >
+                              <Download className="h-4 w-4 mr-1" />
+                              Download
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+
+            {!isLoading && filteredCertifications.length === 0 && (
               <Card>
                 <CardContent className="p-12 text-center">
-                  <p className="text-gray-500">No certifications found matching your criteria.</p>
+                  <Award className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">No certificates found matching your criteria.</p>
+                  <p className="text-sm text-gray-400 mt-2">
+                    Try adjusting your search terms or filters.
+                  </p>
                 </CardContent>
               </Card>
             )}
@@ -254,7 +223,43 @@ export default function Certifications() {
                 <CardTitle>Certificate Reports</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Additional certificate reporting features coming soon...</p>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Card className="p-4">
+                      <h3 className="font-semibold mb-2">Total Certificates</h3>
+                      <p className="text-2xl font-bold text-blue-600">{certificates.length}</p>
+                    </Card>
+                    <Card className="p-4">
+                      <h3 className="font-semibold mb-2">Valid Certificates</h3>
+                      <p className="text-2xl font-bold text-green-600">
+                        {certificates.filter(c => c.status === 'valid').length}
+                      </p>
+                    </Card>
+                    <Card className="p-4">
+                      <h3 className="font-semibold mb-2">Expired Certificates</h3>
+                      <p className="text-2xl font-bold text-red-600">
+                        {certificates.filter(c => c.status === 'expired').length}
+                      </p>
+                    </Card>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <h3 className="font-semibold mb-4">Certificate Categories</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {Object.entries(
+                        certificates.reduce((acc, cert) => {
+                          acc[cert.category] = (acc[cert.category] || 0) + 1;
+                          return acc;
+                        }, {} as Record<string, number>)
+                      ).map(([category, count]) => (
+                        <div key={category} className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                          <span className="font-medium">{category}</span>
+                          <Badge variant="secondary">{count}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

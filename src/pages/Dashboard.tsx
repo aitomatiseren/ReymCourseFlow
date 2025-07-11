@@ -6,10 +6,29 @@ import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { UpcomingCourses } from "@/components/dashboard/UpcomingCourses";
 import { ReportsScreen } from "@/components/reports/ReportsScreen";
 import { Users, BookOpen, Award, Calendar } from "lucide-react";
+import { useEmployees } from "@/hooks/useEmployees";
+import { useCourses } from "@/hooks/useCourses";
+import { useTrainings } from "@/hooks/useTrainings";
+import { useCertificates } from "@/hooks/useCertificates";
 
 export default function Dashboard() {
   const location = useLocation();
-  
+
+  // Fetch real data from database
+  const { data: employees = [], isLoading: employeesLoading } = useEmployees();
+  const { data: courses = [], isLoading: coursesLoading } = useCourses();
+  const { data: trainings = [], isLoading: trainingsLoading } = useTrainings();
+  const { data: certificates = [], isLoading: certificatesLoading } = useCertificates();
+
+  // Calculate real statistics
+  const totalEmployees = employees.length;
+  const activeCourses = courses.filter(course => course.title).length;
+  const validCertificates = certificates.filter(cert => cert.status === 'valid').length;
+  const expiredCertificates = certificates.filter(cert => cert.status === 'expired').length;
+  const upcomingTrainings = trainings.filter(training =>
+    training.status === 'scheduled' || training.status === 'confirmed'
+  ).length;
+
   // Show reports screen when on /reports route
   if (location.pathname === "/reports") {
     return (
@@ -32,32 +51,48 @@ export default function Dashboard() {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatsCard
-            title="Total Participants"
-            value={247}
+            title="Total Employees"
+            value={totalEmployees}
             icon={Users}
-            trend={{ value: "+12 this month", isPositive: true }}
+            trend={{
+              value: employeesLoading ? "Loading..." : `${totalEmployees} total`,
+              isPositive: true
+            }}
             color="blue"
+            isLoading={employeesLoading}
           />
           <StatsCard
             title="Active Courses"
-            value={18}
+            value={activeCourses}
             icon={BookOpen}
-            trend={{ value: "+3 this week", isPositive: true }}
+            trend={{
+              value: coursesLoading ? "Loading..." : `${activeCourses} available`,
+              isPositive: true
+            }}
             color="green"
+            isLoading={coursesLoading}
           />
           <StatsCard
-            title="Valid Certifications"
-            value={189}
+            title="Valid Certificates"
+            value={validCertificates}
             icon={Award}
-            trend={{ value: "-5 expired", isPositive: false }}
+            trend={{
+              value: certificatesLoading ? "Loading..." : expiredCertificates > 0 ? `${expiredCertificates} expired` : "All current",
+              isPositive: expiredCertificates === 0
+            }}
             color="purple"
+            isLoading={certificatesLoading}
           />
           <StatsCard
-            title="Scheduled Sessions"
-            value={12}
+            title="Scheduled Trainings"
+            value={upcomingTrainings}
             icon={Calendar}
-            trend={{ value: "+4 next week", isPositive: true }}
+            trend={{
+              value: trainingsLoading ? "Loading..." : `${upcomingTrainings} upcoming`,
+              isPositive: true
+            }}
             color="orange"
+            isLoading={trainingsLoading}
           />
         </div>
 

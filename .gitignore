@@ -13,6 +13,10 @@ lerna-debug.log*
 .env.development.local
 .env.test.local
 .env.production.local
+.env.example
+
+# Cursor MCP configuration (contains sensitive tokens)
+.cursor/mcp.json
 
 node_modules
 dist
