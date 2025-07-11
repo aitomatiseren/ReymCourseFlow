@@ -1,0 +1,171 @@
+
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2 } from "lucide-react";
+import { useTrainings } from "@/hooks/useTrainings";
+import { useCourses } from "@/hooks/useCourses";
+import { useTrainingParticipants } from "@/hooks/useTrainingParticipants";
+import { CreateTrainingDialog } from "./CreateTrainingDialog";
+import { AddParticipantDialog } from "./AddParticipantDialog";
+import { TrainingCalendar } from "./TrainingCalendar";
+import { TrainingTimeline } from "./TrainingTimeline";
+import { TrainingListView } from "./TrainingListView";
+import { TrainingSchedulerHeader } from "./TrainingSchedulerHeader";
+import { TrainingGridView } from "./TrainingGridView";
+import { TrainingDetailsView } from "./TrainingDetailsView";
+import { useToast } from "@/hooks/use-toast";
+
+export function TrainingScheduler() {
+  const [searchParams] = useSearchParams();
+  const [selectedTrainingId, setSelectedTrainingId] = useState<string | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showAddParticipant, setShowAddParticipant] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'view' | 'edit'>('list');
+  
+  const preSelectedCourseId = searchParams.get('courseId');
+  const { toast } = useToast();
+
+  const { data: trainings = [], isLoading: trainingsLoading, error: trainingsError } = useTrainings();
+  const { data: courses = [], isLoading: coursesLoading } = useCourses();
+  const { participants, removeParticipant } = useTrainingParticipants(selectedTrainingId || undefined);
+
+  const selectedTraining = trainings.find(t => t.id === selectedTrainingId);
+
+  // Auto-open create dialog if courseId is provided
+  useEffect(() => {
+    if (preSelectedCourseId && courses.length > 0) {
+      setShowCreateForm(true);
+    }
+  }, [preSelectedCourseId, courses.length]);
+
+  const handleTrainingSelect = (trainingId: string) => {
+    setSelectedTrainingId(trainingId);
+    setViewMode('view');
+  };
+
+  const handleBackToList = () => {
+    setViewMode('list');
+    setSelectedTrainingId(null);
+  };
+
+  const handleEditTraining = () => {
+    // Edit is now handled by the EditTrainingDialog in TrainingDetailsView
+  };
+
+  const handleSendNotifications = (trainingId: string) => {
+    console.log(`Sending notifications for training ${trainingId}`);
+    toast({
+      title: "Notifications Sent",
+      description: "All participants have been notified"
+    });
+  };
+
+  const handleGenerateAttendanceList = (trainingId: string) => {
+    console.log(`Generating attendance list for training ${trainingId}`);
+    toast({
+      title: "Attendance List Generated",
+      description: "The attendance list has been prepared"
+    });
+  };
+
+  if (trainingsLoading || coursesLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin mr-2" />
+        <span>Loading training data...</span>
+      </div>
+    );
+  }
+
+  if (trainingsError) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-500">Error loading trainings: {trainingsError.message}</p>
+      </div>
+    );
+  }
+
+  // Show view or editor based on mode
+  if (viewMode === 'view' && selectedTraining) {
+    return (
+      <>
+        <TrainingDetailsView
+          training={selectedTraining}
+          onBack={handleBackToList}
+          onEdit={handleEditTraining}
+          onAddParticipant={() => setShowAddParticipant(true)}
+          onSendNotifications={handleSendNotifications}
+          onGenerateAttendanceList={handleGenerateAttendanceList}
+          onRemoveParticipant={(id) => removeParticipant.mutate(id)}
+        />
+        {selectedTrainingId && (
+          <AddParticipantDialog
+            open={showAddParticipant}
+            onOpenChange={setShowAddParticipant}
+            trainingId={selectedTrainingId}
+          />
+        )}
+      </>
+    );
+  }
+
+
+  return (
+    <div className="space-y-6">
+      <TrainingSchedulerHeader onCreateTraining={() => setShowCreateForm(true)} />
+
+      <Tabs defaultValue="list" className="w-full">
+        <TabsList>
+          <TabsTrigger value="list">List View</TabsTrigger>
+          <TabsTrigger value="grid">Grid View</TabsTrigger>
+          <TabsTrigger value="timeline">Timeline View</TabsTrigger>
+          <TabsTrigger value="calendar">Calendar View</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="list">
+          <TrainingListView
+            trainings={trainings}
+            onTrainingSelect={handleTrainingSelect}
+            onCreateTraining={() => setShowCreateForm(true)}
+          />
+        </TabsContent>
+
+        <TabsContent value="grid">
+          <TrainingGridView
+            trainings={trainings}
+            onTrainingSelect={handleTrainingSelect}
+            onCreateTraining={() => setShowCreateForm(true)}
+          />
+        </TabsContent>
+
+        <TabsContent value="timeline">
+          <TrainingTimeline 
+            onTrainingSelect={handleTrainingSelect}
+            selectedTrainingId={selectedTrainingId}
+          />
+        </TabsContent>
+
+        <TabsContent value="calendar">
+          <TrainingCalendar 
+            onTrainingSelect={handleTrainingSelect}
+          />
+        </TabsContent>
+      </Tabs>
+
+      <CreateTrainingDialog
+        open={showCreateForm}
+        onOpenChange={setShowCreateForm}
+        preSelectedCourseId={preSelectedCourseId || undefined}
+      />
+
+      {selectedTrainingId && (
+        <AddParticipantDialog
+          open={showAddParticipant}
+          onOpenChange={setShowAddParticipant}
+          trainingId={selectedTrainingId}
+        />
+      )}
+    </div>
+  );
+}

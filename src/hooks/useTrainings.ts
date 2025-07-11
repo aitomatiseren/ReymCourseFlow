@@ -1,0 +1,113 @@
+
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
+export interface Training {
+  id: string;
+  title: string;
+  instructor: string;
+  date: string;
+  time: string;
+  location: string;
+  maxParticipants: number;
+  status: 'scheduled' | 'confirmed' | 'cancelled' | 'completed';
+  requiresApproval: boolean;
+  participantCount: number;
+  course_id?: string;
+  courseName?: string;
+  price?: number;
+  code95_points?: number;
+  sessions_count?: number;
+  session_dates?: string[] | null;
+  session_times?: string[] | null;
+  session_end_times?: string[] | null;
+  checklist?: Array<{ id: string; text: string; completed: boolean }>;
+  notes?: string;
+}
+
+export function useTrainings() {
+  return useQuery({
+    queryKey: ['trainings'],
+    queryFn: async () => {
+      console.log('Fetching trainings from database...');
+      
+      const { data: trainingsData, error: trainingsError } = await supabase
+        .from('trainings')
+        .select(`
+          id,
+          title,
+          instructor,
+          date,
+          time,
+          location,
+          max_participants,
+          status,
+          requires_approval,
+          sessions_count,
+          session_dates,
+          session_times,
+          session_end_times,
+          price,
+          notes,
+          checklist,
+          course_id,
+          courses (
+            title,
+            price,
+            code95_points
+          )
+        `)
+        .order('date');
+      
+      if (trainingsError) {
+        console.error('Error fetching trainings:', trainingsError);
+        throw trainingsError;
+      }
+      
+      // Get participant counts for each training
+      const { data: participantsData, error: participantsError } = await supabase
+        .from('training_participants')
+        .select('training_id')
+        .in('status', ['enrolled', 'attended']);
+      
+      if (participantsError) {
+        console.error('Error fetching training participants:', participantsError);
+        throw participantsError;
+      }
+      
+      // Count participants per training
+      const participantCounts = participantsData.reduce((acc, participant) => {
+        acc[participant.training_id] = (acc[participant.training_id] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      console.log('Fetched trainings:', trainingsData);
+      
+      // Transform database data to match our Training interface
+      const trainings: Training[] = trainingsData.map(training => ({
+        id: training.id,
+        title: training.title,
+        instructor: training.instructor || 'TBD',
+        date: training.date,
+        time: training.time,
+        location: training.location,
+        maxParticipants: training.max_participants,
+        status: training.status as Training['status'] || 'scheduled',
+        requiresApproval: training.requires_approval || false,
+        participantCount: participantCounts[training.id] || 0,
+        course_id: training.course_id,
+        courseName: training.courses?.title,
+        price: training.price ? Number(training.price) : training.courses?.price ? Number(training.courses.price) : undefined,
+        code95_points: training.courses?.code95_points || undefined,
+        sessions_count: training.sessions_count || 1,
+        session_dates: training.session_dates as string[] | null,
+        session_times: training.session_times as string[] | null,
+        session_end_times: training.session_end_times as string[] | null,
+        checklist: training.checklist as Array<{ id: string; text: string; completed: boolean }> || [],
+        notes: training.notes || ""
+      }));
+      
+      return trainings;
+    }
+  });
+}
