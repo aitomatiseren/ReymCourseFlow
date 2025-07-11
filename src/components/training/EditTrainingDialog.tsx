@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, forwardRef } from "react";
 import { Dialog, DialogDescription, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from "@/components/ui/dialog";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,32 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Minus, Calendar, Copy } from "lucide-react";
+
+// Custom DialogContent component - defined outside to prevent re-renders
+const CustomDialogContent = forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
+    onOpenChange?: (open: boolean) => void;
+  }
+>(({ className, children, onOpenChange, ...props }, ref) => (
+  <DialogPortal>
+    <DialogOverlay />
+    <DialogPrimitive.Content
+      ref={ref}
+      className={cn(
+        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
+        className
+      )}
+      onPointerDownOutside={(e) => e.preventDefault()}
+      onEscapeKeyDown={() => onOpenChange?.(false)}
+      {...props}
+    >
+      {children}
+    </DialogPrimitive.Content>
+  </DialogPortal>
+));
+
+CustomDialogContent.displayName = "CustomDialogContent";
 
 interface EditTrainingDialogProps {
   open: boolean;
@@ -359,27 +385,9 @@ export function EditTrainingDialog({ open, onOpenChange, training }: EditTrainin
 
   if (!training) return null;
 
-  // Custom DialogContent without close button and outside click disabled
-  const CustomDialogContent = ({ className, children, ...props }: any) => (
-    <DialogPortal>
-      <DialogOverlay />
-      <DialogPrimitive.Content
-        className={cn(
-          "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
-          className
-        )}
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={() => onOpenChange(false)}
-        {...props}
-      >
-        {children}
-      </DialogPrimitive.Content>
-    </DialogPortal>
-  );
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange} modal>
-      <CustomDialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
+      <CustomDialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto" onOpenChange={onOpenChange}>
         <DialogHeader>
           <DialogTitle>Edit Training</DialogTitle>
           <DialogDescription>
