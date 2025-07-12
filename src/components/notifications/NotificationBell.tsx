@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, X, CheckCircle, Eye, Trash2 } from 'lucide-react';
+import { Bell, X, CheckCircle, Eye, Trash2, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,6 +54,7 @@ export function NotificationBell({
         markAsRead,
         markAllAsRead,
         deleteNotification,
+        createNotification,
         enableRealTime: enableRT,
         disableRealTime: disableRT,
         isLoading,
@@ -111,6 +112,20 @@ export function NotificationBell({
         markAllAsRead();
     };
 
+    const handleCreateTestNotification = () => {
+        if (!userId) return;
+
+        console.log('Creating test notification from bell for user:', userId);
+        createNotification({
+            recipient_id: userId,
+            type: 'training_reminder',
+            title: 'Bell Test Notification',
+            message: `Test notification from bell at ${new Date().toLocaleTimeString()}`,
+            priority: 'medium',
+            action_url: '/communications'
+        });
+    };
+
     const handleViewAll = () => {
         navigate('/communications');
         setIsOpen(false);
@@ -140,6 +155,16 @@ export function NotificationBell({
                         <div className="flex items-center justify-between">
                             <CardTitle className="text-base">Notifications</CardTitle>
                             <div className="flex items-center space-x-2">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleCreateTestNotification}
+                                    disabled={!userId}
+                                    className="text-xs"
+                                >
+                                    <Send className="h-3 w-3 mr-1" />
+                                    Test
+                                </Button>
                                 {unreadCount > 0 && (
                                     <Button
                                         variant="ghost"

@@ -67,6 +67,8 @@ export function NotificationSystem({
     markAllAsRead,
     deleteNotification,
     createBulkNotifications,
+    createNotification,
+    refetch,
     isLoading,
     isMarkingAsRead,
     isMarkingAllAsRead,
@@ -79,15 +81,23 @@ export function NotificationSystem({
   // Enable real-time notifications
   useEffect(() => {
     if (enableRealTime && userId) {
+      console.log('Enabling real-time notifications for NotificationSystem');
       enableRT();
     }
 
     return () => {
       if (enableRealTime) {
+        console.log('Disabling real-time notifications for NotificationSystem');
         disableRT();
       }
     };
   }, [enableRealTime, userId, enableRT, disableRT]);
+
+  // Log notification changes for debugging
+  useEffect(() => {
+    console.log('NotificationSystem: notifications updated, count:', notifications.length);
+    console.log('NotificationSystem: unread count:', unreadCount);
+  }, [notifications, unreadCount]);
 
   // If user has no employee record, show appropriate message
   if (!userId) {
@@ -166,6 +176,25 @@ export function NotificationSystem({
     markAllAsRead();
   };
 
+  const handleRefresh = () => {
+    console.log('Manual refresh triggered');
+    refetch();
+  };
+
+  const handleCreateTestNotification = () => {
+    if (!userId) return;
+
+    console.log('Creating test notification for user:', userId);
+    createNotification({
+      recipient_id: userId,
+      type: 'system_announcement',
+      title: 'Test Notification',
+      message: `This is a test notification created at ${new Date().toLocaleTimeString()}. If you can see this, the notification system is working!`,
+      priority: 'high',
+      action_url: '/communications'
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -191,6 +220,14 @@ export function NotificationSystem({
             <option value="unread">Unread</option>
             <option value="read">Read</option>
           </select>
+          <Button variant="outline" onClick={handleRefresh} disabled={isLoading}>
+            <Bell className="h-4 w-4 mr-2" />
+            {isLoading ? 'Refreshing...' : 'Refresh'}
+          </Button>
+          <Button variant="outline" onClick={handleCreateTestNotification} disabled={!userId}>
+            <Send className="h-4 w-4 mr-2" />
+            Create Test Notification
+          </Button>
           {unreadCount > 0 && (
             <Button variant="outline" onClick={handleMarkAllAsRead} disabled={isMarkingAllAsRead}>
               <Check className="h-4 w-4 mr-2" />

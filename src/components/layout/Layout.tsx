@@ -13,6 +13,10 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const { userProfile } = usePermissions();
 
+  // Debug logging for user profile
+  console.log('Layout: userProfile', userProfile);
+  console.log('Layout: employee_id for notifications', userProfile?.employee?.id);
+
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="min-h-screen flex w-full">

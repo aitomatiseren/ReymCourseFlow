@@ -56,7 +56,17 @@ export function NotificationPopup({
     position = 'top-right'
 }: NotificationPopupProps) {
     const [visibleNotifications, setVisibleNotifications] = useState<Notification[]>([]);
-    const [previousNotificationCount, setPreviousNotificationCount] = useState(0);
+    const [seenNotificationIds, setSeenNotificationIds] = useState<Set<string>>(() => {
+        // Load seen notification IDs from localStorage on initialization
+        const storageKey = `seen-notifications-${userId || 'default'}`;
+        try {
+            const stored = localStorage.getItem(storageKey);
+            return stored ? new Set(JSON.parse(stored)) : new Set();
+        } catch (error) {
+            console.error('Error loading seen notification IDs:', error);
+            return new Set();
+        }
+    });
     const navigate = useNavigate();
 
     const {
@@ -80,29 +90,76 @@ export function NotificationPopup({
         };
     }, [enableRealTime, userId, enableRT, disableRT]);
 
-    // Monitor for new notifications
+    // Save seen notification IDs to localStorage whenever they change
+    useEffect(() => {
+        if (userId && seenNotificationIds.size > 0) {
+            const storageKey = `seen-notifications-${userId}`;
+            try {
+                localStorage.setItem(storageKey, JSON.stringify(Array.from(seenNotificationIds)));
+            } catch (error) {
+                console.error('Error saving seen notification IDs:', error);
+            }
+        }
+    }, [seenNotificationIds, userId]);
+
+    // Initialize seen notification IDs on first load for new users
+    useEffect(() => {
+        if (notifications.length > 0 && seenNotificationIds.size === 0 && userId) {
+            // Only mark read notifications as seen, not all notifications
+            const readNotificationIds = new Set(notifications.filter(n => n.read).map(n => n.id));
+            if (readNotificationIds.size > 0) {
+                setSeenNotificationIds(readNotificationIds);
+                console.log('Initialized seen notification IDs for read notifications:', readNotificationIds.size);
+            }
+        }
+    }, [notifications, seenNotificationIds.size, userId]);
+
+    // Monitor for new notifications using ID-based detection
     useEffect(() => {
         if (!notifications.length) return;
 
-        const currentCount = notifications.length;
+        const currentNotificationIds = new Set(notifications.map(n => n.id));
         const unreadNotifications = notifications.filter(n => !n.read);
 
-        // Check if we have new notifications
-        if (currentCount > previousNotificationCount && previousNotificationCount > 0) {
-            const newNotifications = notifications.slice(0, currentCount - previousNotificationCount);
-            const newUnreadNotifications = newNotifications.filter(n => !n.read);
+        // Find truly new notifications (not previously seen)
+        const newNotifications = unreadNotifications.filter(notification =>
+            !seenNotificationIds.has(notification.id)
+        );
 
-            if (newUnreadNotifications.length > 0) {
-                // Add new notifications to visible list
-                setVisibleNotifications(prev => {
-                    const combined = [...newUnreadNotifications, ...prev];
-                    return combined.slice(0, maxVisible);
-                });
-            }
+        if (newNotifications.length > 0) {
+            console.log('New notifications detected for popup:', newNotifications.length);
+
+            // Add new notifications to visible list
+            setVisibleNotifications(prev => {
+                const combined = [...newNotifications, ...prev];
+                return combined.slice(0, maxVisible);
+            });
+
+            // Update seen notification IDs
+            setSeenNotificationIds(prev => {
+                const newSet = new Set(prev);
+                newNotifications.forEach(n => newSet.add(n.id));
+                console.log('Added new notification IDs to seen set:', newNotifications.map(n => n.id));
+                return newSet;
+            });
         }
 
-        setPreviousNotificationCount(currentCount);
-    }, [notifications, previousNotificationCount, maxVisible]);
+        // Clean up old seen IDs to prevent memory leak
+        setSeenNotificationIds(prev => {
+            const newSet = new Set<string>();
+            notifications.forEach(n => {
+                if (prev.has(n.id)) {
+                    newSet.add(n.id);
+                }
+            });
+
+            // Only update if the Set actually changed to avoid unnecessary localStorage writes
+            if (newSet.size !== prev.size || ![...newSet].every(id => prev.has(id))) {
+                return newSet;
+            }
+            return prev;
+        });
+    }, [notifications, seenNotificationIds, maxVisible]);
 
     // Auto-hide notifications after a delay
     useEffect(() => {

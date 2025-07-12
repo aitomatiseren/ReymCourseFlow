@@ -44,6 +44,8 @@ export function useNotifications(userId?: string) {
         queryFn: async () => {
             if (!userId) return [];
 
+            console.log('Fetching notifications for user:', userId);
+
             // Explicitly filter by recipient_id (employee_id) + RLS policy provides additional security
             const { data, error } = await supabase
                 .from('notifications')
@@ -59,11 +61,13 @@ export function useNotifications(userId?: string) {
                 throw error;
             }
 
+            console.log('Fetched notifications:', data?.length || 0);
             return data as any[];
         },
         enabled: !!userId,
         refetchOnWindowFocus: false,
-        staleTime: 1000 * 60 * 5, // 5 minutes
+        staleTime: isRealTimeEnabled ? 1000 * 30 : 1000 * 60 * 5, // 30 seconds when real-time is enabled, 5 minutes otherwise
+        refetchInterval: isRealTimeEnabled ? false : 1000 * 60, // Poll every minute when real-time is disabled
     });
 
     // Get unread notification count
@@ -273,8 +277,10 @@ export function useNotifications(userId?: string) {
     useEffect(() => {
         if (!userId || !isRealTimeEnabled) return;
 
+        console.log('Setting up real-time subscription for user:', userId);
+
         const channel = supabase
-            .channel('notifications')
+            .channel(`notifications-${userId}`)
             .on(
                 'postgres_changes',
                 {
@@ -284,11 +290,14 @@ export function useNotifications(userId?: string) {
                     filter: `recipient_id=eq.${userId}`,
                 },
                 (payload) => {
-                    console.log('New notification received:', payload.new);
+                    console.log('New notification received via real-time:', payload.new);
 
-                    // Invalidate and refetch notifications
+                    // Force immediate refetch instead of just invalidating
                     queryClient.invalidateQueries({ queryKey: ['notifications', userId] });
                     queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count', userId] });
+
+                    // Trigger immediate refetch
+                    refetch();
 
                     // Show toast for new notification
                     const newNotification = payload.new as Notification;
@@ -308,19 +317,25 @@ export function useNotifications(userId?: string) {
                     filter: `recipient_id=eq.${userId}`,
                 },
                 (payload) => {
-                    console.log('Notification updated:', payload.new);
+                    console.log('Notification updated via real-time:', payload.new);
 
-                    // Invalidate and refetch notifications
+                    // Force immediate refetch
                     queryClient.invalidateQueries({ queryKey: ['notifications', userId] });
                     queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count', userId] });
+
+                    // Trigger immediate refetch
+                    refetch();
                 }
             )
-            .subscribe();
+            .subscribe((status) => {
+                console.log('Real-time subscription status:', status);
+            });
 
         return () => {
+            console.log('Cleaning up real-time subscription for user:', userId);
             supabase.removeChannel(channel);
         };
-    }, [userId, isRealTimeEnabled, queryClient, toast]);
+    }, [userId, isRealTimeEnabled, queryClient, toast, refetch]);
 
     // Enable real-time notifications
     const enableRealTime = useCallback(() => {
