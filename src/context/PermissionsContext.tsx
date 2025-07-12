@@ -39,6 +39,7 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
     const [initialized, setInitialized] = useState(false);
     const [fetchingPermissions, setFetchingPermissions] = useState(false);
     const initializationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const lastAuthEventRef = useRef<{ event: string; timestamp: number; userId?: string } | null>(null);
 
     // Helper to clear timeout when initialization is complete
     const clearInitializationTimeout = () => {
@@ -260,7 +261,7 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                     .single();
                 
                 const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
+                    setTimeout(() => reject(new Error('Profile fetch timeout')), 8000)
                 );
                 
                 const result = await Promise.race([profilePromise, timeoutPromise]) as any;
@@ -315,7 +316,7 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                 // Add timeout to RPC call to prevent hanging
                 const rpcPromise = supabase.rpc('get_user_permissions', { user_id: currentUser.id });
                 const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('RPC timeout')), 10000)
+                    setTimeout(() => reject(new Error('RPC timeout')), 8000)
                 );
                 
                 const result = await Promise.race([rpcPromise, timeoutPromise]) as any;
@@ -456,13 +457,73 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
     const isAdmin = permissions?.isAdmin || false;
     const roleName = permissions?.role?.name || null;
 
+    // Handle page visibility changes (tab switching, minimizing)
+    useEffect(() => {
+        let visibilityCheckTimeout: NodeJS.Timeout | null = null;
+        
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                console.log('Page became visible...');
+                
+                // Only check if we're in a potentially stuck state
+                if (!initialized && loading) {
+                    console.log('Page became visible but stuck in loading, triggering faster recovery...');
+                    // If we're stuck in loading state when tab becomes visible, reduce timeout
+                    if (initializationTimeoutRef.current) {
+                        clearTimeout(initializationTimeoutRef.current);
+                        initializationTimeoutRef.current = setTimeout(() => {
+                            console.warn('Fast authentication check timed out after visibility change');
+                            if (!initialized) {
+                                setPermissions(null);
+                                setUserProfile(null);
+                                setLoading(false);
+                                setInitialized(true);
+                                setFetchingPermissions(false);
+                                setError('Authentication timeout - please refresh the page');
+                            }
+                        }, 5000); // Faster timeout when coming back from background
+                    }
+                } else if (initialized && userProfile) {
+                    // Only do a lightweight check, and debounce it to avoid repeated calls
+                    if (visibilityCheckTimeout) {
+                        clearTimeout(visibilityCheckTimeout);
+                    }
+                    
+                    visibilityCheckTimeout = setTimeout(() => {
+                        console.log('Doing lightweight auth check after visibility change...');
+                        supabase.auth.getUser().then(({ data: { user }, error }) => {
+                            if (error) {
+                                console.warn('Auth check failed on visibility change:', error);
+                                return;
+                            }
+                            
+                            if (!user && userProfile) {
+                                console.log('User session lost while tab was in background, clearing state');
+                                setPermissions(null);
+                                setUserProfile(null);
+                            }
+                        });
+                    }, 1000); // Debounce visibility checks
+                }
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            if (visibilityCheckTimeout) {
+                clearTimeout(visibilityCheckTimeout);
+            }
+        };
+    }, [initialized, userProfile, loading]);
+
     // Fetch permissions on mount and when auth state changes
     useEffect(() => {
         console.log('PermissionsProvider useEffect triggered');
 
-        // Set a maximum loading time to prevent infinite spinners
+        // Set a maximum loading time to prevent infinite spinners  
         initializationTimeoutRef.current = setTimeout(() => {
-            console.warn('Authentication check timed out after 15 seconds');
+            console.warn('Authentication check timed out after 12 seconds');
             // Set unauthenticated state on timeout
             if (!initialized) {
                 setPermissions(null);
@@ -472,7 +533,7 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                 setFetchingPermissions(false);
                 setError('Authentication timeout - please refresh the page');
             }
-        }, 15000); // 15 second timeout
+        }, 12000); // 12 second timeout
 
         // Listen for auth changes first, then check initial session
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -515,6 +576,19 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
             } else if (event === 'SIGNED_IN' && session?.user) {
                 console.log('=== SIGNED_IN event ===');
                 console.log('User signed in');
+                
+                // Check if this is a duplicate event (debouncing)
+                const now = Date.now();
+                const lastEvent = lastAuthEventRef.current;
+                if (lastEvent && 
+                    lastEvent.event === 'SIGNED_IN' && 
+                    lastEvent.userId === session.user.id && 
+                    now - lastEvent.timestamp < 3000) { // 3 second debounce
+                    console.log('Ignoring duplicate SIGNED_IN event within 3 seconds');
+                    return;
+                }
+                
+                lastAuthEventRef.current = { event: 'SIGNED_IN', timestamp: now, userId: session.user.id };
                 
                 clearLogoutFlag(); // Clear flag on successful sign in
                 

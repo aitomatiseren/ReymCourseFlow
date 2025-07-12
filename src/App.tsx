@@ -47,10 +47,11 @@ const App = () => (
               <Route path="/scheduling" element={<AuthGuard><TrainingSchedulerPage /></AuthGuard>} />
               <Route path="/scheduling/:id" element={<AuthGuard><TrainingDetail /></AuthGuard>} />
               <Route path="/employee-dashboard" element={<AuthGuard><EmployeeDashboard /></AuthGuard>} />
-              <Route path="/providers" element={<AuthGuard><Dashboard /></AuthGuard>} />
+              <Route path="/providers" element={<AuthGuard><Providers /></AuthGuard>} />
+              <Route path="/providers/:id" element={<AuthGuard><ProviderProfile /></AuthGuard>} />
               <Route path="/communications" element={<AuthGuard><Notifications /></AuthGuard>} />
-              <Route path="/reports" element={<AuthGuard><Dashboard /></AuthGuard>} />
-              <Route path="/settings" element={<AuthGuard><Dashboard /></AuthGuard>} />
+              <Route path="/reports" element={<AuthGuard><Reports /></AuthGuard>} />
+              <Route path="/settings" element={<AuthGuard><Settings /></AuthGuard>} />
               
               {/* Public Routes */}
               <Route path="/login" element={<Login />} />
