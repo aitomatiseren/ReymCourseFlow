@@ -244,25 +244,6 @@ export default function Courses() {
                         )}
                       </div>
                     </div>
-                    <div className="flex space-x-1">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-8 w-8 p-0"
-                        onClick={() => handleEditCourse(course)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                        onClick={() => handleDeleteCourse(course.id)}
-                        disabled={deleteCourse.isPending}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4 flex flex-col flex-grow">
@@ -304,22 +285,14 @@ export default function Courses() {
                     )}
                   </div>
                   
-                  <div className="flex gap-2 mt-auto">
+                  <div className="mt-auto">
                     <Button 
-                      variant="outline" 
                       size="sm" 
-                      className="flex-1 h-9"
+                      className="w-full h-9"
                       onClick={() => handleEditCourse(course)}
                     >
                       <Edit className="h-4 w-4 mr-1" />
                       Edit
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      className="flex-1 h-9"
-                      onClick={() => handleScheduleCourse(course.id)}
-                    >
-                      Schedule
                     </Button>
                   </div>
                 </CardContent>
@@ -365,7 +338,7 @@ export default function Courses() {
                       </th>
                       <th className="text-left p-4 font-medium text-gray-700">Sessions</th>
                       <th className="text-left p-4 font-medium text-gray-700">Max Participants</th>
-                      <th className="text-left p-4 font-medium text-gray-700">Code 95</th>
+                      <th className="text-left p-4 font-medium text-gray-700 w-24">Code 95</th>
                       <th className="text-left p-4 font-medium text-gray-700">Features</th>
                       <th className="text-right p-4 font-medium text-gray-700">Actions</th>
                     </tr>
@@ -397,9 +370,9 @@ export default function Courses() {
                         <td className="p-4">
                           {course.max_participants || 'N/A'}
                         </td>
-                        <td className="p-4">
+                        <td className="p-4 w-24">
                           {course.code95_points && course.code95_points > 0 ? (
-                            <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                            <Badge variant="outline" className="bg-blue-100 text-blue-800 whitespace-nowrap">
                               {course.code95_points} pts
                             </Badge>
                           ) : 'N/A'}
@@ -414,31 +387,13 @@ export default function Courses() {
                           </div>
                         </td>
                         <td className="p-4 text-right">
-                          <div className="flex justify-end space-x-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleEditCourse(course)}
-                            >
-                              <Edit className="h-4 w-4 mr-1" />
-                              Edit
-                            </Button>
-                            <Button 
-                              size="sm"
-                              onClick={() => handleScheduleCourse(course.id)}
-                            >
-                              Schedule
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="text-red-600 hover:text-red-700"
-                              onClick={() => handleDeleteCourse(course.id)}
-                              disabled={deleteCourse.isPending}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          <Button 
+                            size="sm"
+                            onClick={() => handleEditCourse(course)}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
                         </td>
                       </tr>
                     ))}
