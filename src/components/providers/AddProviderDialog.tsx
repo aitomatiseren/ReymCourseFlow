@@ -36,12 +36,16 @@ const providerSchema = z.object({
   contact_person: z.string().optional(),
   email: z.string().email("Invalid email").optional().or(z.literal("")),
   phone: z.string().optional(),
-  website: z.string().url("Invalid URL").optional().or(z.literal("")),
+  website: z.string().optional().or(z.literal("")).refine(val => {
+    if (!val || val === "") return true;
+    // Allow URLs with or without protocol
+    const urlPattern = /^(https?:\/\/)?(www\.)?[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}([\/?#][^\s]*)?$/;
+    return urlPattern.test(val);
+  }, { message: "Invalid URL format" }),
   address: z.string().optional(),
   postcode: z.string().optional(),
   city: z.string().optional(),
   country: z.string().default("Netherlands"),
-  default_location: z.string().optional(),
   additional_locations: z.array(z.string()).default([]),
   instructors: z.array(z.string()).default([]),
   description: z.string().optional(),
@@ -95,7 +99,6 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
       postcode: "",
       city: "",
       country: "Netherlands",
-      default_location: "",
       additional_locations: [],
       instructors: [],
       description: "",
@@ -132,7 +135,6 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
           postcode: data.postcode || null,
           city: data.city || null,
           country: data.country,
-          default_location: data.default_location || null,
           additional_locations: data.additional_locations || [],
           instructors: data.instructors || [],
           description: data.description || null,
@@ -243,7 +245,13 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
   const onSubmit = async (data: ProviderFormData) => {
     setIsSubmitting(true);
     try {
-      await createProviderMutation.mutateAsync(data);
+      // Process website URL to ensure it has a protocol
+      const processedData = { ...data };
+      if (processedData.website && !processedData.website.match(/^https?:\/\//)) {
+        processedData.website = `https://${processedData.website}`;
+      }
+      
+      await createProviderMutation.mutateAsync(processedData);
     } finally {
       setIsSubmitting(false);
     }
@@ -453,29 +461,9 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
                 />
 
 
-                <FormField
-                  control={form.control}
-                  name="default_location"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Default Training Location</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Training Room A, Hoofdstraat 123"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        This location will be auto-filled when scheduling trainings
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Additional Locations */}
+                {/* Training Locations */}
                 <div className="space-y-3">
-                  <FormLabel>Additional Locations</FormLabel>
+                  <FormLabel>Training Locations</FormLabel>
                   
                   {/* Add new location */}
                   <div className="flex gap-2">
@@ -533,7 +521,7 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
                   />
                   
                   <FormDescription>
-                    Add multiple training locations for this provider
+                    Add training locations for this provider
                   </FormDescription>
                 </div>
 

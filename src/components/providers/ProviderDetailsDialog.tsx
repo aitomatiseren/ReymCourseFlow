@@ -8,6 +8,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Building2,
   Mail,
@@ -33,7 +34,7 @@ export function ProviderDetailsDialog({
 }: ProviderDetailsDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-3xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
@@ -44,7 +45,8 @@ export function ProviderDetailsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <ScrollArea className="max-h-[calc(90vh-120px)] pr-4">
+          <div className="space-y-6">
           {/* Status */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">Status:</span>
@@ -138,19 +140,47 @@ export function ProviderDetailsDialog({
                 {provider.country && (
                   <div className="text-gray-600">{provider.country}</div>
                 )}
-                {provider.default_location && (
-                  <div className="mt-4">
-                    <div className="text-gray-600 text-xs uppercase tracking-wide mb-1">
-                      Default Training Location
-                    </div>
-                    <div className="font-medium bg-gray-50 p-2 rounded">
-                      {provider.default_location}
-                    </div>
-                  </div>
-                )}
               </div>
             </CardContent>
           </Card>
+
+          {/* Training Locations */}
+          {provider.additional_locations && provider.additional_locations.length > 0 && (
+            <Card>
+              <CardContent className="pt-6">
+                <h3 className="font-semibold mb-4 flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  Training Locations
+                </h3>
+                <div className="space-y-2">
+                  {provider.additional_locations.map((location: string, index: number) => (
+                    <div key={index} className="p-2 bg-gray-50 rounded text-sm font-semibold">
+                      {location}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Instructors */}
+          {provider.instructors && provider.instructors.length > 0 && (
+            <Card>
+              <CardContent className="pt-6">
+                <h3 className="font-semibold mb-4 flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Instructors
+                </h3>
+                <div className="space-y-2">
+                  {provider.instructors.map((instructor: string, index: number) => (
+                    <div key={index} className="p-2 bg-gray-50 rounded text-sm font-medium">
+                      {instructor}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Description */}
           {provider.description && (
@@ -230,7 +260,8 @@ export function ProviderDetailsDialog({
               </div>
             )}
           </div>
-        </div>
+          </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

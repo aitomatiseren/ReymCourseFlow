@@ -10,6 +10,7 @@ import { AuthGuard } from "./components/auth/AuthGuard";
 import Dashboard from "./pages/Dashboard";
 import Courses from "./pages/Courses";
 import CourseProviders from "./pages/CourseProviders";
+import ProviderProfile from "./pages/ProviderProfile";
 import Certifications from "./pages/Certifications";
 import TrainingSchedulerPage from "./pages/TrainingScheduler";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
@@ -18,7 +19,6 @@ import Participants from "./pages/Participants";
 import UserProfile from "./pages/UserProfile";
 import Settings from "./pages/Settings";
 import Reports from "./pages/Reports";
-import Providers from "./pages/Providers";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import CertificateExpiry from "./pages/CertificateExpiry";
@@ -80,7 +80,12 @@ const App = () => (
               } />
               <Route path="/providers" element={
                 <AuthGuard>
-                  <Providers />
+                  <CourseProviders />
+                </AuthGuard>
+              } />
+              <Route path="/providers/:id" element={
+                <AuthGuard>
+                  <ProviderProfile />
                 </AuthGuard>
               } />
               <Route path="/communications" element={

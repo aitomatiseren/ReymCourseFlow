@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Card,
@@ -26,11 +27,8 @@ import {
   MapPin,
   Globe,
   Search,
-  Edit,
   Eye,
 } from "lucide-react";
-import { EditProviderDialog } from "./EditProviderDialog";
-import { ProviderDetailsDialog } from "./ProviderDetailsDialog";
 
 interface CourseProvider {
   id: string;
@@ -42,7 +40,8 @@ interface CourseProvider {
   address: string | null;
   city: string | null;
   country: string | null;
-  default_location: string | null;
+  additional_locations: string[] | null;
+  instructors: string[] | null;
   active: boolean;
   course_provider_courses: {
     course_id: string;
@@ -56,9 +55,7 @@ interface CourseProvider {
 
 export function CourseProviderList() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedProvider, setSelectedProvider] = useState<CourseProvider | null>(null);
-  const [showEditDialog, setShowEditDialog] = useState(false);
-  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const navigate = useNavigate();
 
   const { data: providers, isLoading } = useQuery({
     queryKey: ["course-providers"],
@@ -90,14 +87,9 @@ export function CourseProviderList() {
       provider.contact_person?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleEdit = (provider: CourseProvider) => {
-    setSelectedProvider(provider);
-    setShowEditDialog(true);
-  };
 
   const handleView = (provider: CourseProvider) => {
-    setSelectedProvider(provider);
-    setShowDetailsDialog(true);
+    navigate(`/providers/${provider.id}`);
   };
 
   if (isLoading) {
@@ -137,9 +129,10 @@ export function CourseProviderList() {
             <TableHeader>
               <TableRow>
                 <TableHead>Provider</TableHead>
-                <TableHead>Contact</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Website</TableHead>
                 <TableHead>Location</TableHead>
-                <TableHead>Courses</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -167,23 +160,37 @@ export function CourseProviderList() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="space-y-1 text-sm">
-                      {provider.contact_person && (
-                        <div>{provider.contact_person}</div>
-                      )}
-                      {provider.email && (
-                        <div className="flex items-center gap-1 text-gray-600">
-                          <Mail className="h-3 w-3" />
-                          {provider.email}
-                        </div>
-                      )}
-                      {provider.phone && (
-                        <div className="flex items-center gap-1 text-gray-600">
-                          <Phone className="h-3 w-3" />
-                          {provider.phone}
-                        </div>
-                      )}
-                    </div>
+                    {provider.phone ? (
+                      <a href={`tel:${provider.phone}`} className="text-blue-600 hover:underline text-sm">
+                        {provider.phone}
+                      </a>
+                    ) : (
+                      <span className="text-gray-400 text-sm">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {provider.email ? (
+                      <a href={`mailto:${provider.email}`} className="text-blue-600 hover:underline text-sm">
+                        {provider.email}
+                      </a>
+                    ) : (
+                      <span className="text-gray-400 text-sm">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {provider.website ? (
+                      <a 
+                        href={provider.website} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline text-sm"
+                      >
+                        <Globe className="h-3 w-3 inline mr-1" />
+                        Website
+                      </a>
+                    ) : (
+                      <span className="text-gray-400 text-sm">-</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="text-sm">
@@ -193,36 +200,6 @@ export function CourseProviderList() {
                           {provider.city}
                           {provider.country && provider.country !== "Netherlands" && (
                             <span className="text-gray-500">, {provider.country}</span>
-                          )}
-                        </div>
-                      )}
-                      {provider.default_location && (
-                        <div className="text-gray-600 mt-1">
-                          {provider.default_location}
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <div className="text-sm font-medium">
-                        {provider.course_provider_courses.length} courses
-                      </div>
-                      {provider.course_provider_courses.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {provider.course_provider_courses.slice(0, 2).map((cpc) => (
-                            <Badge
-                              key={cpc.course_id}
-                              variant="outline"
-                              className="text-xs"
-                            >
-                              {cpc.courses.title}
-                            </Badge>
-                          ))}
-                          {provider.course_provider_courses.length > 2 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{provider.course_provider_courses.length - 2} more
-                            </Badge>
                           )}
                         </div>
                       )}
@@ -237,22 +214,13 @@ export function CourseProviderList() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleView(provider)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(provider)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => handleView(provider)}
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      View
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -267,20 +235,6 @@ export function CourseProviderList() {
         </CardContent>
       </Card>
 
-      {selectedProvider && (
-        <>
-          <EditProviderDialog
-            provider={selectedProvider}
-            open={showEditDialog}
-            onOpenChange={setShowEditDialog}
-          />
-          <ProviderDetailsDialog
-            provider={selectedProvider}
-            open={showDetailsDialog}
-            onOpenChange={setShowDetailsDialog}
-          />
-        </>
-      )}
     </>
   );
 }
