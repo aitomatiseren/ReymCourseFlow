@@ -1,5 +1,6 @@
 
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Layout } from "@/components/layout/Layout";
 import { UserProfileHeader } from "@/components/users/UserProfileHeader";
 import { UserProfileTabs } from "@/components/users/UserProfileTabs";
@@ -7,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
 export default function UserProfile() {
+  const { t } = useTranslation('employees');
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -14,7 +16,7 @@ export default function UserProfile() {
     return (
       <Layout>
         <div className="text-center py-12">
-          <p className="text-gray-500">User not found</p>
+          <p className="text-gray-500">{t('userNotFound')}</p>
         </div>
       </Layout>
     );
@@ -25,8 +27,8 @@ export default function UserProfile() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Employee Profile</h1>
-            <p className="text-gray-600 mt-1">View and manage employee information and training progress.</p>
+            <h1 className="text-3xl font-bold text-gray-900">{t('employeeProfile')}</h1>
+            <p className="text-gray-600 mt-1">{t('employeeProfileDescription')}</p>
           </div>
           <Button
             variant="ghost"
@@ -35,7 +37,7 @@ export default function UserProfile() {
             className="flex items-center space-x-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span>Back to Participants</span>
+            <span>{t('backToParticipants')}</span>
           </Button>
         </div>
         <UserProfileHeader userId={id} />

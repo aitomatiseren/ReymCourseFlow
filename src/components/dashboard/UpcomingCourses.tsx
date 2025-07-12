@@ -2,11 +2,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, MapPin, Users, Clock } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useTrainings } from "@/hooks/useTrainings";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 
 export function UpcomingCourses() {
+  const { t } = useTranslation(['training', 'common']);
   const { data: trainings = [], isLoading } = useTrainings();
   const navigate = useNavigate();
 
@@ -39,7 +41,7 @@ export function UpcomingCourses() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            Upcoming Trainings
+            {t('training:upcoming.title')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -61,13 +63,13 @@ export function UpcomingCourses() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Calendar className="h-5 w-5" />
-          Upcoming Trainings
+          {t('training:upcoming.title')}
         </CardTitle>
       </CardHeader>
       <CardContent>
         {upcomingTrainings.length === 0 ? (
           <p className="text-gray-500 text-center py-8">
-            No upcoming trainings scheduled
+            {t('training:upcoming.noTrainings')}
           </p>
         ) : (
           <div className="space-y-4">
@@ -104,12 +106,12 @@ export function UpcomingCourses() {
                     </div>
                   </div>
                   <Badge className={getStatusColor(training.status)}>
-                    {training.status.charAt(0).toUpperCase() + training.status.slice(1)}
+                    {t(`training:status.${training.status}`)}
                   </Badge>
                 </div>
                 {training.instructor && (
                   <p className="text-sm text-gray-500 mt-2">
-                    Instructor: {training.instructor}
+                    {t('training:upcoming.instructor')}: {training.instructor}
                   </p>
                 )}
               </div>

@@ -1,0 +1,138 @@
+{
+    "title": "Reports & Analytics",
+    "dashboard": {
+        "title": "Reports Dashboard",
+        "overview": "Overview",
+        "quickStats": "Quick Statistics",
+        "recentReports": "Recent Reports",
+        "scheduledReports": "Scheduled Reports"
+    },
+    "types": {
+        "complianceReport": "Compliance Report",
+        "certificateExpiryReport": "Certificate Expiry Report",
+        "trainingCostReport": "Training Cost Report",
+        "participationReport": "Participation Report",
+        "performanceReport": "Performance Report",
+        "attendanceReport": "Attendance Report",
+        "providerReport": "Provider Report",
+        "departmentReport": "Department Report"
+    },
+    "filters": {
+        "title": "Report Filters",
+        "dateRange": "Date Range",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "department": "Department",
+        "employee": "Employee",
+        "course": "Course",
+        "provider": "Provider",
+        "status": "Status",
+        "location": "Location",
+        "instructor": "Instructor",
+        "certificateType": "Certificate Type",
+        "customFilter": "Custom Filter"
+    },
+    "generation": {
+        "generateReport": "Generate Report",
+        "generating": "Generating report...",
+        "generated": "Report generated successfully",
+        "failed": "Report generation failed",
+        "downloadReport": "Download Report",
+        "emailReport": "Email Report",
+        "scheduleReport": "Schedule Report",
+        "previewReport": "Preview Report"
+    },
+    "formats": {
+        "pdf": "PDF",
+        "excel": "Excel",
+        "csv": "CSV",
+        "html": "HTML",
+        "json": "JSON"
+    },
+    "compliance": {
+        "title": "Compliance Report",
+        "overallCompliance": "Overall Compliance",
+        "departmentCompliance": "Department Compliance",
+        "individualCompliance": "Individual Compliance",
+        "expiringCertificates": "Expiring Certificates",
+        "expiredCertificates": "Expired Certificates",
+        "renewalsRequired": "Renewals Required",
+        "complianceRate": "Compliance Rate",
+        "nonCompliantEmployees": "Non-Compliant Employees"
+    },
+    "costs": {
+        "title": "Training Cost Report",
+        "totalCosts": "Total Training Costs",
+        "costsByDepartment": "Costs by Department",
+        "costsByProvider": "Costs by Provider",
+        "costsByCourse": "Costs by Course",
+        "costPerEmployee": "Cost per Employee",
+        "budgetUtilization": "Budget Utilization",
+        "costTrends": "Cost Trends",
+        "savings": "Cost Savings"
+    },
+    "participation": {
+        "title": "Participation Report",
+        "totalParticipants": "Total Participants",
+        "participationRate": "Participation Rate",
+        "completionRate": "Completion Rate",
+        "dropoutRate": "Dropout Rate",
+        "attendanceRate": "Attendance Rate",
+        "topCourses": "Most Popular Courses",
+        "leastPopular": "Least Popular Courses"
+    },
+    "export": {
+        "title": "Export Options",
+        "exportToPdf": "Export to PDF",
+        "exportToExcel": "Export to Excel",
+        "exportToCsv": "Export to CSV",
+        "emailTo": "Email to",
+        "emailSubject": "Email Subject",
+        "emailMessage": "Email Message",
+        "sendEmail": "Send Email",
+        "downloadFile": "Download File"
+    },
+    "scheduling": {
+        "title": "Report Scheduling",
+        "scheduleReport": "Schedule Report",
+        "frequency": "Frequency",
+        "daily": "Daily",
+        "weekly": "Weekly",
+        "monthly": "Monthly",
+        "quarterly": "Quarterly",
+        "annually": "Annually",
+        "recipients": "Recipients",
+        "nextRun": "Next Run",
+        "lastRun": "Last Run",
+        "enabled": "Enabled",
+        "disabled": "Disabled"
+    },
+    "messages": {
+        "reportGenerated": "Report generated successfully",
+        "reportFailed": "Failed to generate report",
+        "reportEmailSent": "Report emailed successfully",
+        "reportScheduled": "Report scheduled successfully",
+        "reportDeleted": "Report deleted successfully",
+        "invalidDateRange": "Invalid date range selected",
+        "noDataFound": "No data found for the selected criteria",
+        "exportCompleted": "Export completed successfully"
+    },
+    "screen": {
+        "title": "Reports & Analytics",
+        "subtitle": "Comprehensive training and compliance reporting",
+        "expiringSoon": "Expiring Soon",
+        "criticalExpired": "Critical Expired",
+        "trainingCosts": "Training Costs",
+        "complianceRate": "Compliance Rate",
+        "next30Days": "Next 30 days",
+        "requiresAction": "Requires immediate action",
+        "totalEnrolled": "Total enrolled",
+        "validCertificates": "Valid certificates",
+        "certificateExpiry": "Certificate Expiry",
+        "trainingCostsTab": "Training Costs",
+        "compliance": "Compliance",
+        "utilization": "Utilization",
+        "utilizationTitle": "Course Utilization Report",
+        "comingSoon": "Coming soon..."
+    }
+}

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -22,9 +23,10 @@ interface SearchDialogProps {
 }
 
 export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
+  const { t } = useTranslation('common');
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
-  
+
   const { data: employees = [] } = useEmployees();
   const { data: trainings = [] } = useTrainings();
   const { data: courses = [] } = useCourses();
@@ -93,13 +95,13 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Search</DialogTitle>
+          <DialogTitle>{t('search.title')}</DialogTitle>
         </DialogHeader>
-        
+
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
-            placeholder="Search employees, trainings, courses, or providers..."
+            placeholder={t('search.placeholder')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="pl-10"
@@ -111,7 +113,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             {/* Employees */}
             {filteredEmployees.length > 0 && (
               <div>
-                <h3 className="font-medium text-sm text-gray-500 mb-2">Employees</h3>
+                <h3 className="font-medium text-sm text-gray-500 mb-2">{t('search.employees')}</h3>
                 <div className="space-y-1">
                   {filteredEmployees.slice(0, 5).map((employee) => (
                     <Button
@@ -136,7 +138,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             {/* Trainings */}
             {filteredTrainings.length > 0 && (
               <div>
-                <h3 className="font-medium text-sm text-gray-500 mb-2">Trainings</h3>
+                <h3 className="font-medium text-sm text-gray-500 mb-2">{t('search.trainings')}</h3>
                 <div className="space-y-1">
                   {filteredTrainings.slice(0, 5).map((training) => (
                     <Button
@@ -161,7 +163,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             {/* Courses */}
             {filteredCourses.length > 0 && (
               <div>
-                <h3 className="font-medium text-sm text-gray-500 mb-2">Courses</h3>
+                <h3 className="font-medium text-sm text-gray-500 mb-2">{t('search.courses')}</h3>
                 <div className="space-y-1">
                   {filteredCourses.slice(0, 5).map((course) => (
                     <Button
@@ -188,7 +190,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             {/* Providers */}
             {filteredProviders.length > 0 && (
               <div>
-                <h3 className="font-medium text-sm text-gray-500 mb-2">Providers</h3>
+                <h3 className="font-medium text-sm text-gray-500 mb-2">{t('search.providers')}</h3>
                 <div className="space-y-1">
                   {filteredProviders.slice(0, 5).map((provider) => (
                     <Button
@@ -200,9 +202,11 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                       <Building2 className="h-4 w-4 mr-3 flex-shrink-0" />
                       <div className="text-left">
                         <div className="font-medium">{provider.name}</div>
-                        <div className="text-sm text-gray-500">
-                          {provider.contact_person} • {provider.city}
-                        </div>
+                        {provider.contact_person && (
+                          <div className="text-sm text-gray-500">
+                            {provider.contact_person} • {provider.city}
+                          </div>
+                        )}
                       </div>
                     </Button>
                   ))}
@@ -210,11 +214,16 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
               </div>
             )}
 
-            {query && filteredEmployees.length === 0 && filteredTrainings.length === 0 && filteredCourses.length === 0 && filteredProviders.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                No results found for "{query}"
-              </div>
-            )}
+            {/* No Results */}
+            {filteredEmployees.length === 0 &&
+              filteredTrainings.length === 0 &&
+              filteredCourses.length === 0 &&
+              filteredProviders.length === 0 && (
+                <div className="text-center py-6 text-gray-500">
+                  <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>{t('search.noResults')}</p>
+                </div>
+              )}
           </div>
         )}
       </DialogContent>

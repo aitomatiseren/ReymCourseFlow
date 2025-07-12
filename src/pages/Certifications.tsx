@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ const statusIcons = {
 };
 
 export default function Certifications() {
+  const { t } = useTranslation(['certificates']);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
 
@@ -69,12 +71,12 @@ export default function Certifications() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Certificate Management</h1>
-            <p className="text-gray-600 mt-1">Manage certificates, track expiry dates, and ensure compliance.</p>
+            <h1 className="text-3xl font-bold text-gray-900">{t('certificates:page.title')}</h1>
+            <p className="text-gray-600 mt-1">{t('certificates:page.subtitle')}</p>
           </div>
           <Button>
             <Plus className="h-4 w-4 mr-2" />
-            Add Certification
+            {t('certificates:page.addCertification')}
           </Button>
         </div>
 
@@ -82,19 +84,19 @@ export default function Certifications() {
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="all" className="flex items-center gap-2">
               <Award className="h-4 w-4" />
-              All Certificates
+              {t('certificates:page.allCertificates')}
             </TabsTrigger>
             <TabsTrigger value="expiry" className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4" />
-              Expiry Tracking
+              {t('certificates:page.expiryTracking')}
             </TabsTrigger>
             <TabsTrigger value="code95" className="flex items-center gap-2">
               <Truck className="h-4 w-4" />
-              Code 95
+              {t('certificates:page.code95')}
             </TabsTrigger>
             <TabsTrigger value="reports" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Reports
+              {t('certificates:page.reports')}
             </TabsTrigger>
           </TabsList>
 
@@ -103,7 +105,7 @@ export default function Certifications() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
-                  placeholder="Search certificates, employees, or certificate numbers..."
+                  placeholder={t('certificates:page.searchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -114,10 +116,10 @@ export default function Certifications() {
                 onChange={(e) => setSelectedStatus(e.target.value)}
                 className="px-3 py-2 border rounded-md bg-white"
               >
-                <option value="all">All Status</option>
-                <option value="valid">Valid</option>
-                <option value="expiring">Expiring</option>
-                <option value="expired">Expired</option>
+                <option value="all">{t('certificates:page.allStatus')}</option>
+                <option value="valid">{t('certificates:page.valid')}</option>
+                <option value="expiring">{t('certificates:page.expiring')}</option>
+                <option value="expired">{t('certificates:page.expired')}</option>
               </select>
             </div>
 
@@ -163,7 +165,7 @@ export default function Certifications() {
                               <div className="flex items-center gap-2">
                                 <Calendar className="h-4 w-4" />
                                 <span>
-                                  Expires: {cert.expiryDate ? format(new Date(cert.expiryDate), 'MMM dd, yyyy') : 'N/A'}
+                                  {t('certificates:page.expires')}: {cert.expiryDate ? format(new Date(cert.expiryDate), 'MMM dd, yyyy') : 'N/A'}
                                 </span>
                               </div>
                               <div className="flex items-center gap-2">
@@ -173,9 +175,9 @@ export default function Certifications() {
                             </div>
 
                             <div className="flex items-center gap-2 text-sm text-gray-500">
-                              <span>Category: {cert.category}</span>
+                              <span>{t('certificates:page.category')}: {cert.category}</span>
                               {cert.issueDate && (
-                                <span>• Issued: {format(new Date(cert.issueDate), 'MMM dd, yyyy')}</span>
+                                <span>• {t('certificates:page.issued')}: {format(new Date(cert.issueDate), 'MMM dd, yyyy')}</span>
                               )}
                             </div>
                           </div>
@@ -187,7 +189,7 @@ export default function Certifications() {
                               onClick={() => handleViewCertificate(cert.id)}
                             >
                               <Eye className="h-4 w-4 mr-1" />
-                              View
+                              {t('certificates:page.view')}
                             </Button>
                             <Button
                               variant="outline"
@@ -195,7 +197,7 @@ export default function Certifications() {
                               onClick={() => handleDownloadCertificate(cert.id)}
                             >
                               <Download className="h-4 w-4 mr-1" />
-                              Download
+                              {t('certificates:page.download')}
                             </Button>
                           </div>
                         </div>
@@ -210,9 +212,9 @@ export default function Certifications() {
               <Card>
                 <CardContent className="p-12 text-center">
                   <Award className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No certificates found matching your criteria.</p>
+                  <p className="text-gray-500">{t('certificates:page.noCertificates')}</p>
                   <p className="text-sm text-gray-400 mt-2">
-                    Try adjusting your search terms or filters.
+                    {t('certificates:page.adjustFilters')}
                   </p>
                 </CardContent>
               </Card>
@@ -230,23 +232,23 @@ export default function Certifications() {
           <TabsContent value="reports">
             <Card>
               <CardHeader>
-                <CardTitle>Certificate Reports</CardTitle>
+                <CardTitle>{t('certificates:page.certificateReports')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <Card className="p-4">
-                      <h3 className="font-semibold mb-2">Total Certificates</h3>
+                      <h3 className="font-semibold mb-2">{t('certificates:page.totalCertificates')}</h3>
                       <p className="text-2xl font-bold text-blue-600">{certificates.length}</p>
                     </Card>
                     <Card className="p-4">
-                      <h3 className="font-semibold mb-2">Valid Certificates</h3>
+                      <h3 className="font-semibold mb-2">{t('certificates:page.validCertificates')}</h3>
                       <p className="text-2xl font-bold text-green-600">
                         {certificates.filter(c => c.status === 'valid').length}
                       </p>
                     </Card>
                     <Card className="p-4">
-                      <h3 className="font-semibold mb-2">Expired Certificates</h3>
+                      <h3 className="font-semibold mb-2">{t('certificates:page.expiredCertificates')}</h3>
                       <p className="text-2xl font-bold text-red-600">
                         {certificates.filter(c => c.status === 'expired').length}
                       </p>
@@ -254,7 +256,7 @@ export default function Certifications() {
                   </div>
 
                   <div className="border-t pt-4">
-                    <h3 className="font-semibold mb-4">Certificate Categories</h3>
+                    <h3 className="font-semibold mb-4">{t('certificates:page.certificateCategories')}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {Object.entries(
                         certificates.reduce((acc, cert) => {

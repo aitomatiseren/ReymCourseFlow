@@ -1,0 +1,105 @@
+{
+    "title": "AI Assistent",
+    "chat": {
+        "title": "AI Assistent",
+        "subtitle": "Vraag me alles over het platform",
+        "placeholder": "Typ je bericht hier...",
+        "send": "Versturen",
+        "thinking": "Aan het denken...",
+        "typing": "AI is aan het typen...",
+        "error": "Sorry, er is een fout opgetreden. Probeer het opnieuw.",
+        "offline": "AI Assistent is momenteel offline",
+        "reconnecting": "Opnieuw verbinden...",
+        "connected": "Verbonden",
+        "disconnected": "Verbinding verbroken"
+    },
+    "welcome": {
+        "greeting": "👋 Hallo daar!",
+        "intro": "Ik ben je AI assistent. Ik kan je helpen met:",
+        "features": [
+            "Functies en menu's vinden",
+            "Trainingen plannen",
+            "Medewerkers beheren",
+            "Vragen beantwoorden"
+        ]
+    },
+    "capabilities": {
+        "navigation": "Navigatie Hulp",
+        "dataQuery": "Data Opvragen",
+        "taskAutomation": "Taak Automatisering",
+        "recommendations": "Slimme Aanbevelingen",
+        "troubleshooting": "Probleemoplossing",
+        "reporting": "Rapport Generatie"
+    },
+    "messages": {
+        "defaultError": "Het spijt me, ik kon dat verzoek niet verwerken. Probeer het opnieuw of wees specifieker.",
+        "networkError": "Ik heb moeite met verbinden. Controleer je internetverbinding.",
+        "permissionDenied": "Ik heb geen toestemming om die actie voor je uit te voeren.",
+        "dataNotFound": "Ik kon de gevraagde informatie niet vinden.",
+        "actionCompleted": "Klaar! De actie is succesvol voltooid.",
+        "actionFailed": "Ik kon die actie niet voltooien. Probeer het opnieuw of neem contact op met ondersteuning.",
+        "clarificationNeeded": "Kun je meer details geven over wat je zoekt?",
+        "multipleOptions": "Ik heb meerdere opties gevonden. Welke wil je?",
+        "confirmAction": "Weet je zeker dat je wilt dat ik doorgaan met deze actie?",
+        "unauthorized": "Je hebt geen toestemming om deze actie uit te voeren.",
+        "sessionExpired": "Je sessie is verlopen. Vernieuw de pagina en probeer het opnieuw."
+    },
+    "suggestions": {
+        "quickActions": "Snelle Acties",
+        "scheduleTraining": "Plan een training",
+        "addEmployee": "Nieuwe medewerker toevoegen",
+        "viewReports": "Rapporten bekijken",
+        "checkCertificates": "Certificaat vervaldatum controleren",
+        "contactSupport": "Contact opnemen met ondersteuning",
+        "searchEmployees": "Zoek medewerkers",
+        "upcomingTrainings": "Toon aankomende trainingen",
+        "complianceStatus": "Controleer compliantie status"
+    },
+    "help": {
+        "title": "Hoe kan ik helpen?",
+        "examples": [
+            "Plan een veiligheidstraining voor volgende week",
+            "Toon me medewerkers met verlopende certificaten",
+            "Vind alle Code 95 trainingen",
+            "Genereer een compliantie rapport",
+            "Voeg een nieuwe deelnemer toe aan training",
+            "Welke trainingen heeft Jan gepland?"
+        ]
+    },
+    "settings": {
+        "title": "AI Instellingen",
+        "enableNotifications": "AI Notificaties Inschakelen",
+        "voiceResponses": "Spraak Reacties",
+        "autoSuggestions": "Auto Suggesties",
+        "contextAwareness": "Context Bewustzijn",
+        "personalizedResponses": "Gepersonaliseerde Reacties",
+        "debugMode": "Debug Modus",
+        "resetConversation": "Gesprek Resetten",
+        "clearHistory": "Chat Geschiedenis Wissen"
+    },
+    "feedback": {
+        "title": "Feedback",
+        "helpful": "Was dit nuttig?",
+        "thumbsUp": "👍 Ja",
+        "thumbsDown": "👎 Nee",
+        "improve": "Hoe kan ik verbeteren?",
+        "submit": "Feedback Versturen",
+        "thankYou": "Bedankt voor je feedback!"
+    },
+    "commands": {
+        "help": "Toon beschikbare commando's",
+        "clear": "Gesprek wissen",
+        "reset": "AI assistent resetten",
+        "settings": "AI instellingen openen",
+        "feedback": "Feedback geven",
+        "debug": "Debug modus inschakelen"
+    },
+    "status": {
+        "online": "Online",
+        "offline": "Offline",
+        "busy": "Bezig",
+        "idle": "Klaar om te helpen",
+        "error": "Fout",
+        "maintenance": "Onderhoud"
+    }
+}

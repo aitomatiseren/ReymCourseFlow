@@ -1,14 +1,15 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { 
-  Edit, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Calendar, 
+import {
+  Edit,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
   Building2,
   Globe,
   Loader2,
@@ -30,6 +31,7 @@ interface ProviderProfileHeaderProps {
 }
 
 export function ProviderProfileHeader({ providerId }: ProviderProfileHeaderProps) {
+  const { t } = useTranslation('providers');
   const [showEditDialog, setShowEditDialog] = useState(false);
 
   const { data: provider, isLoading } = useQuery({
@@ -62,7 +64,7 @@ export function ProviderProfileHeader({ providerId }: ProviderProfileHeaderProps
         <CardContent className="p-6">
           <div className="flex items-center justify-center">
             <Loader2 className="h-6 w-6 animate-spin" />
-            <span className="ml-2">Loading provider...</span>
+            <span className="ml-2">{t('profile.loadingProvider')}</span>
           </div>
         </CardContent>
       </Card>
@@ -74,7 +76,7 @@ export function ProviderProfileHeader({ providerId }: ProviderProfileHeaderProps
       <Card>
         <CardContent className="p-6">
           <div className="text-center text-gray-500">
-            Provider not found
+            {t('profile.providerNotFound')}
           </div>
         </CardContent>
       </Card>
@@ -101,12 +103,12 @@ export function ProviderProfileHeader({ providerId }: ProviderProfileHeaderProps
                   {getInitials(provider.name)}
                 </AvatarFallback>
               </Avatar>
-              
+
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <h1 className="text-2xl font-bold text-gray-900">{provider.name}</h1>
                   <Badge className={statusColors[provider.active ? 'active' : 'inactive']}>
-                    {provider.active ? 'Active' : 'Inactive'}
+                    {provider.active ? t('status.active') : t('status.inactive')}
                   </Badge>
                 </div>
 
@@ -114,10 +116,10 @@ export function ProviderProfileHeader({ providerId }: ProviderProfileHeaderProps
                   {provider.contact_person && (
                     <div className="flex items-center space-x-2">
                       <User className="h-4 w-4" />
-                      <span>Contact: {provider.contact_person}</span>
+                      <span>{t('profile.contact')}: {provider.contact_person}</span>
                     </div>
                   )}
-                  
+
                   {provider.email && (
                     <div className="flex items-center space-x-2">
                       <Mail className="h-4 w-4" />
@@ -126,7 +128,7 @@ export function ProviderProfileHeader({ providerId }: ProviderProfileHeaderProps
                       </a>
                     </div>
                   )}
-                  
+
                   {provider.phone && (
                     <div className="flex items-center space-x-2">
                       <Phone className="h-4 w-4" />
@@ -135,13 +137,13 @@ export function ProviderProfileHeader({ providerId }: ProviderProfileHeaderProps
                       </a>
                     </div>
                   )}
-                  
+
                   {provider.website && (
                     <div className="flex items-center space-x-2">
                       <Globe className="h-4 w-4" />
-                      <a 
-                        href={provider.website} 
-                        target="_blank" 
+                      <a
+                        href={provider.website}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-600 hover:underline"
                       >
@@ -149,7 +151,7 @@ export function ProviderProfileHeader({ providerId }: ProviderProfileHeaderProps
                       </a>
                     </div>
                   )}
-                  
+
                   {(provider.address || provider.city || provider.country) && (
                     <div className="flex items-center space-x-2">
                       <MapPin className="h-4 w-4" />
@@ -166,11 +168,11 @@ export function ProviderProfileHeader({ providerId }: ProviderProfileHeaderProps
                       </span>
                     </div>
                   )}
-                  
+
                   <div className="flex items-center space-x-2">
                     <Calendar className="h-4 w-4" />
                     <span>
-                      Joined: {format(new Date(provider.created_at), "MMM d, yyyy")}
+                      {t('profile.joined')}: {format(new Date(provider.created_at), "MMM d, yyyy")}
                     </span>
                   </div>
                 </div>
@@ -181,48 +183,50 @@ export function ProviderProfileHeader({ providerId }: ProviderProfileHeaderProps
                     <div className="text-2xl font-bold text-blue-600">
                       {provider.course_provider_courses?.length || 0}
                     </div>
-                    <div className="text-xs text-gray-500">Courses Offered</div>
+                    <div className="text-xs text-gray-500">{t('profile.coursesOffered')}</div>
                   </div>
-                  
+
                   {provider.additional_locations && (
                     <div className="text-center">
                       <div className="text-2xl font-bold text-green-600">
                         {provider.additional_locations.length}
                       </div>
-                      <div className="text-xs text-gray-500">Training Locations</div>
+                      <div className="text-xs text-gray-500">{t('profile.trainingLocations')}</div>
                     </div>
                   )}
-                  
+
                   {provider.instructors && (
                     <div className="text-center">
                       <div className="text-2xl font-bold text-purple-600">
                         {provider.instructors.length}
                       </div>
-                      <div className="text-xs text-gray-500">Instructors</div>
+                      <div className="text-xs text-gray-500">{t('profile.instructors')}</div>
                     </div>
                   )}
                 </div>
               </div>
             </div>
 
-            <Button
-              onClick={() => setShowEditDialog(true)}
-              className="flex items-center gap-2"
-            >
-              <Edit className="h-4 w-4" />
-              Edit Provider
-            </Button>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowEditDialog(true)}
+                className="flex items-center space-x-2"
+              >
+                <Edit className="h-4 w-4" />
+                <span>{t('profile.edit')}</span>
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {showEditDialog && (
-        <EditProviderDialog
-          provider={provider}
-          open={showEditDialog}
-          onOpenChange={setShowEditDialog}
-        />
-      )}
+      <EditProviderDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        provider={provider}
+      />
     </>
   );
 }

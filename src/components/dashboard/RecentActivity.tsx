@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Activity, User, Calendar, Award, BookOpen } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useTrainings } from "@/hooks/useTrainings";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useCourses } from "@/hooks/useCourses";
@@ -9,6 +10,7 @@ import { format, formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
 
 export function RecentActivity() {
+  const { t } = useTranslation(['common', 'training', 'employees']);
   const { data: trainings = [], isLoading: trainingsLoading } = useTrainings();
   const { data: employees = [], isLoading: employeesLoading } = useEmployees();
   const { data: courses = [], isLoading: coursesLoading } = useCourses();
@@ -30,8 +32,8 @@ export function RecentActivity() {
         activities.push({
           id: `training-${training.id}`,
           type: 'training',
-          title: `Training scheduled: ${training.title}`,
-          description: `${training.participantCount || 0} participants enrolled`,
+          title: `${t('common:activity.trainingScheduled')}: ${training.title}`,
+          description: `${training.participantCount || 0} ${t('common:activity.participantsEnrolled')}`,
           timestamp: timestamp,
           icon: Calendar,
           color: 'bg-blue-100 text-blue-800',
@@ -51,8 +53,8 @@ export function RecentActivity() {
         activities.push({
           id: `employee-${employee.id}`,
           type: 'employee',
-          title: `New employee added: ${employee.name}`,
-          description: `${employee.department} department`,
+          title: `${t('common:activity.newEmployeeAdded')}: ${employee.name}`,
+          description: `${employee.department} ${t('common:activity.department')}`,
           timestamp: timestamp,
           icon: User,
           color: 'bg-green-100 text-green-800',
@@ -72,8 +74,8 @@ export function RecentActivity() {
         activities.push({
           id: `course-${course.id}`,
           type: 'course',
-          title: `Course updated: ${course.title}`,
-          description: course.description || 'Course details',
+          title: `${t('common:activity.courseUpdated')}: ${course.title}`,
+          description: course.description || t('common:activity.courseDetails'),
           timestamp: timestamp,
           icon: BookOpen,
           color: 'bg-purple-100 text-purple-800',
@@ -96,7 +98,7 @@ export function RecentActivity() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Activity className="h-5 w-5" />
-            Recent Activity
+            {t('common:activity.title')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -120,13 +122,13 @@ export function RecentActivity() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Activity className="h-5 w-5" />
-          Recent Activity
+          {t('common:activity.title')}
         </CardTitle>
       </CardHeader>
       <CardContent>
         {activities.length === 0 ? (
           <p className="text-gray-500 text-center py-8">
-            No recent activity
+            {t('common:activity.noActivity')}
           </p>
         ) : (
           <div className="space-y-4">

@@ -1,0 +1,138 @@
+{
+    "title": "Rapporten & Analytics",
+    "dashboard": {
+        "title": "Rapporten Dashboard",
+        "overview": "Overzicht",
+        "quickStats": "Snelle Statistieken",
+        "recentReports": "Recente Rapporten",
+        "scheduledReports": "Geplande Rapporten"
+    },
+    "types": {
+        "complianceReport": "Compliantie Rapport",
+        "certificateExpiryReport": "Certificaat Verval Rapport",
+        "trainingCostReport": "Training Kosten Rapport",
+        "participationReport": "Deelname Rapport",
+        "performanceReport": "Prestatie Rapport",
+        "attendanceReport": "Aanwezigheid Rapport",
+        "providerReport": "Aanbieder Rapport",
+        "departmentReport": "Afdeling Rapport"
+    },
+    "filters": {
+        "title": "Rapport Filters",
+        "dateRange": "Datumbereik",
+        "startDate": "Startdatum",
+        "endDate": "Einddatum",
+        "department": "Afdeling",
+        "employee": "Medewerker",
+        "course": "Cursus",
+        "provider": "Aanbieder",
+        "status": "Status",
+        "location": "Locatie",
+        "instructor": "Instructeur",
+        "certificateType": "Certificaat Type",
+        "customFilter": "Aangepast Filter"
+    },
+    "generation": {
+        "generateReport": "Rapport Genereren",
+        "generating": "Rapport genereren...",
+        "generated": "Rapport succesvol gegenereerd",
+        "failed": "Rapport genereren mislukt",
+        "downloadReport": "Rapport Downloaden",
+        "emailReport": "Rapport E-mailen",
+        "scheduleReport": "Rapport Plannen",
+        "previewReport": "Rapport Voorvertoning"
+    },
+    "formats": {
+        "pdf": "PDF",
+        "excel": "Excel",
+        "csv": "CSV",
+        "html": "HTML",
+        "json": "JSON"
+    },
+    "compliance": {
+        "title": "Compliantie Rapport",
+        "overallCompliance": "Algemene Compliantie",
+        "departmentCompliance": "Afdeling Compliantie",
+        "individualCompliance": "Individuele Compliantie",
+        "expiringCertificates": "Verlopende Certificaten",
+        "expiredCertificates": "Vervallen Certificaten",
+        "renewalsRequired": "Verlengingen Vereist",
+        "complianceRate": "Compliantie Percentage",
+        "nonCompliantEmployees": "Niet-Compliant Medewerkers"
+    },
+    "costs": {
+        "title": "Training Kosten Rapport",
+        "totalCosts": "Totale Training Kosten",
+        "costsByDepartment": "Kosten per Afdeling",
+        "costsByProvider": "Kosten per Aanbieder",
+        "costsByCourse": "Kosten per Cursus",
+        "costPerEmployee": "Kosten per Medewerker",
+        "budgetUtilization": "Budget Benutting",
+        "costTrends": "Kosten Trends",
+        "savings": "Kostenbesparingen"
+    },
+    "participation": {
+        "title": "Deelname Rapport",
+        "totalParticipants": "Totaal Deelnemers",
+        "participationRate": "Deelname Percentage",
+        "completionRate": "Voltooiing Percentage",
+        "dropoutRate": "Uitval Percentage",
+        "attendanceRate": "Aanwezigheid Percentage",
+        "topCourses": "Populairste Cursussen",
+        "leastPopular": "Minst Populaire Cursussen"
+    },
+    "export": {
+        "title": "Export Opties",
+        "exportToPdf": "Exporteren naar PDF",
+        "exportToExcel": "Exporteren naar Excel",
+        "exportToCsv": "Exporteren naar CSV",
+        "emailTo": "E-mailen naar",
+        "emailSubject": "E-mail Onderwerp",
+        "emailMessage": "E-mail Bericht",
+        "sendEmail": "E-mail Versturen",
+        "downloadFile": "Bestand Downloaden"
+    },
+    "scheduling": {
+        "title": "Rapport Planning",
+        "scheduleReport": "Rapport Plannen",
+        "frequency": "Frequentie",
+        "daily": "Dagelijks",
+        "weekly": "Wekelijks",
+        "monthly": "Maandelijks",
+        "quarterly": "Kwartaal",
+        "annually": "Jaarlijks",
+        "recipients": "Ontvangers",
+        "nextRun": "Volgende Uitvoering",
+        "lastRun": "Laatste Uitvoering",
+        "enabled": "Ingeschakeld",
+        "disabled": "Uitgeschakeld"
+    },
+    "messages": {
+        "reportGenerated": "Rapport succesvol gegenereerd",
+        "reportFailed": "Rapport genereren mislukt",
+        "reportEmailSent": "Rapport succesvol ge-e-maild",
+        "reportScheduled": "Rapport succesvol gepland",
+        "reportDeleted": "Rapport succesvol verwijderd",
+        "invalidDateRange": "Ongeldig datumbereik geselecteerd",
+        "noDataFound": "Geen gegevens gevonden voor de geselecteerde criteria",
+        "exportCompleted": "Export succesvol voltooid"
+    },
+    "screen": {
+        "title": "Rapporten & Analytics",
+        "subtitle": "Uitgebreide training- en compliance-rapportage",
+        "expiringSoon": "Binnenkort Verlopend",
+        "criticalExpired": "Kritiek Verlopen",
+        "trainingCosts": "Trainingskosten",
+        "complianceRate": "Compliance Percentage",
+        "next30Days": "Komende 30 dagen",
+        "requiresAction": "Vereist directe actie",
+        "totalEnrolled": "Totaal ingeschreven",
+        "validCertificates": "Geldige certificaten",
+        "certificateExpiry": "Certificaat Verloop",
+        "trainingCostsTab": "Trainingskosten",
+        "compliance": "Compliance",
+        "utilization": "Gebruik",
+        "utilizationTitle": "Cursus Benutting Rapport",
+        "comingSoon": "Binnenkort beschikbaar..."
+    }
+}

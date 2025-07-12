@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,7 @@ import { EmployeeStatusBadge } from "@/components/employee/EmployeeStatusBadge";
 import type { EmployeeStatus } from "@/types/index";
 
 export default function TrainingDetail() {
+  const { t } = useTranslation('training');
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -27,25 +29,25 @@ export default function TrainingDetail() {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showAddParticipant, setShowAddParticipant] = useState(false);
   const [currentStatus, setCurrentStatus] = useState('scheduled');
-  
+
   const { data: trainings = [], isLoading: trainingsLoading } = useTrainings();
   const { data: courses = [] } = useCourses();
   const training = trainings.find(t => t.id === id);
   const course = training ? courses.find(c => c.id === training.course_id) : null;
-  
+
   // Fetch participants using the hook
   const { participants, removeParticipant } = useTrainingParticipants(id);
 
   // Initialize with default checklist if none exists
   const defaultChecklist = [
-    { id: '1', text: 'Training location confirmed', completed: false },
-    { id: '2', text: 'Instructor confirmed', completed: false },
-    { id: '3', text: 'Materials prepared', completed: false },
-    { id: '4', text: 'Participants notified', completed: false },
+    { id: '1', text: t('detail.defaultChecklist.locationConfirmed'), completed: false },
+    { id: '2', text: t('detail.defaultChecklist.instructorConfirmed'), completed: false },
+    { id: '3', text: t('detail.defaultChecklist.materialsPrepared'), completed: false },
+    { id: '4', text: t('detail.defaultChecklist.participantsNotified'), completed: false },
   ];
 
   const { checklist, updateChecklistItem } = useTrainingChecklist(
-    id || '', 
+    id || '',
     training?.checklist || []
   );
 
@@ -99,7 +101,7 @@ export default function TrainingDetail() {
     queryFn: async () => {
       const employeeIds = participants?.map(p => p.employees?.id).filter(Boolean) || [];
       if (employeeIds.length === 0) return {};
-      
+
       const now = new Date().toISOString();
       const { data, error } = await supabase
         .from('employee_status_history')
@@ -108,12 +110,12 @@ export default function TrainingDetail() {
         .is('end_date', null)
         .lte('start_date', now)
         .order('start_date', { ascending: false });
-      
+
       if (error) {
         console.error('Error fetching employee statuses:', error);
         throw error;
       }
-      
+
       // Create a map of employee_id -> current status
       const statusMap: Record<string, string> = {};
       data.forEach(record => {
@@ -121,7 +123,7 @@ export default function TrainingDetail() {
           statusMap[record.employee_id] = record.status;
         }
       });
-      
+
       return statusMap;
     },
     enabled: (participants?.length || 0) > 0
@@ -150,22 +152,22 @@ export default function TrainingDetail() {
   const handleStatusChange = (newStatus: string) => {
     setCurrentStatus(newStatus);
     toast({
-      title: "Status Updated",
-      description: `Training status changed to ${newStatus}`,
+      title: t('detail.statusUpdated'),
+      description: t('detail.statusUpdatedDescription', { status: newStatus }),
     });
   };
 
   const handleSendNotifications = (trainingId: string) => {
     toast({
-      title: "Notifications Sent",
-      description: "All participants have been notified",
+      title: t('detail.notificationsSent'),
+      description: t('detail.notificationsSentDescription'),
     });
   };
 
   const handleGenerateAttendanceList = (trainingId: string) => {
     toast({
-      title: "Attendance List Generated",
-      description: "Attendance list has been generated and downloaded",
+      title: t('detail.attendanceListGenerated'),
+      description: t('detail.attendanceListGeneratedDescription'),
     });
   };
 
@@ -186,15 +188,15 @@ export default function TrainingDetail() {
           <div className="flex items-center space-x-4">
             <Button variant="ghost" onClick={() => navigate("/scheduling")}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Scheduling
+              {t('detail.backToSchedule')}
             </Button>
           </div>
-          
+
           <div className="text-center py-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Training Not Found</h2>
-            <p className="text-gray-600">The training you're looking for doesn't exist or has been removed.</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('detail.trainingNotFound')}</h2>
+            <p className="text-gray-600">{t('detail.trainingNotFoundDescription')}</p>
             <Button className="mt-4" onClick={() => navigate("/scheduling")}>
-              View All Trainings
+              {t('detail.viewAllTrainings')}
             </Button>
           </div>
         </div>
@@ -208,8 +210,8 @@ export default function TrainingDetail() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Training Detail</h1>
-            <p className="text-gray-600 mt-1">View and manage training information and participants.</p>
+            <h1 className="text-3xl font-bold text-gray-900">{t('detail.trainingDetail')}</h1>
+            <p className="text-gray-600 mt-1">{t('detail.trainingDetailDescription')}</p>
           </div>
           <Button
             variant="ghost"
@@ -218,7 +220,7 @@ export default function TrainingDetail() {
             className="flex items-center space-x-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span>Back to Schedule</span>
+            <span>{t('detail.backToSchedule')}</span>
           </Button>
         </div>
 
@@ -228,109 +230,112 @@ export default function TrainingDetail() {
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-xl font-bold text-gray-900 mb-2">{training.title}</h2>
-                <p className="text-gray-600">Course: {course?.title}</p>
+                <p className="text-gray-600">{t('detail.course')}: {course?.title}</p>
               </div>
               <Button onClick={() => setShowEditDialog(true)} className="flex items-center space-x-2">
                 <Edit className="h-4 w-4" />
-                <span>Edit Training</span>
+                <span>{t('detail.editTraining')}</span>
               </Button>
             </div>
-          
-          {training.sessions_count && training.sessions_count > 1 && training.session_dates ? (
-            <div className="space-y-4">
-              <p className="font-medium">Sessions ({training.sessions_count})</p>
-              {Array.from({ length: training.sessions_count }, (_, index) => (
-                <div key={index} className="flex items-center space-x-6 py-2">
-                  <span className="font-medium">Session {index + 1}</span>
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="h-4 w-4 text-gray-500" />
-                    <span>{formatDate(training.session_dates[index])}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Clock className="h-4 w-4 text-gray-500" />
-                    <span>{formatTime(training.session_times?.[index] || '')}</span>
-                    {training.session_end_times?.[index] && (
-                      <span>- {formatTime(training.session_end_times[index])}</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex items-center space-x-8 mb-6">
-              <div className="flex items-center space-x-2">
-                <Calendar className="h-4 w-4 text-gray-500" />
-                <span>{formatDate(training.date)}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Clock className="h-4 w-4 text-gray-500" />
-                <span>
-                  {formatTime(training.time)}
-                  {(training.end_time || training.session_end_times?.[0]) && ` - ${formatTime(training.end_time || training.session_end_times?.[0])}`}
-                </span>
-              </div>
-            </div>
-          )}
 
-          <div className="grid grid-cols-2 gap-6 mt-6">
-            <div className="flex items-center space-x-2">
-              <Users className="h-4 w-4 text-gray-500" />
-              <span className="font-medium">Instructor:</span> 
-              <span>{training.instructor || 'Not assigned'}</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <MapPin className="h-4 w-4 text-gray-500" />
-              <span className="font-medium">Location:</span> 
-              <span>{training.location}</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Users className="h-4 w-4 text-gray-500" />
-              <span className="font-medium">Capacity:</span> 
-              <span>{participants?.length || 0}/{training.maxParticipants}</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="font-medium">Price:</span> 
-              <span>€{training.price || '0'}</span>
-            </div>
-            {course?.code95_points && course.code95_points > 0 && (
-              <div className="flex items-center space-x-2">
-                <span className="font-medium">Code 95 Points:</span> 
-                <span>{course.code95_points}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Training Checklist integrated into details */}
-          {checklist && checklist.length > 0 && (
-            <div className="mt-8">
-              <h3 className="font-medium mb-3">Training Checklist</h3>
-              <div className="space-y-2">
-                {checklist.map((item) => (
-                <label key={item.id} className="flex items-center space-x-2 text-sm cursor-pointer">
-                  <Checkbox
-                    checked={item.completed}
-                    onCheckedChange={async (checked) => {
-                      try {
-                        await updateChecklistItem(item.id, !!checked);
-                        toast({
-                          title: "Checklist Updated",
-                          description: `${item.text} marked as ${checked ? 'completed' : 'incomplete'}`
-                        });
-                      } catch (error) {
-                        toast({
-                          title: "Error",
-                          description: "Failed to update checklist item",
-                          variant: "destructive"
-                        });
-                      }
-                    }}
-                  />
-                  <span className={item.completed ? 'line-through text-gray-500' : ''}>{item.text}</span>
-                </label>
+            {training.sessions_count && training.sessions_count > 1 && training.session_dates ? (
+              <div className="space-y-4">
+                <p className="font-medium">{t('detail.sessions')} ({training.sessions_count})</p>
+                {Array.from({ length: training.sessions_count }, (_, index) => (
+                  <div key={index} className="flex items-center space-x-6 py-2">
+                    <span className="font-medium">{t('detail.session')} {index + 1}</span>
+                    <div className="flex items-center space-x-2">
+                      <Calendar className="h-4 w-4 text-gray-500" />
+                      <span>{formatDate(training.session_dates[index])}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Clock className="h-4 w-4 text-gray-500" />
+                      <span>{formatTime(training.session_times?.[index] || '')}</span>
+                      {training.session_end_times?.[index] && (
+                        <span>- {formatTime(training.session_end_times[index])}</span>
+                      )}
+                    </div>
+                  </div>
                 ))}
               </div>
+            ) : (
+              <div className="flex items-center space-x-8 mb-6">
+                <div className="flex items-center space-x-2">
+                  <Calendar className="h-4 w-4 text-gray-500" />
+                  <span>{formatDate(training.date)}</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Clock className="h-4 w-4 text-gray-500" />
+                  <span>
+                    {formatTime(training.time)}
+                    {(training.end_time || training.session_end_times?.[0]) && ` - ${formatTime(training.end_time || training.session_end_times?.[0])}`}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-6 mt-6">
+              <div className="flex items-center space-x-2">
+                <Users className="h-4 w-4 text-gray-500" />
+                <span className="font-medium">{t('detail.instructor')}:</span>
+                <span>{training.instructor || t('detail.notAssigned')}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <MapPin className="h-4 w-4 text-gray-500" />
+                <span className="font-medium">{t('detail.location')}:</span>
+                <span>{training.location}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Users className="h-4 w-4 text-gray-500" />
+                <span className="font-medium">{t('detail.capacity')}:</span>
+                <span>{participants?.length || 0}/{training.maxParticipants}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="font-medium">{t('detail.price')}:</span>
+                <span>€{training.price || '0'}</span>
+              </div>
+              {course?.code95_points && course.code95_points > 0 && (
+                <div className="flex items-center space-x-2">
+                  <span className="font-medium">{t('detail.code95Points')}:</span>
+                  <span>{course.code95_points}</span>
+                </div>
+              )}
             </div>
-          )}
+
+            {/* Training Checklist integrated into details */}
+            {checklist && checklist.length > 0 && (
+              <div className="mt-8">
+                <h3 className="font-medium mb-3">{t('detail.trainingChecklist')}</h3>
+                <div className="space-y-2">
+                  {checklist.map((item) => (
+                    <label key={item.id} className="flex items-center space-x-2 text-sm cursor-pointer">
+                      <Checkbox
+                        checked={item.completed}
+                        onCheckedChange={async (checked) => {
+                          try {
+                            await updateChecklistItem(item.id, !!checked);
+                            toast({
+                              title: t('detail.checklistUpdated'),
+                              description: t('detail.checklistUpdatedDescription', {
+                                item: item.text,
+                                status: checked ? t('detail.completed') : t('detail.incomplete')
+                              })
+                            });
+                          } catch (error) {
+                            toast({
+                              title: t('detail.error'),
+                              description: t('detail.checklistUpdateError'),
+                              variant: "destructive"
+                            });
+                          }
+                        }}
+                      />
+                      <span className={item.completed ? 'line-through text-gray-500' : ''}>{item.text}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -340,32 +345,32 @@ export default function TrainingDetail() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold flex items-center">
                 <Users className="h-5 w-5 mr-2" />
-                Participants ({participants?.length || 0})
+                {t('detail.participants')} ({participants?.length || 0})
               </h2>
               <div className="flex items-center space-x-2">
                 {currentStatus === 'completed' && (
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => {
                       toast({
-                        title: "Bulk Update",
-                        description: "All participants marked as attended"
+                        title: t('detail.bulkUpdate'),
+                        description: t('detail.bulkUpdateDescription')
                       });
                     }}
                   >
-                    Mark All as Attended
+                    {t('detail.markAllAsAttended')}
                   </Button>
                 )}
                 <Button onClick={() => setShowAddParticipant(true)} size="sm">
-                  Add Participant
+                  {t('detail.addParticipant')}
                 </Button>
               </div>
             </div>
 
             <div className="space-y-2">
               {!participants || participants.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">No participants enrolled yet</p>
+                <p className="text-gray-500 text-center py-8">{t('detail.noParticipantsEnrolled')}</p>
               ) : (
                 participants.map((participant) => {
                   const currentEmployeeStatus = participantStatuses[participant.employees?.id || ''] || participant.employees?.status || 'active';
@@ -391,12 +396,15 @@ export default function TrainingDetail() {
                               checked={participant.status === 'attended'}
                               onCheckedChange={(checked) => {
                                 toast({
-                                  title: "Attendance Updated",
-                                  description: `${participant.employees?.name} marked as ${checked ? 'attended' : 'enrolled'}`
+                                  title: t('detail.attendanceUpdated'),
+                                  description: t('detail.attendanceUpdatedDescription', {
+                                    name: participant.employees?.name,
+                                    status: checked ? t('detail.attended') : t('detail.enrolled')
+                                  })
                                 });
                               }}
                             />
-                            <span className="text-sm">Attended</span>
+                            <span className="text-sm">{t('detail.attended')}</span>
                           </label>
                         )}
                         {course?.code95_points && course.code95_points > 0 && (
@@ -409,23 +417,26 @@ export default function TrainingDetail() {
                                     .from('training_participants')
                                     .update({ code95_eligible: !!checked })
                                     .eq('id', participant.id);
-                                  
+
                                   if (error) throw error;
-                                  
+
                                   toast({
-                                    title: "Code 95 Updated",
-                                    description: `${participant.employees?.name} ${checked ? 'eligible for' : 'not eligible for'} Code 95 points`
+                                    title: t('detail.code95Updated'),
+                                    description: t('detail.code95UpdatedDescription', {
+                                      name: participant.employees?.name,
+                                      status: checked ? t('detail.eligibleFor') : t('detail.notEligibleFor')
+                                    })
                                   });
                                 } catch (error) {
                                   toast({
-                                    title: "Error",
-                                    description: "Failed to update Code 95 eligibility",
+                                    title: t('detail.error'),
+                                    description: t('detail.code95UpdateError'),
                                     variant: "destructive"
                                   });
                                 }
                               }}
                             />
-                            <span className="text-sm text-gray-500">Code 95: {course.code95_points} points</span>
+                            <span className="text-sm text-gray-500">{t('detail.code95')}: {course.code95_points} {t('detail.points')}</span>
                           </label>
                         )}
                         <Button
@@ -433,7 +444,7 @@ export default function TrainingDetail() {
                           size="sm"
                           onClick={() => removeParticipant.mutate(participant.id)}
                         >
-                          Remove
+                          {t('detail.remove')}
                         </Button>
                       </div>
                     </div>
@@ -448,7 +459,7 @@ export default function TrainingDetail() {
         {training.notes && (
           <Card>
             <CardContent className="p-6">
-              <h2 className="text-lg font-semibold mb-4">Notes</h2>
+              <h2 className="text-lg font-semibold mb-4">{t('detail.notes')}</h2>
               <p className="text-gray-700 whitespace-pre-wrap">{training.notes}</p>
             </CardContent>
           </Card>

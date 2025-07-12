@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -41,6 +42,7 @@ export function NotificationBell({
     enableRealTime = true,
     maxPreviewCount = 5
 }: NotificationBellProps) {
+    const { t } = useTranslation(['common']);
     const [isOpen, setIsOpen] = useState(false);
     const navigate = useNavigate();
 
@@ -123,11 +125,11 @@ export function NotificationBell({
                 <Card className="border-0 shadow-lg">
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
-                            <CardTitle className="text-base">Notifications</CardTitle>
+                            <CardTitle className="text-base">{t('common:notifications.title')}</CardTitle>
                         </div>
                         {unreadCount > 0 && (
                             <p className="text-sm text-gray-600">
-                                You have {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
+                                {t('common:notifications.unreadCount', { count: unreadCount })}
                             </p>
                         )}
                     </CardHeader>
@@ -136,7 +138,7 @@ export function NotificationBell({
                         {isLoading ? (
                             <div className="p-4 text-center text-gray-500">
                                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900 mx-auto"></div>
-                                <p className="mt-2 text-sm">Loading notifications...</p>
+                                <p className="mt-2 text-sm">{t('common:notifications.loading')}</p>
                             </div>
                         ) : previewNotifications.length > 0 ? (
                             <ScrollArea className="h-64">
@@ -180,7 +182,7 @@ export function NotificationBell({
                         ) : (
                             <div className="p-4 text-center text-gray-500">
                                 <Bell className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                                <p className="text-sm">No notifications yet</p>
+                                <p className="text-sm">{t('common:notifications.noNotifications')}</p>
                             </div>
                         )}
                     </CardContent>
@@ -194,7 +196,7 @@ export function NotificationBell({
                                     onClick={handleViewAll}
                                     className="text-xs"
                                 >
-                                    View All {notifications.length} Notifications
+                                    {t('common:notifications.viewAll', { count: notifications.length })}
                                 </Button>
                             </div>
                         </>

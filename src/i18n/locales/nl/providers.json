@@ -1,0 +1,122 @@
+{
+    "title": "Training Aanbieders",
+    "list": {
+        "title": "Aanbieders",
+        "addProvider": "Aanbieder Toevoegen",
+        "search": "Zoek aanbieders...",
+        "noProviders": "Geen aanbieders gevonden",
+        "totalProviders": "Totaal Aanbieders"
+    },
+    "form": {
+        "addProvider": "Aanbieder Toevoegen",
+        "editProvider": "Aanbieder Bewerken",
+        "providerDetails": "Aanbieder Details",
+        "companyInfo": "Bedrijfsgegevens",
+        "contactInfo": "Contactgegevens",
+        "certifications": "Certificeringen",
+        "companyName": "Bedrijfsnaam",
+        "description": "Beschrijving",
+        "website": "Website",
+        "email": "E-mailadres",
+        "phone": "Telefoonnummer",
+        "fax": "Faxnummer",
+        "address": "Adres",
+        "postalCode": "Postcode",
+        "city": "Plaats",
+        "country": "Land",
+        "contactPerson": "Contactpersoon",
+        "contactEmail": "Contact E-mail",
+        "contactPhone": "Contact Telefoon",
+        "specializations": "Specialisaties",
+        "accreditations": "Accreditaties",
+        "rating": "Beoordeling",
+        "notes": "Notities",
+        "active": "Actief",
+        "preferred": "Voorkeursaanbieder"
+    },
+    "profile": {
+        "title": "Aanbieder Profiel",
+        "overview": "Overzicht",
+        "courses": "Cursussen",
+        "locations": "Locaties",
+        "instructors": "Instructeurs",
+        "history": "Geschiedenis",
+        "reviews": "Beoordelingen",
+        "edit": "Aanbieder Bewerken",
+        "contact": "Contact",
+        "website": "Bezoek Website",
+        "loadingProvider": "Aanbieder laden...",
+        "providerNotFound": "Aanbieder niet gevonden",
+        "joined": "Aangesloten",
+        "coursesOffered": "Aangeboden Cursussen",
+        "trainingLocations": "Training Locaties"
+    },
+    "courses": {
+        "title": "Aanbieder Cursussen",
+        "addCourse": "Cursus Toevoegen",
+        "availableCourses": "Beschikbare Cursussen",
+        "courseName": "Cursus Naam",
+        "duration": "Duur",
+        "maxParticipants": "Max Deelnemers",
+        "price": "Prijs",
+        "code95Points": "Code 95 Punten",
+        "certification": "Certificering",
+        "nextAvailable": "Eerstvolgende"
+    },
+    "locations": {
+        "title": "Training Locaties",
+        "addLocation": "Locatie Toevoegen",
+        "locationName": "Locatie Naam",
+        "address": "Adres",
+        "facilities": "Faciliteiten",
+        "capacity": "Capaciteit",
+        "parking": "Parkeren",
+        "accessibility": "Toegankelijkheid",
+        "equipment": "Apparatuur"
+    },
+    "instructors": {
+        "title": "Instructeurs",
+        "addInstructor": "Instructeur Toevoegen",
+        "instructorName": "Instructeur Naam",
+        "qualifications": "Kwalificaties",
+        "specializations": "Specialisaties",
+        "experience": "Ervaring",
+        "languages": "Talen",
+        "rating": "Beoordeling",
+        "availability": "Beschikbaarheid"
+    },
+    "status": {
+        "active": "Actief",
+        "inactive": "Inactief",
+        "pending": "In behandeling",
+        "suspended": "Geschorst",
+        "verified": "Geverifieerd",
+        "unverified": "Niet Geverifieerd"
+    },
+    "ratings": {
+        "excellent": "Uitstekend",
+        "good": "Goed",
+        "average": "Gemiddeld",
+        "poor": "Slecht",
+        "notRated": "Niet Beoordeeld"
+    },
+    "messages": {
+        "providerCreated": "Aanbieder succesvol aangemaakt",
+        "providerUpdated": "Aanbieder succesvol bijgewerkt",
+        "providerDeleted": "Aanbieder succesvol verwijderd",
+        "courseAdded": "Cursus succesvol toegevoegd",
+        "locationAdded": "Locatie succesvol toegevoegd",
+        "instructorAdded": "Instructeur succesvol toegevoegd",
+        "emailSent": "E-mail verzonden naar aanbieder",
+        "deleteConfirm": "Weet je zeker dat je deze aanbieder wilt verwijderen?"
+    },
+    "page": {
+        "title": "Cursus Aanbieders",
+        "subtitle": "Beheer trainingsaanbieders en hun cursusaanbod",
+        "addProvider": "Aanbieder Toevoegen"
+    },
+    "providerProfile": "Provider Profiel",
+    "providerProfileDescription": "Bekijk en beheer trainingsaanbieder informatie en aanbiedingen.",
+    "providerNotFound": "Provider niet gevonden",
+    "backToProviders": "Terug naar Providers"
+}

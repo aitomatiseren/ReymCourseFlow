@@ -1,5 +1,6 @@
 
 import { useState, useEffect, useCallback, forwardRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogDescription, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from "@/components/ui/dialog";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { cn } from "@/lib/utils";
@@ -54,6 +55,7 @@ interface CreateTrainingDialogProps {
 
 
 export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }: CreateTrainingDialogProps) {
+  const { t } = useTranslation(['training', 'common']);
   const [selectedCourseId, setSelectedCourseId] = useState("");
   const [selectedProviderId, setSelectedProviderId] = useState("");
   const [title, setTitle] = useState("");
@@ -82,7 +84,7 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
   // Auto-populate pricing when provider is selected
   const handleProviderChange = async (providerId: string) => {
     setSelectedProviderId(providerId);
-    
+
     if (providerId && selectedCourseId) {
       try {
         const { data, error } = await supabase
@@ -125,7 +127,7 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
       if (provider.default_location && !location) {
         setLocation(provider.default_location);
       }
-      
+
       // Auto-fill instructor from provider contact person if available
       if (provider.contact_person && !instructor) {
         setInstructor(provider.contact_person);
@@ -142,7 +144,7 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
         setTitle(course.title);
         setMaxParticipants(course.max_participants?.toString() || "");
         setSessions(course.sessions_required || 1);
-        
+
         // Initialize checklist from course
         if (course.has_checklist && course.checklist_items) {
           const items = Array.isArray(course.checklist_items) ? course.checklist_items : [];
@@ -162,7 +164,7 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
         }
         return newDates;
       });
-      
+
       setSessionTimes(prev => {
         const newTimes = Array(sessions).fill('');
         for (let i = 0; i < Math.min(prev.length, sessions); i++) {
@@ -187,13 +189,13 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
     setSelectedProviderId("");
     setCostBreakdown([]);
     setPrice("");
-    
+
     const course = courses.find(c => c.id === courseId);
     if (course) {
       setTitle(course.title);
       setMaxParticipants(course.max_participants?.toString() || "");
       setSessions(course.sessions_required || 1);
-      
+
       // Reset and initialize checklist
       setCourseChecklistItems([]);
       if (course.has_checklist && course.checklist_items) {
@@ -227,7 +229,7 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
     const newComponents = [...costBreakdown];
     newComponents[index] = { ...newComponents[index], [field]: value };
     setCostBreakdown(newComponents);
-    
+
     // Update total price
     const total = newComponents.reduce((sum, item) => sum + item.amount, 0);
     setPrice(total.toString());
@@ -265,26 +267,26 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
           const sourceStartTime = currentTimes[sourceIndex];
           const sourceEndTime = currentEndTimes[sourceIndex];
           const sourceDate = currentDates[sourceIndex];
-          
+
           // Utility function to get next business day (skip weekends)
           const getNextBusinessDay = (date: Date): Date => {
             const nextDay = new Date(date);
             nextDay.setDate(date.getDate() + 1);
-            
+
             // If it's Saturday (6) or Sunday (0), move to Monday
             while (nextDay.getDay() === 0 || nextDay.getDay() === 6) {
               nextDay.setDate(nextDay.getDate() + 1);
             }
-            
+
             return nextDay;
           };
-          
+
           const newSessionDates = [...currentDates];
-          
+
           // Smart date copying: each session gets the next business day
           if (sourceDate) {
             let currentDate = new Date(sourceDate);
-            
+
             for (let i = 0; i < sessions; i++) {
               if (i === sourceIndex) {
                 // Keep the source date as is
@@ -294,7 +296,7 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
                 const daysBack = sourceIndex - i;
                 const targetDate = new Date(sourceDate);
                 let daysSubtracted = 0;
-                
+
                 while (daysSubtracted < daysBack) {
                   targetDate.setDate(targetDate.getDate() - 1);
                   // Skip weekends when going backwards too
@@ -302,25 +304,25 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
                     daysSubtracted++;
                   }
                 }
-                
+
                 newSessionDates[i] = targetDate.toISOString().split('T')[0];
               } else {
                 // For sessions after the source, go forwards
                 const daysForward = i - sourceIndex;
                 currentDate = new Date(sourceDate);
-                
+
                 for (let d = 0; d < daysForward; d++) {
                   currentDate = getNextBusinessDay(currentDate);
                 }
-                
+
                 newSessionDates[i] = currentDate.toISOString().split('T')[0];
               }
             }
           }
-          
+
           return newSessionDates;
         });
-        
+
         // Copy end times
         if (currentEndTimes[sourceIndex]) {
           const newEndTimes = [...currentEndTimes];
@@ -333,7 +335,7 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
         }
         return currentEndTimes;
       });
-      
+
       // Copy start times
       if (currentTimes[sourceIndex]) {
         const newTimes = [...currentTimes];
@@ -370,8 +372,8 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
   const validateForm = () => {
     if (!selectedCourseId || !selectedProviderId || !title || !instructor || !location || !maxParticipants) {
       toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields including provider selection",
+        title: t('training:createDialog.validationError'),
+        description: t('training:createDialog.fillRequiredFields'),
         variant: "destructive"
       });
       return false;
@@ -381,10 +383,10 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
     for (let i = 0; i < sessions; i++) {
       if (!sessionDates[i] || !sessionTimes[i]) {
         toast({
-          title: "Validation Error",
-          description: sessions === 1 
-            ? "Please select date and time for the training"
-            : `Please fill in date and time for session ${i + 1}`,
+          title: t('training:createDialog.validationError'),
+          description: sessions === 1
+            ? t('training:createDialog.selectDateTime')
+            : t('training:createDialog.selectDateTimeSession', { session: i + 1 }),
           variant: "destructive"
         });
         return false;
@@ -396,7 +398,7 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     try {
@@ -418,20 +420,20 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
         session_times: sessionTimes.length > 0 ? sessionTimes : null,
         session_end_times: sessionEndTimes.length > 0 ? sessionEndTimes : null
       };
-      
+
       await createTraining.mutateAsync(trainingData);
-      
+
       toast({
-        title: "Success",
-        description: "Training created successfully"
+        title: t('training:createDialog.success'),
+        description: t('training:createDialog.trainingCreated')
       });
-      
+
       resetForm();
       onOpenChange(false);
     } catch (error) {
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create training",
+        title: t('training:createDialog.error'),
+        description: error instanceof Error ? error.message : t('training:createDialog.failedToCreate'),
         variant: "destructive"
       });
     }
@@ -439,14 +441,14 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} modal>
-      <CustomDialogContent 
+      <CustomDialogContent
         className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto"
         onOpenChange={onOpenChange}
       >
         <DialogHeader>
-          <DialogTitle>Create New Training</DialogTitle>
+          <DialogTitle>{t('training:createDialog.title')}</DialogTitle>
           <DialogDescription>
-            Set up a new training session. Fill in all the details below.
+            {t('training:createDialog.description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -465,7 +467,7 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
           {selectedCourse && (
             <>
               <CourseInfoSection selectedCourse={selectedCourse} />
-              
+
               {selectedCourse.has_checklist && (
                 <CourseChecklistSection
                   selectedCourse={selectedCourse}
@@ -482,40 +484,40 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
               <div className="flex items-center justify-between">
                 <Label className="text-base font-medium flex items-center gap-2">
                   <DollarSign className="h-4 w-4" />
-                  Pricing & Cost Breakdown
+                  {t('training:createDialog.pricingCostBreakdown')}
                 </Label>
                 <Button type="button" variant="outline" size="sm" onClick={addCostComponent}>
                   <Plus className="h-4 w-4 mr-1" />
-                  Add Cost Component
+                  {t('training:createDialog.addCostComponent')}
                 </Button>
               </div>
-              
+
               {costBreakdown.length > 0 ? (
                 <div className="space-y-3 border rounded-lg p-4 bg-gray-50">
                   {costBreakdown.map((component, index) => (
                     <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-3 p-3 bg-white rounded border">
                       <div>
-                        <Label className="text-sm">Component Name</Label>
+                        <Label className="text-sm">{t('training:createDialog.componentName')}</Label>
                         <Input
-                          placeholder="e.g., Theory Training"
+                          placeholder={t('training:createDialog.componentNamePlaceholder')}
                           value={component.name}
                           onChange={(e) => updateCostComponent(index, 'name', e.target.value)}
                         />
                       </div>
                       <div>
-                        <Label className="text-sm">Amount (€)</Label>
+                        <Label className="text-sm">{t('training:createDialog.amount')}</Label>
                         <Input
                           type="number"
                           step="0.01"
-                          placeholder="0.00"
+                          placeholder={t('training:createDialog.amountPlaceholder')}
                           value={component.amount || ''}
                           onChange={(e) => updateCostComponent(index, 'amount', Number(e.target.value) || 0)}
                         />
                       </div>
                       <div>
-                        <Label className="text-sm">Description</Label>
+                        <Label className="text-sm">{t('training:createDialog.description')}</Label>
                         <Input
-                          placeholder="Optional description"
+                          placeholder={t('training:createDialog.descriptionPlaceholder')}
                           value={component.description}
                           onChange={(e) => updateCostComponent(index, 'description', e.target.value)}
                         />
@@ -534,9 +536,9 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
                       </div>
                     </div>
                   ))}
-                  
+
                   <div className="flex justify-between items-center pt-2 border-t bg-blue-50 px-3 py-2 rounded">
-                    <span className="font-medium">Total Price per Participant:</span>
+                    <span className="font-medium">{t('training:createDialog.totalPricePerParticipant')}</span>
                     <span className="font-bold text-lg text-blue-600">
                       €{costBreakdown.reduce((sum, item) => sum + item.amount, 0).toFixed(2)}
                     </span>
@@ -544,7 +546,7 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <Label htmlFor="price">Price per Participant (€)</Label>
+                  <Label htmlFor="price">{t('training:createDialog.pricePerParticipant')}</Label>
                   <Input
                     id="price"
                     type="number"
@@ -552,10 +554,10 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
                     min="0"
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
-                    placeholder="Enter price"
+                    placeholder={t('common:common.enterPrice')}
                   />
                   <p className="text-sm text-gray-500">
-                    💡 Select a provider first to auto-populate pricing, or enter manually
+                    {t('training:createDialog.priceHelp')}
                   </p>
                 </div>
               )}
@@ -577,23 +579,23 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="instructor">Instructor</Label>
+              <Label htmlFor="instructor">{t('training:createDialog.instructorLabel')}</Label>
               <Input
                 id="instructor"
                 value={instructor}
                 onChange={(e) => setInstructor(e.target.value)}
-                placeholder="Instructor name"
+                placeholder={t('training:createDialog.instructorPlaceholder')}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
+              <Label htmlFor="location">{t('training:createDialog.locationLabel')}</Label>
               <Input
                 id="location"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                placeholder="Training location"
+                placeholder={t('training:createDialog.locationPlaceholder')}
                 required
               />
             </div>
@@ -601,29 +603,29 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="maxParticipants">Max Participants</Label>
+              <Label htmlFor="maxParticipants">{t('training:createDialog.maxParticipantsLabel')}</Label>
               <Input
                 id="maxParticipants"
                 type="number"
                 min="1"
                 value={maxParticipants}
                 onChange={(e) => setMaxParticipants(e.target.value)}
-                placeholder="Maximum participants"
+                placeholder={t('training:createDialog.maxParticipantsPlaceholder')}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
+              <Label htmlFor="status">{t('training:createDialog.statusLabel')}</Label>
               <Select value={status} onValueChange={(value: 'scheduled' | 'confirmed' | 'cancelled' | 'completed') => setStatus(value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="scheduled">Scheduled</SelectItem>
-                  <SelectItem value="confirmed">Confirmed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="scheduled">{t('training:status.scheduled')}</SelectItem>
+                  <SelectItem value="confirmed">{t('training:status.confirmed')}</SelectItem>
+                  <SelectItem value="cancelled">{t('training:status.cancelled')}</SelectItem>
+                  <SelectItem value="completed">{t('training:status.completed')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -634,7 +636,7 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
               checked={requiresApproval}
               onCheckedChange={(checked) => setRequiresApproval(!!checked)}
             />
-            <Label htmlFor="requiresApproval">Requires approval for enrollment</Label>
+            <Label htmlFor="requiresApproval">{t('training:createDialog.requiresApproval')}</Label>
           </div>
 
           <ChecklistManagementSection
@@ -644,10 +646,10 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
 
           <div className="flex justify-end space-x-2 pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+              {t('training:createDialog.cancel')}
             </Button>
             <Button type="submit" disabled={createTraining.isPending}>
-              {createTraining.isPending ? "Creating..." : "Create Training"}
+              {createTraining.isPending ? t('training:createDialog.creating') : t('training:createDialog.createTraining')}
             </Button>
           </div>
         </form>

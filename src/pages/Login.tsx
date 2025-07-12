@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { usePermissions } from '@/context/PermissionsContext';
 import { clearLogoutFlag, wasExplicitlyLoggedOut } from '@/utils/sessionUtils';
 
 export default function Login() {
+    const { t } = useTranslation(['auth', 'common']);
     const navigate = useNavigate();
     const { permissions, userProfile, loading } = usePermissions();
     const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
@@ -33,7 +35,7 @@ export default function Login() {
 
     const handleLoginSuccess = () => {
         console.log('Login successful, setting up redirect...');
-        
+
         // Clear the explicit logout flag to re-enable auto-refresh
         clearLogoutFlag();
 
@@ -66,7 +68,7 @@ export default function Login() {
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                    <p className="text-gray-600">Checking authentication...</p>
+                    <p className="text-gray-600">{t('common:common.loading')}</p>
                 </div>
             </div>
         );
@@ -82,10 +84,10 @@ export default function Login() {
                         className="mx-auto h-12 w-12 mb-4"
                     />
                     <h2 className="text-3xl font-bold text-gray-900">
-                        Training Management System
+                        {t('auth:login.title')}
                     </h2>
                     <p className="mt-2 text-sm text-gray-600">
-                        Manage your training programs and certifications
+                        {t('auth:login.subtitle')}
                     </p>
                 </div>
 

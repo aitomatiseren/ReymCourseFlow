@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,22 +12,28 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Mail, Lock, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
-const loginSchema = z.object({
-    email: z.string().email('Please enter a valid email address'),
-    password: z.string().min(6, 'Password must be at least 6 characters'),
+const createLoginSchema = (t: any) => z.object({
+    email: z.string().email(t('auth:login.emailInvalid')),
+    password: z.string().min(6, t('auth:login.passwordMinLength')),
 });
 
-type LoginFormData = z.infer<typeof loginSchema>;
+type LoginFormData = {
+    email: string;
+    password: string;
+};
 
 interface LoginFormProps {
     onSuccess?: () => void;
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
+    const { t } = useTranslation(['auth', 'common']);
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [loginSuccess, setLoginSuccess] = useState(false);
+
+    const loginSchema = createLoginSchema(t);
 
     const {
         register,
@@ -57,7 +64,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
             if (authData.user) {
                 console.log('Login successful for user:', authData.user.id);
                 setLoginSuccess(true);
-                toast.success('Successfully logged in! Loading your dashboard...');
+                toast.success(t('auth:login.loginSuccessMessage'));
 
                 // Wait a bit longer for the auth state to propagate
                 setTimeout(() => {
@@ -70,7 +77,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
             console.error('Login error:', err);
             const errorMessage = err instanceof Error ? err.message : 'An error occurred during login';
             setError(errorMessage);
-            toast.error('Login failed. Please check your credentials.');
+            toast.error(t('auth:login.loginError'));
         } finally {
             setIsLoading(false);
         }
@@ -79,9 +86,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     return (
         <Card className="w-full max-w-md mx-auto">
             <CardHeader className="space-y-1">
-                <CardTitle className="text-2xl font-bold text-center">Welcome Back</CardTitle>
+                <CardTitle className="text-2xl font-bold text-center">{t('auth:login.welcomeBack')}</CardTitle>
                 <CardDescription className="text-center">
-                    Sign in to your account to continue
+                    {t('auth:login.signInToContinue')}
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -96,19 +103,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
                         <Alert className="border-green-200 bg-green-50">
                             <CheckCircle className="h-4 w-4 text-green-600" />
                             <AlertDescription className="text-green-800">
-                                Login successful! Loading your dashboard...
+                                {t('auth:login.loginSuccessMessage')}
                             </AlertDescription>
                         </Alert>
                     )}
 
                     <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="email">{t('auth:login.email')}</Label>
                         <div className="relative">
                             <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                             <Input
                                 id="email"
                                 type="email"
-                                placeholder="Enter your email"
+                                placeholder={t('auth:login.emailPlaceholder')}
                                 className="pl-10"
                                 {...register('email')}
                                 disabled={isLoading || loginSuccess}
@@ -120,13 +127,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="password">Password</Label>
+                        <Label htmlFor="password">{t('auth:login.password')}</Label>
                         <div className="relative">
                             <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                             <Input
                                 id="password"
                                 type={showPassword ? 'text' : 'password'}
-                                placeholder="Enter your password"
+                                placeholder={t('auth:login.passwordPlaceholder')}
                                 className="pl-10 pr-10"
                                 {...register('password')}
                                 disabled={isLoading || loginSuccess}
@@ -153,22 +160,22 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
                         {isLoading ? (
                             <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Signing in...
+                                {t('auth:login.signingIn')}
                             </>
                         ) : loginSuccess ? (
                             <>
                                 <CheckCircle className="mr-2 h-4 w-4" />
-                                Success! Loading dashboard...
+                                {t('auth:login.loadingDashboard')}
                             </>
                         ) : (
-                            'Sign In'
+                            t('auth:login.signIn')
                         )}
                     </Button>
                 </form>
 
                 <div className="mt-4 text-center">
                     <p className="text-sm text-gray-600">
-                        Demo: Use <code className="bg-gray-100 px-1 rounded">admin@admin.com</code> to test
+                        {t('auth:login.demoText')}
                     </p>
                 </div>
             </CardContent>

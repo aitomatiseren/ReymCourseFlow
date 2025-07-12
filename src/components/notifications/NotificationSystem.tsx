@@ -54,7 +54,8 @@ export function NotificationSystem({
   userId,
   enableRealTime = true
 }: NotificationSystemProps) {
-  const [filter, setFilter] = useState<'all' | 'read' | 'unread'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'read' | 'unread'>('all');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
   const navigate = useNavigate();
 
   const {
@@ -120,11 +121,19 @@ export function NotificationSystem({
     );
   }
 
+  // Get unique notification types for the filter dropdown
+  const notificationTypes = [...new Set(notifications.map(n => n.type))];
+
   const filteredNotifications = notifications.filter(notification => {
-    if (filter === 'all') return true;
-    if (filter === 'read') return notification.read;
-    if (filter === 'unread') return !notification.read;
-    return true;
+    // Status filter
+    const statusMatch = statusFilter === 'all' ||
+      (statusFilter === 'read' && notification.read) ||
+      (statusFilter === 'unread' && !notification.read);
+
+    // Type filter
+    const typeMatch = typeFilter === 'all' || notification.type === typeFilter;
+
+    return statusMatch && typeMatch;
   });
 
   const handleNotificationClick = (notification: Notification) => {
@@ -181,12 +190,25 @@ export function NotificationSystem({
         <div className="flex items-center space-x-4">
           <select
             className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value as any)}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as any)}
           >
-            <option value="all">All Notifications</option>
+            <option value="all">All Status</option>
             <option value="unread">Unread</option>
             <option value="read">Read</option>
+          </select>
+
+          <select
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+          >
+            <option value="all">All Types</option>
+            {notificationTypes.map(type => (
+              <option key={type} value={type}>
+                {type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+              </option>
+            ))}
           </select>
 
           {unreadCount > 0 && (
@@ -199,6 +221,17 @@ export function NotificationSystem({
       </div>
 
 
+
+      {/* Filter Results Summary */}
+      <div className="text-sm text-gray-600">
+        {filteredNotifications.length === notifications.length ? (
+          `Showing all ${notifications.length} notifications`
+        ) : (
+          `Showing ${filteredNotifications.length} of ${notifications.length} notifications`
+        )}
+        {statusFilter !== 'all' && ` • Status: ${statusFilter}`}
+        {typeFilter !== 'all' && ` • Type: ${typeFilter.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`}
+      </div>
 
       {/* Notifications List */}
       <div className="space-y-4">
@@ -234,11 +267,6 @@ export function NotificationSystem({
                           <h3 className="font-semibold text-gray-900">{notification.title}</h3>
                           <Badge className={notificationColors[notification.type as keyof typeof notificationColors]}>
                             {notification.type.replace('_', ' ')}
-                          </Badge>
-                          <Badge variant="outline" className={
-                            !notification.read ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
-                          }>
-                            {notification.read ? 'Read' : 'Unread'}
                           </Badge>
                           <Badge variant="outline" className={
                             notification.priority === 'high' ? 'bg-red-100 text-red-800' :

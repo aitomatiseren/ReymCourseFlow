@@ -1,0 +1,122 @@
+{
+    "title": "Training Providers",
+    "list": {
+        "title": "Providers",
+        "addProvider": "Add Provider",
+        "search": "Search providers...",
+        "noProviders": "No providers found",
+        "totalProviders": "Total Providers"
+    },
+    "form": {
+        "addProvider": "Add Provider",
+        "editProvider": "Edit Provider",
+        "providerDetails": "Provider Details",
+        "companyInfo": "Company Information",
+        "contactInfo": "Contact Information",
+        "certifications": "Certifications",
+        "companyName": "Company Name",
+        "description": "Description",
+        "website": "Website",
+        "email": "Email Address",
+        "phone": "Phone Number",
+        "fax": "Fax Number",
+        "address": "Address",
+        "postalCode": "Postal Code",
+        "city": "City",
+        "country": "Country",
+        "contactPerson": "Contact Person",
+        "contactEmail": "Contact Email",
+        "contactPhone": "Contact Phone",
+        "specializations": "Specializations",
+        "accreditations": "Accreditations",
+        "rating": "Rating",
+        "notes": "Notes",
+        "active": "Active",
+        "preferred": "Preferred Provider"
+    },
+    "profile": {
+        "title": "Provider Profile",
+        "overview": "Overview",
+        "courses": "Courses",
+        "locations": "Locations",
+        "instructors": "Instructors",
+        "history": "History",
+        "reviews": "Reviews",
+        "edit": "Edit Provider",
+        "contact": "Contact",
+        "website": "Visit Website",
+        "loadingProvider": "Loading provider...",
+        "providerNotFound": "Provider not found",
+        "joined": "Joined",
+        "coursesOffered": "Courses Offered",
+        "trainingLocations": "Training Locations"
+    },
+    "courses": {
+        "title": "Provider Courses",
+        "addCourse": "Add Course",
+        "availableCourses": "Available Courses",
+        "courseName": "Course Name",
+        "duration": "Duration",
+        "maxParticipants": "Max Participants",
+        "price": "Price",
+        "code95Points": "Code 95 Points",
+        "certification": "Certification",
+        "nextAvailable": "Next Available"
+    },
+    "locations": {
+        "title": "Training Locations",
+        "addLocation": "Add Location",
+        "locationName": "Location Name",
+        "address": "Address",
+        "facilities": "Facilities",
+        "capacity": "Capacity",
+        "parking": "Parking",
+        "accessibility": "Accessibility",
+        "equipment": "Equipment"
+    },
+    "instructors": {
+        "title": "Instructors",
+        "addInstructor": "Add Instructor",
+        "instructorName": "Instructor Name",
+        "qualifications": "Qualifications",
+        "specializations": "Specializations",
+        "experience": "Experience",
+        "languages": "Languages",
+        "rating": "Rating",
+        "availability": "Availability"
+    },
+    "status": {
+        "active": "Active",
+        "inactive": "Inactive",
+        "pending": "Pending",
+        "suspended": "Suspended",
+        "verified": "Verified",
+        "unverified": "Unverified"
+    },
+    "ratings": {
+        "excellent": "Excellent",
+        "good": "Good",
+        "average": "Average",
+        "poor": "Poor",
+        "notRated": "Not Rated"
+    },
+    "messages": {
+        "providerCreated": "Provider created successfully",
+        "providerUpdated": "Provider updated successfully",
+        "providerDeleted": "Provider deleted successfully",
+        "courseAdded": "Course added successfully",
+        "locationAdded": "Location added successfully",
+        "instructorAdded": "Instructor added successfully",
+        "emailSent": "Email sent to provider",
+        "deleteConfirm": "Are you sure you want to delete this provider?"
+    },
+    "page": {
+        "title": "Course Providers",
+        "subtitle": "Manage training providers and their course offerings",
+        "addProvider": "Add Provider"
+    },
+    "providerProfile": "Provider Profile",
+    "providerProfileDescription": "View and manage training provider information and offerings.",
+    "providerNotFound": "Provider not found",
+    "backToProviders": "Back to Providers"
+}

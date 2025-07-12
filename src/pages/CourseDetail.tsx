@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,11 +11,12 @@ import { EditCourseDialog } from "@/components/courses/EditCourseDialog";
 import { useToast } from "@/hooks/use-toast";
 
 export default function CourseDetail() {
+  const { t } = useTranslation(['common', 'courses']);
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [showEditDialog, setShowEditDialog] = useState(false);
   const { toast } = useToast();
-  
+
   const { data: courses = [], isLoading } = useCourses();
   const course = courses.find(c => c.id === id);
 
@@ -38,12 +40,12 @@ export default function CourseDetail() {
               Back to Courses
             </Button>
           </div>
-          
+
           <div className="text-center py-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Course Not Found</h2>
-            <p className="text-gray-600">The course you're looking for doesn't exist or has been removed.</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('common:courseDetail.courseNotFound')}</h2>
+            <p className="text-gray-600">{t('common:courseDetail.courseNotFoundDesc')}</p>
             <Button className="mt-4" onClick={() => navigate("/courses")}>
-              View All Courses
+              {t('common:courseDetail.viewAllCourses')}
             </Button>
           </div>
         </div>
@@ -57,8 +59,8 @@ export default function CourseDetail() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Course Detail</h1>
-            <p className="text-gray-600 mt-1">View and manage course information and settings.</p>
+            <h1 className="text-3xl font-bold text-gray-900">{t('common:courseDetail.title')}</h1>
+            <p className="text-gray-600 mt-1">{t('common:courseDetail.subtitle')}</p>
           </div>
           <Button
             variant="ghost"
@@ -67,7 +69,7 @@ export default function CourseDetail() {
             className="flex items-center space-x-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span>Back to Courses</span>
+            <span>{t('common:courseDetail.backToCourses')}</span>
           </Button>
         </div>
 
@@ -83,34 +85,34 @@ export default function CourseDetail() {
               </div>
               <Button onClick={() => setShowEditDialog(true)} className="flex items-center space-x-2">
                 <Edit className="h-4 w-4" />
-                <span>Edit Course</span>
+                <span>{t('common:courseDetail.editCourse')}</span>
               </Button>
             </div>
 
             <div className="grid grid-cols-2 gap-6">
               <div className="flex items-center space-x-2">
                 <Clock className="h-4 w-4 text-gray-500" />
-                <span className="font-medium">Duration:</span> 
-                <span>{course.duration_hours ? `${course.duration_hours} hours` : 'Not specified'}</span>
+                <span className="font-medium">{t('common:courseDetail.duration')}:</span>
+                <span>{course.duration_hours ? `${course.duration_hours} ${t('common:courseDetail.hours')}` : t('common:courseDetail.notSpecified')}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Users className="h-4 w-4 text-gray-500" />
-                <span className="font-medium">Max Participants:</span> 
-                <span>{course.max_participants || 'Unlimited'}</span>
+                <span className="font-medium">{t('common:courses.maxParticipants')}:</span>
+                <span>{course.max_participants || t('common:courseDetail.unlimited')}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <DollarSign className="h-4 w-4 text-gray-500" />
-                <span className="font-medium">Price:</span> 
+                <span className="font-medium">{t('common:courseDetail.price')}:</span>
                 <span>€{course.price || '0'}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Calendar className="h-4 w-4 text-gray-500" />
-                <span className="font-medium">Sessions Required:</span> 
+                <span className="font-medium">{t('common:courseDetail.sessionsRequired')}:</span>
                 <span>{course.sessions_required || 1}</span>
               </div>
               {course.code95_points && course.code95_points > 0 && (
                 <div className="flex items-center space-x-2">
-                  <span className="font-medium">Code 95 Points:</span> 
+                  <span className="font-medium">{t('common:courseDetail.code95Points')}:</span>
                   <span>{course.code95_points}</span>
                 </div>
               )}
@@ -122,7 +124,7 @@ export default function CourseDetail() {
         {course.cost_breakdown && Array.isArray(course.cost_breakdown) && course.cost_breakdown.length > 0 && (
           <Card>
             <CardContent className="p-6">
-              <h2 className="text-lg font-semibold mb-4">Cost Breakdown</h2>
+              <h2 className="text-lg font-semibold mb-4">{t('common:courseDetail.costBreakdown')}</h2>
               <div className="space-y-3">
                 {course.cost_breakdown.map((cost: any, index: number) => (
                   <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
@@ -136,7 +138,7 @@ export default function CourseDetail() {
                   </div>
                 ))}
                 <div className="border-t pt-3 flex items-center justify-between font-semibold">
-                  <span>Total</span>
+                  <span>{t('common:courseDetail.total')}</span>
                   <span>€{course.price}</span>
                 </div>
               </div>
@@ -148,7 +150,7 @@ export default function CourseDetail() {
         {course.has_checklist && course.checklist_items && (
           <Card>
             <CardContent className="p-6">
-              <h2 className="text-lg font-semibold mb-4">Course Checklist</h2>
+              <h2 className="text-lg font-semibold mb-4">{t('common:courseDetail.courseChecklist')}</h2>
               <div className="space-y-2">
                 {Array.isArray(course.checklist_items) ? (
                   course.checklist_items.map((item: any, index: number) => (
@@ -158,7 +160,7 @@ export default function CourseDetail() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-gray-600">Checklist items available</p>
+                  <p className="text-gray-600">{t('common:courseDetail.checklistAvailable')}</p>
                 )}
               </div>
             </CardContent>

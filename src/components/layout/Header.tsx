@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { Bell, Search, User, Settings, LogOut } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -17,6 +18,7 @@ import { SearchDialog } from '@/components/layout/SearchDialog';
 import { clearAuthSession } from '@/utils/sessionUtils';
 
 export const Header: React.FC = () => {
+  const { t } = useTranslation(['common', 'auth']);
   const { userProfile, isAdmin, roleName } = usePermissions();
   const { unreadCount } = useNotifications(userProfile?.employee?.id);
   const navigate = useNavigate();
@@ -34,7 +36,7 @@ export const Header: React.FC = () => {
       }
 
       // Force hard reload to clear all state and prevent auto-login
-      toast.success('Successfully logged out');
+      toast.success(t('common:header.logoutSuccess'));
       setTimeout(() => {
         window.location.href = '/login';
       }, 100);
@@ -90,10 +92,10 @@ export const Header: React.FC = () => {
 
     // For system users without employee records
     if (isAdmin) {
-      return 'System Administrator';
+      return t('common:header.systemAdministrator');
     }
 
-    return 'User';
+    return t('common:header.user');
   };
 
   return (
@@ -112,7 +114,7 @@ export const Header: React.FC = () => {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                placeholder="Search courses, participants, trainings, providers... (Ctrl+Shift+K)"
+                placeholder={t('common:header.searchPlaceholder')}
                 className="pl-10 w-[500px] cursor-pointer"
                 onClick={handleSearchClick}
                 onKeyDown={handleKeyDown}
@@ -141,19 +143,19 @@ export const Header: React.FC = () => {
                       {getDisplayName()}
                     </p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {roleName ? `Role: ${roleName}` : 'Not authenticated'}
+                      {roleName ? `${t('common:header.role')}: ${roleName}` : t('common:header.notAuthenticated')}
                     </p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSettings}>
                   <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
+                  <span>{t('common:header.settings')}</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
+                  <span>{t('common:header.logOut')}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

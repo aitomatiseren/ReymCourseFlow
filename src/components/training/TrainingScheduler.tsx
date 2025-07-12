@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Loader2 } from "lucide-react";
 import { useTrainings } from "@/hooks/useTrainings";
 import { useCourses } from "@/hooks/useCourses";
@@ -17,6 +18,7 @@ import { TrainingViewMode } from "./TrainingViewToggle";
 import { useToast } from "@/hooks/use-toast";
 
 export function TrainingScheduler() {
+  const { t } = useTranslation(['training']);
   const [searchParams] = useSearchParams();
   const [selectedTrainingId, setSelectedTrainingId] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -32,7 +34,7 @@ export function TrainingScheduler() {
     setDisplayMode(mode);
     localStorage.setItem('training-scheduler-view', mode);
   };
-  
+
   const preSelectedCourseId = searchParams.get('courseId');
   const { toast } = useToast();
 
@@ -76,16 +78,16 @@ export function TrainingScheduler() {
   const handleSendNotifications = (trainingId: string) => {
     console.log(`Sending notifications for training ${trainingId}`);
     toast({
-      title: "Notifications Sent",
-      description: "All participants have been notified"
+      title: t('training:scheduler.notificationsSent'),
+      description: t('training:scheduler.notificationsSentDesc')
     });
   };
 
   const handleGenerateAttendanceList = (trainingId: string) => {
     console.log(`Generating attendance list for training ${trainingId}`);
     toast({
-      title: "Attendance List Generated",
-      description: "The attendance list has been prepared"
+      title: t('training:scheduler.attendanceListGenerated'),
+      description: t('training:scheduler.attendanceListDesc')
     });
   };
 
@@ -93,7 +95,7 @@ export function TrainingScheduler() {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin mr-2" />
-        <span>Loading training data...</span>
+        <span>{t('training:scheduler.loadingData')}</span>
       </div>
     );
   }
@@ -101,7 +103,7 @@ export function TrainingScheduler() {
   if (trainingsError) {
     return (
       <div className="text-center py-12">
-        <p className="text-red-500">Error loading trainings: {trainingsError.message}</p>
+        <p className="text-red-500">{t('training:scheduler.errorLoading')} {trainingsError.message}</p>
       </div>
     );
   }
@@ -133,8 +135,8 @@ export function TrainingScheduler() {
 
   return (
     <div className="space-y-6">
-      <TrainingSchedulerHeader 
-        onCreateTraining={() => setShowCreateForm(true)} 
+      <TrainingSchedulerHeader
+        onCreateTraining={() => setShowCreateForm(true)}
         viewMode={displayMode}
         onViewModeChange={handleDisplayModeChange}
       />
@@ -158,14 +160,14 @@ export function TrainingScheduler() {
       )}
 
       {displayMode === 'timeline' && (
-        <TrainingTimeline 
+        <TrainingTimeline
           onTrainingSelect={handleTrainingSelect}
           selectedTrainingId={selectedTrainingId}
         />
       )}
 
       {displayMode === 'calendar' && (
-        <TrainingCalendar 
+        <TrainingCalendar
           onTrainingSelect={handleTrainingSelect}
         />
       )}

@@ -13,6 +13,7 @@ import {
   Bell,
   User
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { usePermissions } from "@/context/PermissionsContext";
 import {
   Sidebar,
@@ -28,23 +29,26 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const menuItems = [
-  { title: "Dashboard", url: "/", icon: Home, permissions: [] },
-  { title: "Courses", url: "/courses", icon: BookOpen, permissions: ["view_courses"] },
-  { title: "Participants", url: "/participants", icon: Users, permissions: ["view_employees"] },
-  { title: "Certifications", url: "/certifications", icon: Award, permissions: ["view_own_certificates"] },
-  { title: "Training Scheduler", url: "/scheduling", icon: Calendar, permissions: ["view_schedules"] },
-  { title: "Employee Portal", url: "/employee-dashboard", icon: User, permissions: ["view_own_profile"] },
-  { title: "Providers", url: "/providers", icon: Building2, permissions: ["view_courses"] },
-  { title: "Notifications", url: "/communications", icon: Bell, permissions: [] },
-  { title: "Reports", url: "/reports", icon: FileText, permissions: ["view_basic_reports"] },
-  { title: "Settings", url: "/settings", icon: Settings, permissions: ["manage_system_settings"] },
+const getMenuItems = (t: any) => [
+  { titleKey: "navigation.dashboard", url: "/", icon: Home, permissions: [] },
+  { titleKey: "navigation.courses", url: "/courses", icon: BookOpen, permissions: ["view_courses"] },
+  { titleKey: "navigation.participants", url: "/participants", icon: Users, permissions: ["view_employees"] },
+  { titleKey: "navigation.certifications", url: "/certifications", icon: Award, permissions: ["view_own_certificates"] },
+  { titleKey: "navigation.trainingScheduler", url: "/scheduling", icon: Calendar, permissions: ["view_schedules"] },
+  { titleKey: "navigation.employeePortal", url: "/employee-dashboard", icon: User, permissions: ["view_own_profile"] },
+  { titleKey: "navigation.providers", url: "/providers", icon: Building2, permissions: ["view_courses"] },
+  { titleKey: "navigation.notifications", url: "/communications", icon: Bell, permissions: [] },
+  { titleKey: "navigation.reports", url: "/reports", icon: FileText, permissions: ["view_basic_reports"] },
+  { titleKey: "navigation.settings", url: "/settings", icon: Settings, permissions: ["manage_system_settings"] },
 ];
 
 export function AppSidebar() {
   const location = useLocation();
   const { state } = useSidebar();
   const { hasAnyPermission, isAdmin } = usePermissions();
+  const { t } = useTranslation('common');
+
+  const menuItems = getMenuItems(t);
 
   return (
     <Sidebar
@@ -74,12 +78,13 @@ export function AppSidebar() {
                 if (!hasPermission) return null;
 
                 const isActive = location.pathname === item.url;
+                const title = t(item.titleKey);
                 return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
+                  <SidebarMenuItem key={item.titleKey}>
+                    <SidebarMenuButton asChild isActive={isActive} tooltip={title}>
                       <NavLink to={item.url}>
                         <item.icon />
-                        <span>{item.title}</span>
+                        <span>{title}</span>
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

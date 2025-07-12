@@ -1,6 +1,7 @@
 
 import { Layout } from "@/components/layout/Layout";
 import { useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { UpcomingCourses } from "@/components/dashboard/UpcomingCourses";
@@ -12,6 +13,7 @@ import { useTrainings } from "@/hooks/useTrainings";
 import { useCertificates } from "@/hooks/useCertificates";
 
 export default function Dashboard() {
+  const { t } = useTranslation(['common', 'employees', 'training', 'certificates']);
   const location = useLocation();
 
   // Fetch real data from database
@@ -43,19 +45,19 @@ export default function Dashboard() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600 mt-1">Welcome back! Here's what's happening with your course management.</p>
+            <h1 className="text-3xl font-bold text-gray-900">{t('common:dashboard.title')}</h1>
+            <p className="text-gray-600 mt-1">{t('common:dashboard.welcome')}</p>
           </div>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatsCard
-            title="Total Employees"
+            title={t('common:dashboard.totalEmployees')}
             value={totalEmployees}
             icon={Users}
             trend={{
-              value: employeesLoading ? "Loading..." : `${totalEmployees} total`,
+              value: employeesLoading ? t('common:common.loading') : `${totalEmployees} ${t('common:dashboard.total')}`,
               isPositive: true
             }}
             color="blue"
@@ -63,11 +65,11 @@ export default function Dashboard() {
             href="/participants"
           />
           <StatsCard
-            title="Active Courses"
+            title={t('common:dashboard.activeCourses')}
             value={activeCourses}
             icon={BookOpen}
             trend={{
-              value: coursesLoading ? "Loading..." : `${activeCourses} available`,
+              value: coursesLoading ? t('common:common.loading') : `${activeCourses} ${t('common:dashboard.available')}`,
               isPositive: true
             }}
             color="green"
@@ -75,11 +77,11 @@ export default function Dashboard() {
             href="/courses"
           />
           <StatsCard
-            title="Valid Certificates"
+            title={t('common:dashboard.validCertificates')}
             value={validCertificates}
             icon={Award}
             trend={{
-              value: certificatesLoading ? "Loading..." : expiredCertificates > 0 ? `${expiredCertificates} expired` : "All current",
+              value: certificatesLoading ? t('common:common.loading') : expiredCertificates > 0 ? `${expiredCertificates} ${t('common:dashboard.expired')}` : t('common:dashboard.allCurrent'),
               isPositive: expiredCertificates === 0
             }}
             color="purple"
@@ -87,11 +89,11 @@ export default function Dashboard() {
             href="/certifications"
           />
           <StatsCard
-            title="Scheduled Trainings"
+            title={t('common:dashboard.scheduledTrainings')}
             value={upcomingTrainings}
             icon={Calendar}
             trend={{
-              value: trainingsLoading ? "Loading..." : `${upcomingTrainings} upcoming`,
+              value: trainingsLoading ? t('common:common.loading') : `${upcomingTrainings} ${t('common:dashboard.upcoming')}`,
               isPositive: true
             }}
             color="orange"

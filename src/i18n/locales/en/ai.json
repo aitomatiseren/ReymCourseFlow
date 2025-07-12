@@ -1,0 +1,105 @@
+{
+    "title": "AI Assistant",
+    "chat": {
+        "title": "AI Assistant",
+        "subtitle": "Ask me anything about the platform",
+        "placeholder": "Type your message here...",
+        "send": "Send",
+        "thinking": "Thinking...",
+        "typing": "AI is typing...",
+        "error": "Sorry, I encountered an error. Please try again.",
+        "offline": "AI Assistant is currently offline",
+        "reconnecting": "Reconnecting...",
+        "connected": "Connected",
+        "disconnected": "Disconnected"
+    },
+    "welcome": {
+        "greeting": "👋 Hi there!",
+        "intro": "I'm your AI assistant. I can help you with:",
+        "features": [
+            "Finding features and menus",
+            "Scheduling trainings",
+            "Managing employees",
+            "Answering questions"
+        ]
+    },
+    "capabilities": {
+        "navigation": "Navigation Help",
+        "dataQuery": "Data Queries",
+        "taskAutomation": "Task Automation",
+        "recommendations": "Smart Recommendations",
+        "troubleshooting": "Troubleshooting",
+        "reporting": "Report Generation"
+    },
+    "messages": {
+        "defaultError": "I'm sorry, I couldn't process that request. Please try again or be more specific.",
+        "networkError": "I'm having trouble connecting. Please check your internet connection.",
+        "permissionDenied": "I don't have permission to perform that action for you.",
+        "dataNotFound": "I couldn't find the information you requested.",
+        "actionCompleted": "Done! The action has been completed successfully.",
+        "actionFailed": "I wasn't able to complete that action. Please try again or contact support.",
+        "clarificationNeeded": "Could you please provide more details about what you're looking for?",
+        "multipleOptions": "I found multiple options. Which one would you like?",
+        "confirmAction": "Are you sure you want me to proceed with this action?",
+        "unauthorized": "You don't have permission to perform this action.",
+        "sessionExpired": "Your session has expired. Please refresh the page and try again."
+    },
+    "suggestions": {
+        "quickActions": "Quick Actions",
+        "scheduleTraining": "Schedule a training",
+        "addEmployee": "Add new employee",
+        "viewReports": "View reports",
+        "checkCertificates": "Check certificate expiry",
+        "contactSupport": "Contact support",
+        "searchEmployees": "Search employees",
+        "upcomingTrainings": "Show upcoming trainings",
+        "complianceStatus": "Check compliance status"
+    },
+    "help": {
+        "title": "How can I help?",
+        "examples": [
+            "Schedule a safety training for next week",
+            "Show me employees with expiring certificates",
+            "Find all Code 95 trainings",
+            "Generate a compliance report",
+            "Add a new participant to training",
+            "What trainings does John have scheduled?"
+        ]
+    },
+    "settings": {
+        "title": "AI Settings",
+        "enableNotifications": "Enable AI Notifications",
+        "voiceResponses": "Voice Responses",
+        "autoSuggestions": "Auto Suggestions",
+        "contextAwareness": "Context Awareness",
+        "personalizedResponses": "Personalized Responses",
+        "debugMode": "Debug Mode",
+        "resetConversation": "Reset Conversation",
+        "clearHistory": "Clear Chat History"
+    },
+    "feedback": {
+        "title": "Feedback",
+        "helpful": "Was this helpful?",
+        "thumbsUp": "👍 Yes",
+        "thumbsDown": "👎 No",
+        "improve": "How can I improve?",
+        "submit": "Submit Feedback",
+        "thankYou": "Thank you for your feedback!"
+    },
+    "commands": {
+        "help": "Show available commands",
+        "clear": "Clear conversation",
+        "reset": "Reset AI assistant",
+        "settings": "Open AI settings",
+        "feedback": "Provide feedback",
+        "debug": "Enable debug mode"
+    },
+    "status": {
+        "online": "Online",
+        "offline": "Offline",
+        "busy": "Processing",
+        "idle": "Ready to help",
+        "error": "Error",
+        "maintenance": "Under maintenance"
+    }
+}

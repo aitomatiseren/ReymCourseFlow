@@ -1,37 +1,49 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Layout } from '@/components/layout/Layout';
 import { UserRoleManager } from '@/components/admin/UserRoleManager';
 import { PermissionGate } from '@/components/auth/PermissionGate';
+import { LanguageSelector } from '@/components/settings/LanguageSelector';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings as SettingsIcon, Users, Shield, Database } from 'lucide-react';
+import { Settings as SettingsIcon, Users, Shield, Database, Globe } from 'lucide-react';
 
 export default function Settings() {
+    const { t } = useTranslation(['common', 'auth']);
+
     return (
         <Layout>
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900">System Settings</h1>
-                        <p className="text-gray-600 mt-1">Configure system settings and manage user permissions.</p>
+                        <h1 className="text-3xl font-bold text-gray-900">{t('common:settings.title')}</h1>
+                        <p className="text-gray-600 mt-1">{t('common:settings.subtitle')}</p>
                     </div>
                 </div>
 
-                <Tabs defaultValue="user-management" className="w-full">
-                    <TabsList className="grid w-full grid-cols-3">
+                <Tabs defaultValue="preferences" className="w-full">
+                    <TabsList className="grid w-full grid-cols-4">
+                        <TabsTrigger value="preferences" className="flex items-center gap-2">
+                            <Globe className="h-4 w-4" />
+                            {t('common:settings.preferences')}
+                        </TabsTrigger>
                         <TabsTrigger value="user-management" className="flex items-center gap-2">
                             <Users className="h-4 w-4" />
-                            User Management
+                            {t('common:settings.userManagement')}
                         </TabsTrigger>
                         <TabsTrigger value="permissions" className="flex items-center gap-2">
                             <Shield className="h-4 w-4" />
-                            Permissions
+                            {t('common:settings.permissions')}
                         </TabsTrigger>
                         <TabsTrigger value="system" className="flex items-center gap-2">
                             <Database className="h-4 w-4" />
-                            System
+                            {t('common:settings.system')}
                         </TabsTrigger>
                     </TabsList>
+
+                    <TabsContent value="preferences" className="space-y-4">
+                        <LanguageSelector />
+                    </TabsContent>
 
                     <TabsContent value="user-management" className="space-y-4">
                         <UserRoleManager />
@@ -43,42 +55,38 @@ export default function Settings() {
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
                                         <Shield className="h-5 w-5" />
-                                        Permission System Overview
+                                        {t('common:settings.permissionSystemOverview')}
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="space-y-4">
                                         <div>
-                                            <h3 className="text-lg font-medium mb-4">Role Overview</h3>
+                                            <h3 className="text-lg font-medium mb-4">{t('common:settings.roleOverview')}</h3>
                                             <div className="bg-gray-50 p-4 rounded-lg">
                                                 <p className="text-sm text-gray-600 mb-3">
-                                                    The system uses role-based access control with the following roles:
+                                                    {t('common:settings.roleDescription')}
                                                 </p>
                                                 <ul className="text-sm space-y-1 text-gray-700">
-                                                    <li>• <strong>Employee</strong> - Basic access to own information</li>
-                                                    <li>• <strong>Instructor</strong> - Training session management</li>
-                                                    <li>• <strong>Manager</strong> - Team oversight and approvals</li>
-                                                    <li>• <strong>HR</strong> - Company-wide employee and training management</li>
-                                                    <li>• <strong>Admin</strong> - Full system access and administration</li>
+                                                    <li>• {t('common:settings.employeeRole')}</li>
+                                                    <li>• {t('common:settings.instructorRole')}</li>
+                                                    <li>• {t('common:settings.managerRole')}</li>
+                                                    <li>• {t('common:settings.hrRole')}</li>
+                                                    <li>• {t('common:settings.adminRole')}</li>
                                                 </ul>
                                             </div>
                                         </div>
 
                                         <div>
-                                            <h3 className="text-lg font-medium mb-4">Permission System</h3>
+                                            <h3 className="text-lg font-medium mb-4">{t('common:settings.permissionSystem')}</h3>
                                             <p className="text-sm text-gray-600 mb-4">
-                                                Each user is assigned a role that determines their specific access permissions.
-                                                Roles have independent permission sets tailored to their responsibilities.
+                                                {t('common:settings.permissionDescription')}
                                             </p>
                                         </div>
 
                                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                            <h4 className="font-semibold text-blue-900 mb-2">How Permissions Work</h4>
+                                            <h4 className="font-semibold text-blue-900 mb-2">{t('common:settings.howPermissionsWork')}</h4>
                                             <p className="text-sm text-blue-800">
-                                                Each user is assigned a role that grants them specific permissions for their job function.
-                                                Roles are independent and have their own unique set of permissions.
-                                                Permissions are checked both in the UI (to show/hide features) and in the backend
-                                                (to enforce data access rules).
+                                                {t('common:settings.permissionWorkDescription')}
                                             </p>
                                         </div>
                                     </div>
@@ -93,30 +101,29 @@ export default function Settings() {
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
                                         <Database className="h-5 w-5" />
-                                        System Configuration
+                                        {t('common:settings.systemConfiguration')}
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="space-y-4">
                                         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                                            <h4 className="font-semibold text-yellow-900 mb-2">System Settings</h4>
+                                            <h4 className="font-semibold text-yellow-900 mb-2">{t('common:settings.title')}</h4>
                                             <p className="text-sm text-yellow-800">
-                                                System configuration options will be available here. This includes
-                                                database settings, integration configurations, and system-wide preferences.
+                                                {t('common:settings.systemSettingsNote')}
                                             </p>
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div className="border rounded-lg p-4">
-                                                <h3 className="font-semibold mb-2">Database Status</h3>
-                                                <p className="text-sm text-green-600">✓ Connected to Supabase</p>
-                                                <p className="text-sm text-green-600">✓ Row Level Security enabled</p>
-                                                <p className="text-sm text-green-600">✓ User roles configured</p>
+                                                <h3 className="font-semibold mb-2">{t('common:settings.databaseStatus')}</h3>
+                                                <p className="text-sm text-green-600">{t('common:settings.connectedToSupabase')}</p>
+                                                <p className="text-sm text-green-600">{t('common:settings.rlsEnabled')}</p>
+                                                <p className="text-sm text-green-600">{t('common:settings.userRolesConfigured')}</p>
                                             </div>
                                             <div className="border rounded-lg p-4">
-                                                <h3 className="font-semibold mb-2">Features</h3>
-                                                <p className="text-sm text-green-600">✓ User management system</p>
-                                                <p className="text-sm text-green-600">✓ Permission-based access</p>
-                                                <p className="text-sm text-green-600">✓ Role-based permissions</p>
+                                                <h3 className="font-semibold mb-2">{t('common:settings.features')}</h3>
+                                                <p className="text-sm text-green-600">{t('common:settings.userManagementSystem')}</p>
+                                                <p className="text-sm text-green-600">{t('common:settings.permissionBasedAccess')}</p>
+                                                <p className="text-sm text-green-600">{t('common:settings.roleBasedPermissions')}</p>
                                             </div>
                                         </div>
                                     </div>
