@@ -4,9 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, MapPin, Users, Clock } from "lucide-react";
 import { useTrainings } from "@/hooks/useTrainings";
 import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 export function UpcomingCourses() {
   const { data: trainings = [], isLoading } = useTrainings();
+  const navigate = useNavigate();
 
   // Filter for upcoming trainings (scheduled or confirmed)
   const upcomingTrainings = trainings
@@ -70,7 +72,11 @@ export function UpcomingCourses() {
         ) : (
           <div className="space-y-4">
             {upcomingTrainings.map((training) => (
-              <div key={training.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+              <div 
+                key={training.id} 
+                className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                onClick={() => navigate(`/training-scheduler`)}
+              >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <h3 className="font-semibold text-gray-900 mb-1">

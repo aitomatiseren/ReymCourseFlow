@@ -1,6 +1,7 @@
 
 import { LucideIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useNavigate } from "react-router-dom";
 
 interface StatsCardProps {
   title: string;
@@ -12,6 +13,7 @@ interface StatsCardProps {
   };
   color: 'blue' | 'green' | 'purple' | 'orange' | 'red';
   isLoading?: boolean;
+  href?: string;
 }
 
 const colorClasses = {
@@ -22,9 +24,20 @@ const colorClasses = {
   red: "text-red-600"
 };
 
-export function StatsCard({ title, value, icon: Icon, trend, color, isLoading }: StatsCardProps) {
+export function StatsCard({ title, value, icon: Icon, trend, color, isLoading, href }: StatsCardProps) {
+  const navigate = useNavigate();
+  
+  const handleClick = () => {
+    if (href) {
+      navigate(href);
+    }
+  };
+  
   return (
-    <Card>
+    <Card 
+      className={href ? "cursor-pointer hover:shadow-lg transition-shadow" : ""}
+      onClick={handleClick}
+    >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         <Icon className={`h-4 w-4 ${colorClasses[color]}`} />

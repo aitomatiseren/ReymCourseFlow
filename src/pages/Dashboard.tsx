@@ -60,6 +60,7 @@ export default function Dashboard() {
             }}
             color="blue"
             isLoading={employeesLoading}
+            href="/participants"
           />
           <StatsCard
             title="Active Courses"
@@ -71,6 +72,7 @@ export default function Dashboard() {
             }}
             color="green"
             isLoading={coursesLoading}
+            href="/courses"
           />
           <StatsCard
             title="Valid Certificates"
@@ -82,6 +84,7 @@ export default function Dashboard() {
             }}
             color="purple"
             isLoading={certificatesLoading}
+            href="/certifications"
           />
           <StatsCard
             title="Scheduled Trainings"
@@ -93,6 +96,7 @@ export default function Dashboard() {
             }}
             color="orange"
             isLoading={trainingsLoading}
+            href="/training-scheduler"
           />
         </div>
 

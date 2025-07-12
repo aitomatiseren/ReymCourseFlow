@@ -6,11 +6,13 @@ import { useTrainings } from "@/hooks/useTrainings";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useCourses } from "@/hooks/useCourses";
 import { format, formatDistanceToNow } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 export function RecentActivity() {
   const { data: trainings = [], isLoading: trainingsLoading } = useTrainings();
   const { data: employees = [], isLoading: employeesLoading } = useEmployees();
   const { data: courses = [], isLoading: coursesLoading } = useCourses();
+  const navigate = useNavigate();
 
   // Generate recent activity from real data
   const generateRecentActivity = () => {
@@ -18,51 +20,66 @@ export function RecentActivity() {
 
     // Recent trainings
     const recentTrainings = trainings
+      .filter(training => training.date) // Filter out entries without date
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, 3);
 
     recentTrainings.forEach(training => {
-      activities.push({
-        id: `training-${training.id}`,
-        type: 'training',
-        title: `Training scheduled: ${training.title}`,
-        description: `${training.participantCount} participants enrolled`,
-        timestamp: new Date(training.date),
-        icon: Calendar,
-        color: 'bg-blue-100 text-blue-800'
-      });
+      const timestamp = new Date(training.date);
+      if (!isNaN(timestamp.getTime())) { // Validate timestamp
+        activities.push({
+          id: `training-${training.id}`,
+          type: 'training',
+          title: `Training scheduled: ${training.title}`,
+          description: `${training.participantCount || 0} participants enrolled`,
+          timestamp: timestamp,
+          icon: Calendar,
+          color: 'bg-blue-100 text-blue-800',
+          href: '/training-scheduler'
+        });
+      }
     });
 
     // Recent employees (sorted by created_at)
     const recentEmployees = employees
+      .filter(employee => employee.created_at) // Filter out entries without created_at
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 2);
     recentEmployees.forEach((employee) => {
-      activities.push({
-        id: `employee-${employee.id}`,
-        type: 'employee',
-        title: `New employee added: ${employee.name}`,
-        description: `${employee.department} department`,
-        timestamp: new Date(employee.created_at),
-        icon: User,
-        color: 'bg-green-100 text-green-800'
-      });
+      const timestamp = new Date(employee.created_at);
+      if (!isNaN(timestamp.getTime())) { // Validate timestamp
+        activities.push({
+          id: `employee-${employee.id}`,
+          type: 'employee',
+          title: `New employee added: ${employee.name}`,
+          description: `${employee.department} department`,
+          timestamp: timestamp,
+          icon: User,
+          color: 'bg-green-100 text-green-800',
+          href: `/participants/${employee.id}`
+        });
+      }
     });
 
     // Recent courses (sorted by created_at)
     const recentCourses = courses
+      .filter(course => course.created_at) // Filter out entries without created_at
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 2);
     recentCourses.forEach((course) => {
-      activities.push({
-        id: `course-${course.id}`,
-        type: 'course',
-        title: `Course updated: ${course.title}`,
-        description: `${course.category} category`,
-        timestamp: new Date(course.created_at),
-        icon: BookOpen,
-        color: 'bg-purple-100 text-purple-800'
-      });
+      const timestamp = new Date(course.created_at);
+      if (!isNaN(timestamp.getTime())) { // Validate timestamp
+        activities.push({
+          id: `course-${course.id}`,
+          type: 'course',
+          title: `Course updated: ${course.title}`,
+          description: `${course.category || 'Uncategorized'} category`,
+          timestamp: timestamp,
+          icon: BookOpen,
+          color: 'bg-purple-100 text-purple-800',
+          href: '/courses'
+        });
+      }
     });
 
     // Sort by timestamp and return most recent
@@ -116,7 +133,11 @@ export function RecentActivity() {
             {activities.map((activity) => {
               const Icon = activity.icon;
               return (
-                <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                <div 
+                  key={activity.id} 
+                  className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => activity.href && navigate(activity.href)}
+                >
                   <div className={`p-2 rounded-full ${activity.color}`}>
                     <Icon className="h-4 w-4" />
                   </div>
