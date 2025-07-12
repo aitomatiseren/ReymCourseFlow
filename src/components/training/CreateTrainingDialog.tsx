@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback, forwardRef } from "react";
+import { useState, useEffect, useCallback, forwardRef, useRef } from "react";
 import { Dialog, DialogDescription, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from "@/components/ui/dialog";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { cn } from "@/lib/utils";
@@ -77,6 +77,7 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
   const { data: courses = [] } = useCourses();
   const createTraining = useCreateTraining();
   const { toast } = useToast();
+  const prevProviderId = useRef<string | null>(null);
 
   const selectedCourse = courses.find(course => course.id === selectedCourseId);
 
@@ -122,9 +123,12 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
   // Handle provider details change (store provider data and clear selections)
   const handleProviderDetailsChange = (provider: any) => {
     setSelectedProvider(provider);
-    // Clear current selections when provider changes so user can choose from new options
-    setLocation("");
-    setInstructor("");
+    // Only reset instructor/location if provider actually changed
+    if (provider?.id !== prevProviderId.current) {
+      setLocation("");
+      setInstructor("");
+      prevProviderId.current = provider?.id || null;
+    }
   };
 
   // Set pre-selected course
@@ -581,11 +585,6 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
                         {inst}
                       </SelectItem>
                     ))}
-                    {selectedProvider.contact_person && !selectedProvider.instructors.includes(selectedProvider.contact_person) && (
-                      <SelectItem value={selectedProvider.contact_person}>
-                        {selectedProvider.contact_person} (Contact Person)
-                      </SelectItem>
-                    )}
                   </SelectContent>
                 </Select>
               ) : (
@@ -611,18 +610,12 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
                       const locationName = typeof loc === 'string' ? loc : (loc.name || loc.city || 'Unnamed Location');
                       const locationAddress = typeof loc === 'object' && loc.address ? ` - ${loc.address}` : '';
                       const displayName = `${locationName}${locationAddress}`;
-                      
                       return (
                         <SelectItem key={index} value={locationName}>
                           {displayName}
                         </SelectItem>
                       );
                     })}
-                    {selectedProvider.city && (
-                      <SelectItem value={selectedProvider.city}>
-                        {selectedProvider.city} (Provider City)
-                      </SelectItem>
-                    )}
                   </SelectContent>
                 </Select>
               ) : (
