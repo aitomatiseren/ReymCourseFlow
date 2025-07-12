@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 import { useTrainings } from "@/hooks/useTrainings";
 import { useCourses } from "@/hooks/useCourses";
@@ -14,6 +13,7 @@ import { TrainingListView } from "./TrainingListView";
 import { TrainingSchedulerHeader } from "./TrainingSchedulerHeader";
 import { TrainingGridView } from "./TrainingGridView";
 import { TrainingDetailsView } from "./TrainingDetailsView";
+import { TrainingViewMode } from "./TrainingViewToggle";
 import { useToast } from "@/hooks/use-toast";
 
 export function TrainingScheduler() {
@@ -22,6 +22,15 @@ export function TrainingScheduler() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showAddParticipant, setShowAddParticipant] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'view' | 'edit'>('list');
+  const [displayMode, setDisplayMode] = useState<TrainingViewMode>(() => {
+    const saved = localStorage.getItem('training-scheduler-view');
+    return (saved as TrainingViewMode) || 'list';
+  });
+
+  const handleDisplayModeChange = (mode: TrainingViewMode) => {
+    setDisplayMode(mode);
+    localStorage.setItem('training-scheduler-view', mode);
+  };
   
   const preSelectedCourseId = searchParams.get('courseId');
   const { toast } = useToast();
@@ -113,45 +122,40 @@ export function TrainingScheduler() {
 
   return (
     <div className="space-y-6">
-      <TrainingSchedulerHeader onCreateTraining={() => setShowCreateForm(true)} />
+      <TrainingSchedulerHeader 
+        onCreateTraining={() => setShowCreateForm(true)} 
+        viewMode={displayMode}
+        onViewModeChange={handleDisplayModeChange}
+      />
 
-      <Tabs defaultValue="list" className="w-full">
-        <TabsList>
-          <TabsTrigger value="list">List View</TabsTrigger>
-          <TabsTrigger value="grid">Grid View</TabsTrigger>
-          <TabsTrigger value="timeline">Timeline View</TabsTrigger>
-          <TabsTrigger value="calendar">Calendar View</TabsTrigger>
-        </TabsList>
+      {displayMode === 'list' && (
+        <TrainingListView
+          trainings={trainings}
+          onTrainingSelect={handleTrainingSelect}
+          onCreateTraining={() => setShowCreateForm(true)}
+        />
+      )}
 
-        <TabsContent value="list">
-          <TrainingListView
-            trainings={trainings}
-            onTrainingSelect={handleTrainingSelect}
-            onCreateTraining={() => setShowCreateForm(true)}
-          />
-        </TabsContent>
+      {displayMode === 'grid' && (
+        <TrainingGridView
+          trainings={trainings}
+          onTrainingSelect={handleTrainingSelect}
+          onCreateTraining={() => setShowCreateForm(true)}
+        />
+      )}
 
-        <TabsContent value="grid">
-          <TrainingGridView
-            trainings={trainings}
-            onTrainingSelect={handleTrainingSelect}
-            onCreateTraining={() => setShowCreateForm(true)}
-          />
-        </TabsContent>
+      {displayMode === 'timeline' && (
+        <TrainingTimeline 
+          onTrainingSelect={handleTrainingSelect}
+          selectedTrainingId={selectedTrainingId}
+        />
+      )}
 
-        <TabsContent value="timeline">
-          <TrainingTimeline 
-            onTrainingSelect={handleTrainingSelect}
-            selectedTrainingId={selectedTrainingId}
-          />
-        </TabsContent>
-
-        <TabsContent value="calendar">
-          <TrainingCalendar 
-            onTrainingSelect={handleTrainingSelect}
-          />
-        </TabsContent>
-      </Tabs>
+      {displayMode === 'calendar' && (
+        <TrainingCalendar 
+          onTrainingSelect={handleTrainingSelect}
+        />
+      )}
 
       <CreateTrainingDialog
         open={showCreateForm}

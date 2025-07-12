@@ -95,8 +95,8 @@ export function TrainingCalendar({ onTrainingSelect }: TrainingCalendarProps) {
             }}
             modifiersStyles={{
               hasTraining: {
-                backgroundColor: 'hsl(var(--primary))',
-                color: 'hsl(var(--primary-foreground))',
+                backgroundColor: 'hsl(220 70% 50%)',
+                color: 'white',
                 fontWeight: 'bold'
               }
             }}

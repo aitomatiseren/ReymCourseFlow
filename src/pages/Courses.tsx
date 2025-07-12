@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ViewToggle } from "@/components/ui/view-toggle";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Search, Calendar, Users, DollarSign, Edit, Trash2, Loader2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { AddCourseDialog } from "@/components/courses/AddCourseDialog";
 import { EditCourseDialog } from "@/components/courses/EditCourseDialog";
@@ -305,79 +306,81 @@ export default function Courses() {
         {!isLoading && viewMode === 'list' && (
           <Card>
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b">
-                    <tr>
-                      <th className="text-left p-4 font-medium text-gray-700">
-                        <button 
-                          onClick={() => handleSort('title')}
-                          className="flex items-center space-x-1 hover:text-gray-900 transition-colors"
-                        >
-                          <span>Course</span>
-                          {getSortIcon('title')}
-                        </button>
-                      </th>
-                      <th className="text-left p-4 font-medium text-gray-700">
-                        <button 
-                          onClick={() => handleSort('category')}
-                          className="flex items-center space-x-1 hover:text-gray-900 transition-colors"
-                        >
-                          <span>Category</span>
-                          {getSortIcon('category')}
-                        </button>
-                      </th>
-                      <th className="text-left p-4 font-medium text-gray-700">
-                        <button 
-                          onClick={() => handleSort('duration_hours')}
-                          className="flex items-center space-x-1 hover:text-gray-900 transition-colors"
-                        >
-                          <span>Duration</span>
-                          {getSortIcon('duration_hours')}
-                        </button>
-                      </th>
-                      <th className="text-left p-4 font-medium text-gray-700">Sessions</th>
-                      <th className="text-left p-4 font-medium text-gray-700">Max Participants</th>
-                      <th className="text-left p-4 font-medium text-gray-700 w-24">Code 95</th>
-                      <th className="text-left p-4 font-medium text-gray-700">Features</th>
-                      <th className="text-right p-4 font-medium text-gray-700">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-left font-medium">
+                      <Button 
+                        variant="ghost" 
+                        onClick={() => handleSort('title')}
+                        className="flex items-center space-x-1 -ml-4"
+                      >
+                        <span>Course</span>
+                        {getSortIcon('title')}
+                      </Button>
+                    </TableHead>
+                    <TableHead className="text-left font-medium">
+                      <Button 
+                        variant="ghost" 
+                        onClick={() => handleSort('category')}
+                        className="flex items-center space-x-1 -ml-4"
+                      >
+                        <span>Category</span>
+                        {getSortIcon('category')}
+                      </Button>
+                    </TableHead>
+                    <TableHead className="text-left font-medium">
+                      <Button 
+                        variant="ghost" 
+                        onClick={() => handleSort('duration_hours')}
+                        className="flex items-center space-x-1 -ml-4"
+                      >
+                        <span>Duration</span>
+                        {getSortIcon('duration_hours')}
+                      </Button>
+                    </TableHead>
+                    <TableHead className="text-left font-medium">Sessions</TableHead>
+                    <TableHead className="text-left font-medium">Max Participants</TableHead>
+                    <TableHead className="text-left font-medium w-24">Code 95</TableHead>
+                    <TableHead className="text-left font-medium">Features</TableHead>
+                    <TableHead className="text-right font-medium">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                     {sortedAndFilteredCourses.map((course) => (
-                      <tr key={course.id} className="border-b hover:bg-gray-50">
-                        <td className="p-4">
+                      <TableRow key={course.id}>
+                        <TableCell>
                           <div>
                             <div className="font-medium">{course.title}</div>
                             {course.description && (
                               <div className="text-sm text-gray-500 line-clamp-1">{course.description}</div>
                             )}
                           </div>
-                        </td>
-                        <td className="p-4">
+                        </TableCell>
+                        <TableCell>
                           {course.category && (
                             <Badge className={categoryColors[course.category as keyof typeof categoryColors] || 'bg-gray-100 text-gray-800'}>
                               {course.category}
                             </Badge>
                           )}
-                        </td>
-                        <td className="p-4">
+                        </TableCell>
+                        <TableCell>
                           {course.duration_hours ? `${course.duration_hours}h` : 'N/A'}
-                        </td>
-                        <td className="p-4">
+                        </TableCell>
+                        <TableCell>
                           {course.sessions_required || 1}
-                        </td>
-                        <td className="p-4">
+                        </TableCell>
+                        <TableCell>
                           {course.max_participants || 'N/A'}
-                        </td>
-                        <td className="p-4 w-24">
+                        </TableCell>
+                        <TableCell className="w-24">
                           {course.code95_points && course.code95_points > 0 ? (
                             <Badge variant="outline" className="bg-blue-100 text-blue-800 whitespace-nowrap">
                               {course.code95_points} pts
                             </Badge>
                           ) : 'N/A'}
-                        </td>
-                        <td className="p-4">
+                        </TableCell>
+                        <TableCell>
                           <div className="flex flex-wrap gap-1">
                             {course.has_checklist && (
                               <Badge variant="outline" className="bg-orange-100 text-orange-800 text-xs">
@@ -385,8 +388,8 @@ export default function Courses() {
                               </Badge>
                             )}
                           </div>
-                        </td>
-                        <td className="p-4 text-right">
+                        </TableCell>
+                        <TableCell className="text-right">
                           <Button 
                             size="sm"
                             onClick={() => handleEditCourse(course)}
@@ -394,12 +397,11 @@ export default function Courses() {
                             <Edit className="h-4 w-4 mr-1" />
                             Edit
                           </Button>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
-              </div>
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         )}
