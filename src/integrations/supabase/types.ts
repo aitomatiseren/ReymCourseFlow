@@ -960,6 +960,13 @@ export type Database = {
       }
       is_admin_user: {
         Args: Record<PropertyKey, never>
+<<<<<<< Updated upstream
+=======
+        Returns: boolean
+      }
+      user_has_permission: {
+        Args: { user_id: string; permission_name: string }
+>>>>>>> Stashed changes
         Returns: boolean
       }
                     user_has_permission: {
