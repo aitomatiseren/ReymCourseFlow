@@ -161,7 +161,7 @@ export function TrainingListView({
                       className="bg-slate-800 text-white hover:bg-slate-900"
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/trainings/${training.id}`);
+                        navigate(`/scheduling/${training.id}`);
                       }}
                     >
                       <Eye className="h-4 w-4 mr-1" />
