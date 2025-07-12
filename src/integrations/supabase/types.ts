@@ -360,6 +360,65 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          id: string
+          recipient_id: string
+          type: string
+          title: string
+          message: string
+          read: boolean
+          read_at: string | null
+          priority: string
+          related_entity_type: string | null
+          related_entity_id: string | null
+          action_url: string | null
+          metadata: Json | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          recipient_id: string
+          type: string
+          title: string
+          message: string
+          read?: boolean
+          read_at?: string | null
+          priority?: string
+          related_entity_type?: string | null
+          related_entity_id?: string | null
+          action_url?: string | null
+          metadata?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          recipient_id?: string
+          type?: string
+          title?: string
+          message?: string
+          read?: boolean
+          read_at?: string | null
+          priority?: string
+          related_entity_type?: string | null
+          related_entity_id?: string | null
+          action_url?: string | null
+          metadata?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       permissions: {
         Row: {
           category: string
@@ -643,6 +702,40 @@ export type Database = {
           permission_name: string
         }
         Returns: boolean
+      }
+      get_unread_notification_count: {
+        Args: {
+          user_id: string
+        }
+        Returns: number
+      }
+      create_notification: {
+        Args: {
+          p_recipient_id: string
+          p_type: string
+          p_title: string
+          p_message: string
+          p_priority?: string
+          p_related_entity_type?: string
+          p_related_entity_id?: string
+          p_action_url?: string
+          p_metadata?: Json
+        }
+        Returns: string
+      }
+      create_bulk_notifications: {
+        Args: {
+          p_recipient_ids: string[]
+          p_type: string
+          p_title: string
+          p_message: string
+          p_priority?: string
+          p_related_entity_type?: string
+          p_related_entity_id?: string
+          p_action_url?: string
+          p_metadata?: Json
+        }
+        Returns: number
       }
     }
     Enums: {

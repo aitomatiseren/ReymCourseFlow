@@ -13,14 +13,15 @@ import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  EMPLOYEE_STATUS_OPTIONS, 
-  EmployeeStatus, 
-  getStatusColor, 
-  getStatusLabel, 
-  isValidTransition, 
-  requiresEndDate 
+import {
+  EMPLOYEE_STATUS_OPTIONS,
+  EmployeeStatus,
+  getStatusColor,
+  getStatusLabel,
+  isValidTransition,
+  requiresEndDate
 } from "@/constants/employeeStatus";
+import { IntegrationService } from "@/services/integrationService";
 
 interface EmployeeStatusManagerProps {
   employeeId: string;
@@ -51,7 +52,7 @@ export function EmployeeStatusManager({ employeeId, currentStatus }: EmployeeSta
         .select('*')
         .eq('employee_id', employeeId)
         .order('start_date', { ascending: false });
-      
+
       if (error) throw error;
       return data;
     },
@@ -80,7 +81,7 @@ export function EmployeeStatusManager({ employeeId, currentStatus }: EmployeeSta
         const endDate = new Date(statusData.startDate);
         endDate.setDate(endDate.getDate() - 1);
         const formattedEndDate = endDate.toISOString().split('T')[0];
-        
+
         await supabase
           .from('employee_status_history')
           .update({ end_date: formattedEndDate })
@@ -106,7 +107,7 @@ export function EmployeeStatusManager({ employeeId, currentStatus }: EmployeeSta
       if (isImmediateStatus) {
         const { error: updateError } = await supabase
           .from('employees')
-          .update({ 
+          .update({
             status: statusData.status,
             status_start_date: statusData.startDate,
             status_end_date: statusData.endDate || null,
@@ -115,6 +116,20 @@ export function EmployeeStatusManager({ employeeId, currentStatus }: EmployeeSta
           .eq('id', employeeId);
 
         if (updateError) throw updateError;
+
+        // Trigger notification for training impact if status change is immediate
+        try {
+          const previousStatus = currentStatusRecord?.status as EmployeeStatus || 'active';
+          await IntegrationService.handleEmployeeStatusChange(
+            employeeId,
+            statusData.status,
+            previousStatus,
+            statusData.startDate
+          );
+        } catch (notificationError) {
+          console.error('Error sending status change notifications:', notificationError);
+          // Don't throw - status was successfully updated, notification failure shouldn't block UI
+        }
       }
 
       return data;
@@ -248,7 +263,7 @@ export function EmployeeStatusManager({ employeeId, currentStatus }: EmployeeSta
     // Check for overlapping periods
     const overlappingStatus = statusHistory.find(status => {
       if (status.status === newStatus.status) return false; // Allow same status extension
-      
+
       const existingStart = new Date(status.start_date);
       const existingEnd = status.end_date ? new Date(status.end_date) : new Date('2099-12-31');
       const newStart = new Date(newStatus.startDate);
@@ -287,7 +302,22 @@ export function EmployeeStatusManager({ employeeId, currentStatus }: EmployeeSta
       return;
     }
 
-    addStatusMutation.mutate(newStatus);
+    if (newStatus.status === "") {
+      toast({
+        title: "Validation Error",
+        description: "Please select a status",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    addStatusMutation.mutate({
+      status: newStatus.status as EmployeeStatus,
+      startDate: newStatus.startDate,
+      endDate: newStatus.endDate || undefined,
+      reason: newStatus.reason,
+      notes: newStatus.notes
+    });
   };
 
   const handleEditStatus = (statusEntry: any) => {
@@ -348,29 +378,29 @@ export function EmployeeStatusManager({ employeeId, currentStatus }: EmployeeSta
     const now = new Date();
     const aStartDate = new Date(a.start_date);
     const bStartDate = new Date(b.start_date);
-    
+
     const aIsFuture = aStartDate > now;
     const bIsFuture = bStartDate > now;
     const aIsOngoing = a.end_date === null;
     const bIsOngoing = b.end_date === null;
-    
+
     // Future dated statuses come first
     if (aIsFuture && !bIsFuture) return -1;
     if (!aIsFuture && bIsFuture) return 1;
-    
+
     // Among non-future statuses, ongoing (current) comes before past
     if (!aIsFuture && !bIsFuture) {
       if (aIsOngoing && !bIsOngoing) return -1;
       if (!aIsOngoing && bIsOngoing) return 1;
     }
-    
+
     // Within the same category, sort by start_date in descending order
     return bStartDate.getTime() - aStartDate.getTime();
   });
 
   // Filter out status options that match the current status and check valid transitions
-  const availableStatusOptions = EMPLOYEE_STATUS_OPTIONS.filter(option => 
-    option.value !== currentStatusFromHistory && 
+  const availableStatusOptions = EMPLOYEE_STATUS_OPTIONS.filter(option =>
+    option.value !== currentStatusFromHistory &&
     isValidTransition(currentStatusFromHistory as EmployeeStatus, option.value)
   );
 
@@ -419,13 +449,13 @@ export function EmployeeStatusManager({ employeeId, currentStatus }: EmployeeSta
                     </ul>
                   </div>
                 )}
-                
+
                 <div>
                   <Label htmlFor="status">Status *</Label>
-                  <Select 
-                    value={newStatus.status} 
+                  <Select
+                    value={newStatus.status}
                     onValueChange={(value) => {
-                      setNewStatus({...newStatus, status: value as EmployeeStatus});
+                      setNewStatus({ ...newStatus, status: value as EmployeeStatus });
                       setValidationErrors([]);
                     }}
                   >
@@ -452,7 +482,7 @@ export function EmployeeStatusManager({ employeeId, currentStatus }: EmployeeSta
                     <p className="text-xs text-gray-500 mt-1">End date is optional for sick leave</p>
                   )}
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="startDate">Start Date *</Label>
@@ -462,7 +492,7 @@ export function EmployeeStatusManager({ employeeId, currentStatus }: EmployeeSta
                       value={newStatus.startDate}
                       min={new Date().toISOString().split('T')[0]}
                       onChange={(e) => {
-                        setNewStatus({...newStatus, startDate: e.target.value});
+                        setNewStatus({ ...newStatus, startDate: e.target.value });
                         setValidationErrors([]);
                       }}
                     />
@@ -477,7 +507,7 @@ export function EmployeeStatusManager({ employeeId, currentStatus }: EmployeeSta
                       value={newStatus.endDate}
                       min={newStatus.startDate || new Date().toISOString().split('T')[0]}
                       onChange={(e) => {
-                        setNewStatus({...newStatus, endDate: e.target.value});
+                        setNewStatus({ ...newStatus, endDate: e.target.value });
                         setValidationErrors([]);
                       }}
                       disabled={!newStatus.startDate}
@@ -487,28 +517,28 @@ export function EmployeeStatusManager({ employeeId, currentStatus }: EmployeeSta
                     )}
                   </div>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="reason">Reason</Label>
                   <Input
                     id="reason"
                     placeholder="Enter reason for status change"
                     value={newStatus.reason}
-                    onChange={(e) => setNewStatus({...newStatus, reason: e.target.value})}
+                    onChange={(e) => setNewStatus({ ...newStatus, reason: e.target.value })}
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="notes">Notes</Label>
                   <Textarea
                     id="notes"
                     placeholder="Additional notes..."
                     value={newStatus.notes}
-                    onChange={(e) => setNewStatus({...newStatus, notes: e.target.value})}
+                    onChange={(e) => setNewStatus({ ...newStatus, notes: e.target.value })}
                     rows={3}
                   />
                 </div>
-                
+
                 <div className="flex justify-end space-x-2">
                   <Button variant="outline" onClick={() => {
                     setIsAddDialogOpen(false);
@@ -564,13 +594,13 @@ export function EmployeeStatusManager({ employeeId, currentStatus }: EmployeeSta
                     </ul>
                   </div>
                 )}
-                
+
                 <div>
                   <Label htmlFor="editStatus">Status *</Label>
-                  <Select 
-                    value={newStatus.status} 
+                  <Select
+                    value={newStatus.status}
                     onValueChange={(value) => {
-                      setNewStatus({...newStatus, status: value as EmployeeStatus});
+                      setNewStatus({ ...newStatus, status: value as EmployeeStatus });
                       setValidationErrors([]);
                     }}
                   >
@@ -597,7 +627,7 @@ export function EmployeeStatusManager({ employeeId, currentStatus }: EmployeeSta
                     <p className="text-xs text-gray-500 mt-1">End date is optional for sick leave</p>
                   )}
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="editStartDate">Start Date *</Label>
@@ -606,7 +636,7 @@ export function EmployeeStatusManager({ employeeId, currentStatus }: EmployeeSta
                       type="date"
                       value={newStatus.startDate}
                       onChange={(e) => {
-                        setNewStatus({...newStatus, startDate: e.target.value});
+                        setNewStatus({ ...newStatus, startDate: e.target.value });
                         setValidationErrors([]);
                       }}
                     />
@@ -621,7 +651,7 @@ export function EmployeeStatusManager({ employeeId, currentStatus }: EmployeeSta
                       value={newStatus.endDate}
                       min={newStatus.startDate || new Date().toISOString().split('T')[0]}
                       onChange={(e) => {
-                        setNewStatus({...newStatus, endDate: e.target.value});
+                        setNewStatus({ ...newStatus, endDate: e.target.value });
                         setValidationErrors([]);
                       }}
                       disabled={!newStatus.startDate}
@@ -631,28 +661,28 @@ export function EmployeeStatusManager({ employeeId, currentStatus }: EmployeeSta
                     )}
                   </div>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="editReason">Reason</Label>
                   <Input
                     id="editReason"
                     placeholder="Enter reason for status change"
                     value={newStatus.reason}
-                    onChange={(e) => setNewStatus({...newStatus, reason: e.target.value})}
+                    onChange={(e) => setNewStatus({ ...newStatus, reason: e.target.value })}
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="editNotes">Notes</Label>
                   <Textarea
                     id="editNotes"
                     placeholder="Additional notes..."
                     value={newStatus.notes}
-                    onChange={(e) => setNewStatus({...newStatus, notes: e.target.value})}
+                    onChange={(e) => setNewStatus({ ...newStatus, notes: e.target.value })}
                     rows={3}
                   />
                 </div>
-                
+
                 <div className="flex justify-end space-x-2">
                   <Button variant="outline" onClick={() => {
                     setIsEditDialogOpen(false);
@@ -701,7 +731,7 @@ export function EmployeeStatusManager({ employeeId, currentStatus }: EmployeeSta
                 const startDate = new Date(entry.start_date);
                 const isFuture = startDate > now;
                 const isOngoing = !entry.end_date;
-                
+
                 return (
                   <TableRow key={entry.id}>
                     <TableCell>

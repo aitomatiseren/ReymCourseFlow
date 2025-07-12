@@ -1,39 +1,25 @@
 
-import React, { useState, useEffect } from "react";
-import { Bell, Search, User, LogOut, Settings as SettingsIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { SearchDialog } from "./SearchDialog";
-import { usePermissions } from "@/context/PermissionsContext";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import React, { useState } from 'react';
+import { Bell, Search, User, Settings, LogOut } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
+import { SidebarTrigger } from '@/components/ui/sidebar';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
+import { usePermissions } from '@/context/PermissionsContext';
+import { useNotifications } from '@/hooks/useNotifications';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { SearchDialog } from '@/components/layout/SearchDialog';
 
-export function Header() {
-  const [searchOpen, setSearchOpen] = useState(false);
-  const { userProfile, roleName, loading } = usePermissions();
+export const Header: React.FC = () => {
+  const { userProfile, isAdmin, roleName } = usePermissions();
+  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
-
-  const handleSearchClick = () => {
-    setSearchOpen(true);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'K' && e.shiftKey && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault();
-      setSearchOpen(true);
-    }
-  };
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -51,6 +37,17 @@ export function Header() {
 
   const handleSettings = () => {
     navigate('/settings');
+  };
+
+  const handleSearchClick = () => {
+    setSearchOpen(true);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.ctrlKey && e.shiftKey && e.key === 'K') {
+      e.preventDefault();
+      setSearchOpen(true);
+    }
   };
 
   // Get user initials for avatar
@@ -74,18 +71,8 @@ export function Header() {
     return 'User';
   };
 
-  // Add global keydown listener
-  useEffect(() => {
-    const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'K' && e.shiftKey && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        setSearchOpen(true);
-      }
-    };
-
-    document.addEventListener('keydown', handleGlobalKeyDown);
-    return () => document.removeEventListener('keydown', handleGlobalKeyDown);
-  }, []);
+  const userEmail = userProfile?.employee?.email || 'Unknown';
+  const userInitials = userEmail.substring(0, 2).toUpperCase();
 
   return (
     <>
@@ -113,12 +100,7 @@ export function Header() {
           </div>
 
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
-                3
-              </span>
-            </Button>
+            <NotificationBell />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -143,7 +125,7 @@ export function Header() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSettings}>
-                  <SettingsIcon className="mr-2 h-4 w-4" />
+                  <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

@@ -7,7 +7,7 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => ({
   server: {
     host: 'localhost',
-    port: 5173,
+    port: 3000,
     strictPort: false,
     watch: {
       usePolling: true  // Better for WSL

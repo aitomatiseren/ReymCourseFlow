@@ -126,14 +126,21 @@ export interface TrainingMaterial {
 
 export interface Notification {
   id: string;
-  type: 'certificate_expiry' | 'training_reminder' | 'location_change' | 'cancellation' | 'approval_required';
-  recipientId: string;
-  recipientEmail: string;
+  recipient_id: string;
+  type: 'certificate_expiry' | 'training_reminder' | 'training_enrollment' | 'training_cancellation' | 'location_change' | 'instructor_change' | 'approval_required' | 'system_announcement' | 'employee_onboarding' | 'employee_departure';
   title: string;
   message: string;
-  status: 'pending' | 'sent' | 'read';
-  createdAt: string;
-  relatedEntityId?: string;
+  read: boolean;
+  read_at: string | null;
+  priority: 'low' | 'medium' | 'high';
+  related_entity_type: string | null;
+  related_entity_id: string | null;
+  action_url: string | null;
+  metadata: any;
+  created_at: string;
+  updated_at: string;
+  // Computed fields
+  recipient?: Employee;
 }
 
 export interface Code95Progress {

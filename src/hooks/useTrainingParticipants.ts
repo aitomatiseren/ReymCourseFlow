@@ -2,6 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { requiresCode95 } from "@/utils/code95Utils";
+import { NotificationService } from "@/services/notificationService";
 
 interface AddParticipantData {
   trainingId: string;
@@ -10,12 +11,12 @@ interface AddParticipantData {
 
 export function useTrainingParticipants(trainingId?: string) {
   const queryClient = useQueryClient();
-  
+
   const { data: participants = [], isLoading } = useQuery({
     queryKey: ['training-participants', trainingId],
     queryFn: async () => {
       if (!trainingId) return [];
-      
+
       const { data, error } = await supabase
         .from('training_participants')
         .select(`
@@ -33,7 +34,7 @@ export function useTrainingParticipants(trainingId?: string) {
           )
         `)
         .eq('training_id', trainingId);
-      
+
       if (error) throw error;
       return data;
     },
@@ -65,8 +66,32 @@ export function useTrainingParticipants(trainingId?: string) {
         }])
         .select()
         .single();
-      
+
       if (error) throw error;
+
+      // Send enrollment notification to the participant
+      try {
+        // Get training details for the notification
+        const { data: training, error: trainingError } = await supabase
+          .from('trainings')
+          .select('id, title, date')
+          .eq('id', trainingId)
+          .single();
+
+        if (!trainingError && training) {
+          await NotificationService.notifyTrainingEnrollment(
+            employeeId,
+            training.title,
+            training.date,
+            training.id
+          );
+          console.log(`Enrollment notification sent to employee ${employeeId} for training ${training.title}`);
+        }
+      } catch (notificationError) {
+        console.error('Error sending enrollment notification:', notificationError);
+        // Don't throw - participant was successfully added, notification failure shouldn't block the operation
+      }
+
       return data;
     },
     onSuccess: () => {
@@ -81,7 +106,7 @@ export function useTrainingParticipants(trainingId?: string) {
         .from('training_participants')
         .delete()
         .eq('id', participantId);
-      
+
       if (error) throw error;
     },
     onSuccess: () => {
