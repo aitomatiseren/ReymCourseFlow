@@ -7,7 +7,7 @@
 - **Profile View**: `UserProfile.tsx` (route: `/participants/:id`)
 - **Profile Display**: `UserProfileHeader.tsx`, `UserProfileTabs.tsx`
 - **CRUD Operations**: 
-  - Add: `AddUserDialog.tsx`
+  - Add: `AddUserDialog.tsx` - Enhanced with Dutch name components
   - Edit: `EditEmployeeDialog.tsx`
 - **Special Features**:
   - Dutch license management: `DutchLicenseManager.tsx`
@@ -18,133 +18,183 @@
 
 ### Employee Status Management (`/src/components/employee/`)
 - **Status Badge**: `EmployeeStatusBadge.tsx` - Visual status indicators
-- **Status Manager**: `EmployeeStatusManager.tsx` - Update employee availability
-- **Self-Service**: `EmployeeSelfService.tsx` - Employee portal features
+- **Status Manager**: `EmployeeStatusManager.tsx` - Enhanced with real-time status tracking
+- **Self-Service**: `EmployeeSelfService.tsx` - Complete employee portal with Code 95 progress
+- **🆕 Enhanced Features**:
+  - Real-time status history tracking
+  - Automatic status transitions
+  - Comprehensive status validation
+  - Audit trail for all status changes
 
 ### Dutch-Specific Features
-- **Name Components**: Support for `tussenvoegsel`, `roepnaam`, first/last name separation
+- **Name Components**: Enhanced support for `tussenvoegsel`, `roepnaam`, first/last name separation
 - **BSN Management**: Dutch social security number tracking
 - **Comprehensive Driving Licenses**: Categories A, B, BE, C, CE, D, Code 95
 - **Identity Verification (KVM)**: ID document management
+- **🆕 Auto-generated Full Names**: Intelligent name generation from Dutch components
 
 ## Course Management
 
 ### Course Administration (`/src/components/courses/`)
-- **Course List**: `/courses` route
+- **Course List**: `/courses` route with enhanced grid/list views
 - **Course CRUD**:
-  - Add: `AddCourseDialog.tsx`
+  - Add: `AddCourseDialog.tsx` - Enhanced with cost components and advanced features
   - Edit: `EditCourseDialog.tsx`
   - Actions: `CourseActions.tsx`
+- **🆕 Enhanced Features**:
+  - Cost component breakdown
+  - Advanced checklist management
+  - Multi-session course support
+  - Code 95 integration
+  - Pricing configuration with components
+
+## Training Provider Management
+
+### 🆕 Provider System (`/src/components/providers/`)
+- **Provider Directory**: `/providers` route - Complete provider management
+- **Provider CRUD**:
+  - Add: `AddProviderDialog.tsx` - Comprehensive provider registration
+  - Profile: `ProviderProfile.tsx` - Detailed provider information
 - **Features**:
-  - Multi-session support
-  - Checklist management
-  - Code 95 points tracking
-  - Pricing configuration
+  - Multiple location support
+  - Contact management
+  - Certification tracking
+  - Course offering management
+  - Address validation and geocoding
+  - Website and contact validation
 
 ## Training Scheduling
 
 ### Training Scheduler (`/src/components/training/`)
 - **Main Interface**: `TrainingScheduler.tsx` (route: `/scheduling`)
-- **Header**: `TrainingSchedulerHeader.tsx` - Controls and actions
+- **Header**: `TrainingSchedulerHeader.tsx` - Enhanced controls and actions
 - **Views**:
   - Calendar: `TrainingCalendar.tsx`
   - Grid: `TrainingGridView.tsx`
   - List: `TrainingListView.tsx`
   - Timeline: `TrainingTimeline.tsx`
+- **🆕 View Toggle**: `TrainingViewToggle.tsx` - Seamless view switching
 
 ### Training Management
-- **Create Training**: `CreateTrainingDialog.tsx`
-- **Edit Training**: `EditTrainingDialog.tsx`
-- **Training Editor**: `TrainingEditor.tsx` - Advanced editing interface
-- **Details Panel**: `TrainingDetailsPanel.tsx` - View training information
-- **🆕 Training Details View**: `TrainingDetailsView.tsx` - Comprehensive training detail page
-  - Multi-session display
+- **Create Training**: `CreateTrainingDialog.tsx` - Enhanced with smart scheduling
+- **Edit Training**: `EditTrainingDialog.tsx` - Comprehensive editing interface
+- **Training Editor**: `TrainingEditor.tsx` - Advanced editing with participant management
+- **Details View**: `TrainingDetailsView.tsx` - Complete training information display
+- **🆕 Enhanced Features**:
+  - Real-time participant status tracking
   - Integrated checklist management
-  - Participant tracking with status badges
-  - Quick actions sidebar
-  - Code 95 points display
-  - Attendance tracking for completed trainings
+  - Advanced participant filtering
+  - Code 95 progress tracking
+  - Automated attendance management
 
 ### Session Management
-- **Session Manager**: `SessionManager.tsx` - Multi-session configuration
-- **Session Tabs**: `SessionTabs.tsx` - Navigate between sessions
+- **Session Manager**: `SessionManager.tsx` - Enhanced multi-session configuration
+- **Session Tabs**: `SessionTabs.tsx` - Improved navigation between sessions
 - **Session Types**:
   - Single session
   - Weekly recurring
   - Custom schedule
+  - Smart multi-session planning
 
 ### Training Forms (`/src/components/training/forms/`)
-Modular form sections for training creation/editing:
+Enhanced modular form sections:
 - `BasicTrainingInfoSection.tsx` - Title, description
-- `CourseInfoSection.tsx` - Course information display
-- `CourseSelectionSection.tsx` - Course selection
-- `CourseChecklistSection.tsx` - Course checklist display
-- `DateTimeSection.tsx` - Schedule configuration
-- `InstructorLocationSection.tsx` - Instructor and venue
-- `MultiSessionSection.tsx` - Multi-session setup
-- `SmartMultiSessionSection.tsx` - Intelligent scheduling
-- `ChecklistManagementSection.tsx` - Checklist configuration
-- `TrainingSettingsSection.tsx` - Training-specific settings
-- `EditSingleSessionSection.tsx` - Single session editing
-- `EditMultiSessionSection.tsx` - Multi-session editing
+- `CourseSelectionSection.tsx` - Enhanced course selection
+- `DateTimeSection.tsx` - Smart schedule configuration
+- `InstructorLocationSection.tsx` - Instructor and venue management
+- `SmartMultiSessionSection.tsx` - Intelligent multi-session scheduling
+- `ChecklistManagementSection.tsx` - Dynamic checklist configuration
+- `TrainingSettingsSection.tsx` - Advanced training settings
+- `EditSingleSessionSection.tsx` - Enhanced single session editing
+- `EditMultiSessionSection.tsx` - Advanced multi-session editing
 
 ### Participant Management
-- **Add Participants**: `AddParticipantDialog.tsx`
+- **Add Participants**: `AddParticipantDialog.tsx` - Enhanced with status filtering
 - **Participant List**: `/participants` route
-- **Enrollment Status**: Track enrolled/attended/absent/cancelled
+- **🆕 Enhanced Features**:
+  - Real-time status indicators
+  - Code 95 eligibility checking
+  - Bulk participant actions
+  - Status-based filtering
+  - Enrollment validation
 
 ## Certificate Management
 
 ### Certificate Tracking (`/src/components/certificates/`)
 - **Expiry Dashboard**: `CertificateExpiryDashboard.tsx`
-- **🆕 Code 95 Dashboard**: `Code95Dashboard.tsx` - Specialized Code 95 compliance tracking
-  - Compliance statistics and progress
+- **🆕 Code 95 Dashboard**: `Code95Dashboard.tsx` - Comprehensive EU driver compliance
+  - Real-time compliance statistics
   - Employee status filtering (expired, expiring, compliant)
-  - Training points tracking
-  - Schedule training actions
-  - Visual indicators and progress bars
+  - Training points tracking and validation
+  - Automated training scheduling
+  - Visual progress indicators and charts
+  - Compliance forecasting
 - **Certificate Expiry Page**: `/certificate-expiry` route
 - **Certificate List**: `/certifications` route
-- **Features**:
-  - Expiry alerts (30/60/90 days)
-  - Status tracking (valid/expiring/expired)
-  - Renewal reminders
-  - **Code 95 Compliance**: EU professional driver certification tracking
+- **🆕 Enhanced Features**:
+  - Advanced expiry prediction
+  - Automated renewal workflows
+  - Compliance reporting
+  - Code 95 point calculations
 
 ## AI Chat Assistant
 
-### 🆕 Chat System (`/src/components/chat/`)
-AI-powered assistance integrated throughout the application:
+### 🆕 Complete AI Chat System (`/src/components/chat/`)
+Advanced AI-powered assistance integrated throughout the application:
+- **Chat Interface**: `Chat.tsx` - Main chat component
 - **Chat Bubble**: `ChatBubble.tsx` - Floating chat interface
-- **Chat Panel**: `ChatPanel.tsx` - Full chat interface
-- **Chat Messages**: `ChatMessage.tsx` - Message display
-- **Chat Settings**: `ChatSettings.tsx` - Configuration options
-- **Chat Debug**: `ChatDebug.tsx` - Development tools
+- **Chat Panel**: `ChatPanel.tsx` - Full-screen chat interface
+- **Chat Messages**: `ChatMessage.tsx` - Enhanced message display
+- **Chat Settings**: `ChatSettings.tsx` - Configuration and preferences
+- **Chat Debug**: `ChatDebug.tsx` - Development and debugging tools
 
-### AI Features
-- **Contextual Help**: Understands current page and user intent
-- **UI Automation**: Can navigate, click buttons, fill forms
+### 🆕 Advanced AI Features
+- **Contextual Intelligence**: Understands current page and user workflow
+- **UI Automation**: Can navigate, interact, and perform actions
+- **Database Integration**: Direct database operations with security
 - **Knowledge Base**: Comprehensive platform knowledge
-- **Action Execution**: Performs tasks within the application
-- **Conversation History**: Persistent chat sessions with cleanup
+- **Conversation Management**: Persistent sessions with context
+- **Smart Suggestions**: Intelligent recommendations
+- **Multi-modal Support**: Text, actions, and data visualization
+
+## Application Settings & Configuration
+
+### 🆕 Settings Management (`/src/pages/`)
+- **Settings Page**: `Settings.tsx` - Comprehensive application configuration
+- **Features**:
+  - User preferences
+  - System configuration
+  - Integration settings
+  - Security preferences
+  - Feature toggles
 
 ## Reporting System
 
-### Reports (`/src/components/reports/`)
-- **Report Hub**: `ReportsScreen.tsx` (route: `/reports`)
+### 🆕 Enhanced Reports (`/src/components/reports/`)
+- **Report Hub**: `ReportsScreen.tsx` (route: `/reports`) - Complete reporting dashboard
 - **Available Reports**:
   - **Compliance Report**: `ComplianceReport.tsx`
     - Training completion rates
-    - Mandatory training tracking
-    - Department compliance
+    - Regulatory compliance tracking
+    - Department-level compliance
+    - Audit trail reporting
   - **Certificate Expiry**: `CertificateExpiryReport.tsx`
-    - Upcoming expirations
-    - Expired certificates
-    - Renewal tracking
+    - Upcoming expirations with forecasting
+    - Expired certificates tracking
+    - Renewal workflow management
+    - Compliance risk assessment
   - **Training Cost**: `TrainingCostReport.tsx`
-    - Cost per department
-    - Budget tracking
-    - ROI analysis
+    - Cost breakdown by department
+    - Budget tracking and forecasting
+    - ROI analysis and metrics
+    - Cost optimization recommendations
+  - **🆕 Utilization Report**: Course and resource utilization analytics
+
+### 🆕 Real-time Analytics
+- **Live Statistics**: Real-time calculation from database
+- **Interactive Dashboards**: Dynamic data visualization
+- **Export Capabilities**: PDF and Excel report generation
+- **Automated Insights**: AI-powered analysis and recommendations
 
 ## Notification System
 
@@ -159,135 +209,159 @@ AI-powered assistance integrated throughout the application:
 
 ## Dashboard Features
 
-### Dashboard Components (`/src/components/dashboard/`)
-- **Stats Cards**: `StatsCard.tsx` - KPI display
-- **Recent Activity**: `RecentActivity.tsx` - Activity feed
-- **Upcoming Courses**: `UpcomingCourses.tsx` - Schedule preview
+### 🆕 Enhanced Dashboard Components (`/src/components/dashboard/`)
+- **Stats Cards**: `StatsCard.tsx` - Real-time KPI display
+- **Recent Activity**: `RecentActivity.tsx` - Enhanced activity feed with real data
+- **Upcoming Courses**: `UpcomingCourses.tsx` - Intelligent schedule preview
+- **🆕 Features**:
+  - Real-time data integration
+  - Interactive widgets
+  - Customizable layouts
+  - Drill-down capabilities
 
 ### Employee Dashboard
 - **Employee Portal**: `/employee-dashboard` route
-- **Self-Service Features**: View personal training, certificates, status
+- **🆕 Enhanced Self-Service**:
+  - Personal training calendar
+  - Certificate status tracking
+  - Code 95 progress monitoring
+  - Training history and achievements
 
 ## Common UI Patterns
 
 ### Layout (`/src/components/layout/`)
-- **App Layout**: `Layout.tsx` - Main app wrapper
-- **Sidebar Navigation**: `Sidebar.tsx`, `AppSidebar.tsx`
-- **Header**: `Header.tsx` - Top navigation
-- **Search**: `SearchDialog.tsx` - Global search functionality
+- **App Layout**: `Layout.tsx` - Enhanced main app wrapper
+- **Sidebar Navigation**: `Sidebar.tsx`, `AppSidebar.tsx` - Improved navigation
+- **Header**: `Header.tsx` - Enhanced top navigation
+- **Search**: `SearchDialog.tsx` - Advanced global search functionality
 
-### Shared Features
-- **View Toggle**: Grid/List view switching (`ViewToggle.tsx`)
-- **Status Toggle**: `StatusToggle.tsx` - Status updates
-- **Editable Checklist**: `EditableChecklist.tsx` - Dynamic checklists
+### 🆕 Enhanced Shared Features
+- **View Toggle**: Advanced grid/list view switching
+- **Status Toggle**: `StatusToggle.tsx` - Real-time status updates
+- **Editable Checklist**: `EditableChecklist.tsx` - Dynamic checklist management
+- **Smart Filters**: Advanced filtering and sorting capabilities
 
 ## Data Management
 
 ### Custom Hooks (`/src/hooks/`)
-- `useEmployees.ts` - Employee data operations
-- `useCourses.ts` - Course management
-- `useTrainings.ts` - Training queries
-- `useTrainingParticipants.ts` - Participant management
-- `useCertificates.ts` - Certificate tracking
-- `useTrainingForm.ts` - Form state management
-- `useCreateTraining.ts` - Training creation
-- `useUpdateTraining.ts` - Training updates
-- `useViewMode.ts` - View preferences
-- **🆕 useAIChat.ts** - AI chat functionality and conversation management
+- `useEmployees.ts` - Enhanced employee data operations
+- `useCourses.ts` - Course management with provider integration
+- `useTrainings.ts` - Advanced training queries
+- `useTrainingParticipants.ts` - Enhanced participant management
+- `useCertificates.ts` - Certificate tracking with Code 95 integration
+- `useTrainingForm.ts` - Advanced form state management
+- `useCreateTraining.ts` - Enhanced training creation
+- `useUpdateTraining.ts` - Training updates with validation
+- `useViewMode.ts` - View preferences and persistence
+- **🆕 useAIChat.ts** - Complete AI chat functionality and conversation management
 - **🆕 useTrainingChecklist.ts** - Training checklist management with persistence
 
 ### Services (`/src/services/`)
-- **🆕 AI Services** (`/src/services/ai/`):
+- **🆕 Complete AI Services** (`/src/services/ai/`):
   - `ai-factory.ts` - Service factory pattern
+  - `ai-service.ts` - Main AI service orchestrator
   - `openai-service.ts` - OpenAI API integration
-  - `database-service.ts` - Database query capabilities
-  - `ui-interaction-service.ts` - UI automation
-  - `knowledge-base.ts` - Platform knowledge
-  - `tools-definitions.ts` - AI tool definitions
-  - `chat-storage-service.ts` - Message storage
+  - `database-service.ts` - Secure database operations
+  - `enhanced-database-service.ts` - Advanced database queries
+  - `secure-database-service.ts` - Security-focused operations
+  - `ui-interaction-service.ts` - UI automation capabilities
+  - `knowledge-base.ts` - Comprehensive platform knowledge
+  - `tools-definitions.ts` - AI tool definitions and schemas
+  - `chat-storage-service.ts` - Conversation persistence
+  - `debug-openai.ts` - Development and debugging tools
 
 ### Utilities (`/src/utils/`)
 - `certificateUtils.ts` - Certificate helper functions
-- **🆕 code95Utils.ts** - Code 95 compliance calculations:
-  - Determine Code 95 requirements
-  - Calculate training points and progress
-  - Check compliance status
-  - Generate training suggestions
-  - UI helpers (colors, emojis, status descriptions)
-- Date formatting and validation
-- Status calculations
+- **🆕 code95Utils.ts** - Complete Code 95 compliance system:
+  - Comprehensive compliance calculations
+  - Training point tracking and validation
+  - Status determination and forecasting
+  - Visual indicators and UI helpers
+  - Automated training suggestions
+  - Regulatory compliance checking
+- **🆕 Enhanced Utilities**:
+  - Advanced date formatting and validation
+  - Status calculation with history
+  - Data transformation utilities
 
 ## Context Providers (`/src/context/`)
-- **🆕 ChatContext** - AI chat state management
+- **🆕 ChatContext** - Complete AI chat state management
 - **AuthContext** - Authentication state
-- **UI Preferences** - View modes, themes
+- **UI Preferences** - View modes, themes, and user preferences
+- **🆕 PermissionsContext** - Role-based access control
 
 ## Configuration (`/src/config/`)
+- **🆕 ai.ts** - AI service configuration
 - Environment configuration
-- Feature flags
-- API endpoints
-- Service settings
+- Feature flags and toggles
+- API endpoints and integration settings
+- Service settings and parameters
 
 ## Constants (`/src/constants/`)
+- **🆕 employeeStatus.ts** - Employee status definitions
 - Application constants
 - Enum definitions
 - Status mappings
-- Default values
+- Default values and configurations
 
 ## Route Structure
 
 ### Main Routes
-- `/` - Dashboard (Index page)
-- `/participants` - Employee list
-- `/participants/:id` - Employee profile
-- `/courses` - Course management
-- `/scheduling` - Training scheduler
-- `/certifications` - Certificate list
-- `/certificate-expiry` - Certificate expiry dashboard
-- `/reports` - Reporting hub
+- `/` - Enhanced Dashboard with real-time analytics
+- `/participants` - Employee management with advanced filtering
+- `/participants/:id` - Enhanced employee profile with tabs
+- `/courses` - Course management with provider integration
+- `/scheduling` - Advanced training scheduler
+- `/certifications` - Certificate management with Code 95 dashboard
+- `/certificate-expiry` - Certificate expiry tracking
+- `/reports` - Complete reporting hub
 - `/notifications` - Notification center
-- `/employee-dashboard` - Employee self-service portal
+- `/employee-dashboard` - Enhanced employee self-service portal
+- **🆕 `/providers`** - Training provider management
+- **🆕 `/settings`** - Application settings and configuration
 
-### Feature-Specific Pages
-- **Dashboard**: Overview with KPIs and recent activity
-- **Participants**: Employee directory with search and filtering
-- **Training Scheduler**: Calendar-based training management
-- **Certifications**: Certificate tracking and compliance monitoring
-- **Reports**: Analytics and compliance reporting
-- **Employee Dashboard**: Self-service portal for employees
+### 🆕 Enhanced Feature Pages
+- **Provider Management**: Complete provider directory and profiles
+- **Advanced Settings**: System-wide configuration management
+- **Enhanced Reports**: Interactive reporting with real-time data
+- **AI Chat Integration**: Available on all pages with contextual assistance
 
 ## Integration Features
 
 ### External APIs
-- **🆕 OpenCage Geocoding** - City/country lookup for addresses
-- **🆕 REST Countries API** - Country data fallback
-- **🆕 OpenAI API** - AI chat functionality
-- **Supabase** - Database and authentication
+- **🆕 OpenAI API** - Complete AI chat and automation
+- **🆕 OpenCage Geocoding** - Address validation and city/country lookup
+- **🆕 REST Countries API** - Country data with fallback support
+- **Supabase** - Enhanced database operations and real-time features
 
-### Real-time Features
-- Live training updates
-- Real-time notifications
-- Collaborative editing
+### 🆕 Advanced Real-time Features
+- Live training updates with participant tracking
+- Real-time notification delivery
+- Collaborative editing capabilities
 - Automatic cache invalidation
+- Status synchronization across users
 
 ## Compliance & Regulatory Features
 
-### Dutch Business Requirements
-- **Code 95 Certification**: EU professional driver compliance
-- **Dutch Naming Conventions**: Tussenvoegsel support
-- **BSN Management**: Dutch social security numbers
-- **Driving License Categories**: Complete A-D coverage
+### 🆕 Enhanced Dutch Business Requirements
+- **Advanced Code 95 Certification**: Complete EU professional driver compliance
+- **Enhanced Dutch Naming**: Full tussenvoegsel and roepnaam support
+- **BSN Management**: Dutch social security number with validation
+- **Complete Driving License System**: All categories with expiry tracking
+- **Provider Compliance**: Training provider certification tracking
 
-### Training Compliance
-- Mandatory training tracking
-- Completion deadlines
-- Renewal requirements
-- Department compliance reporting
+### 🆕 Advanced Training Compliance
+- Automated mandatory training tracking
+- Intelligent completion deadline management
+- Renewal requirement automation
+- Department-level compliance reporting
+- Regulatory audit trail maintenance
 
 ## Accessibility Features
-- Keyboard navigation
-- Screen reader support
-- ARIA labels
-- Focus management
+- Enhanced keyboard navigation
+- Improved screen reader support
+- Comprehensive ARIA labels
+- Advanced focus management
 - Color contrast compliance
 - Semantic HTML structure
+- **🆕 AI-Powered Accessibility**: Chat assistance for navigation and interaction

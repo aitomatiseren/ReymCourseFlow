@@ -33,29 +33,33 @@ export function RecentActivity() {
       });
     });
 
-    // Recent employees (based on created_at if available, otherwise just recent entries)
-    const recentEmployees = employees.slice(0, 2);
-    recentEmployees.forEach((employee, index) => {
+    // Recent employees (sorted by created_at)
+    const recentEmployees = employees
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 2);
+    recentEmployees.forEach((employee) => {
       activities.push({
         id: `employee-${employee.id}`,
         type: 'employee',
         title: `New employee added: ${employee.name}`,
         description: `${employee.department} department`,
-        timestamp: new Date(Date.now() - (index * 24 * 60 * 60 * 1000)), // Mock recent dates
+        timestamp: new Date(employee.created_at),
         icon: User,
         color: 'bg-green-100 text-green-800'
       });
     });
 
-    // Recent courses
-    const recentCourses = courses.slice(0, 2);
-    recentCourses.forEach((course, index) => {
+    // Recent courses (sorted by created_at)
+    const recentCourses = courses
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 2);
+    recentCourses.forEach((course) => {
       activities.push({
         id: `course-${course.id}`,
         type: 'course',
         title: `Course updated: ${course.title}`,
         description: `${course.category} category`,
-        timestamp: new Date(Date.now() - (index * 12 * 60 * 60 * 1000)), // Mock recent dates
+        timestamp: new Date(course.created_at),
         icon: BookOpen,
         color: 'bg-purple-100 text-purple-800'
       });
