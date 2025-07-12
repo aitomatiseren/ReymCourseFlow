@@ -60,7 +60,7 @@ export function TrainingListView({
               <TableHead className="text-left font-medium">Location</TableHead>
               <TableHead className="text-left font-medium">Participants</TableHead>
               <TableHead className="text-left font-medium">Instructor</TableHead>
-              <TableHead className="text-left font-medium">Pricing & Features</TableHead>
+              {/* <TableHead className="text-left font-medium">Pricing & Features</TableHead> */}
               <TableHead className="text-right font-medium">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -149,44 +149,11 @@ export function TrainingListView({
                     )}
                   </TableCell>
                   
-                  <TableCell>
+                  {/* <TableCell>
                     <div className="space-y-2">
-                      {/* Pricing Breakdown */}
-                      {training.cost_breakdown && training.cost_breakdown.length > 0 ? (
-                        <div className="space-y-1">
-                          {training.cost_breakdown.map((cost, index) => (
-                            <div key={index} className="flex items-center justify-between text-xs">
-                              <span className="text-gray-600">{cost.name}</span>
-                              <span className="font-medium">€{cost.amount}</span>
-                            </div>
-                          ))}
-                          {training.cost_breakdown.length > 1 && (
-                            <div className="flex items-center justify-between text-xs font-semibold border-t pt-1">
-                              <span>Total</span>
-                              <span>€{training.price || 0}</span>
-                            </div>
-                          )}
-                        </div>
-                      ) : training.price ? (
-                        <div className="flex items-center text-xs">
-                          <Euro className="h-3 w-3 mr-1" />
-                          <span>€{training.price}</span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-gray-500">Free</span>
-                      )}
-                      
-                      {/* Features */}
-                      <div className="flex flex-wrap gap-1">
-                        {training.code95_points && training.code95_points > 0 && (
-                          <Badge variant="outline" className="bg-blue-100 text-blue-800 text-xs">
-                            <Truck className="h-3 w-3 mr-1" />
-                            {training.code95_points} pts
-                          </Badge>
-                        )}
-                      </div>
+                      Pricing info hidden
                     </div>
-                  </TableCell>
+                  </TableCell> */}
                   
                   <TableCell className="text-right">
                     <Button 

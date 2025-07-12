@@ -61,23 +61,20 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     }
 
     // Check if user is authenticated
-    // A user is authenticated if they have:
-    // 1. A userProfile (preferred) OR
-    // 2. Permissions with at least one permission OR
-    // 3. Basic permissions (even if permissions.size is 0, they might have basic access)
-    const isAuthenticated = userProfile || (permissions && permissions.permissions.size > 0);
+    // A user is authenticated if they have a userProfile OR permissions
+    const isAuthenticated = !!(userProfile || permissions);
 
     console.log('AuthGuard authentication check:', {
         isAuthenticated,
         hasUserProfile: !!userProfile,
         hasPermissions: !!permissions,
-        permissionsSize: permissions?.permissions?.size || 0,
-        isAdmin: permissions?.isAdmin || false,
-        roleName: permissions?.role?.name || null
+        error
     });
 
     if (!isAuthenticated) {
         console.log('User not authenticated, redirecting to login');
+        // Clear any stale auth data
+        localStorage.removeItem('explicit_logout');
         // Redirect to login page, but remember where they were trying to go
         return <Navigate to="/login" state={{ from: location }} replace />;
     }

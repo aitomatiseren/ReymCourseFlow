@@ -130,30 +130,6 @@ export function TrainingGridView({
                     </div>
                   )}
                   
-                  {/* Pricing */}
-                  {training.cost_breakdown && training.cost_breakdown.length > 0 ? (
-                    <div className="space-y-1">
-                      {training.cost_breakdown.map((cost, index) => (
-                        <div key={index} className="flex items-center justify-between text-xs">
-                          <span className="text-gray-600">{cost.name}</span>
-                          <span className="font-medium">€{cost.amount}</span>
-                        </div>
-                      ))}
-                      {training.cost_breakdown.length > 1 && (
-                        <div className="flex items-center justify-between text-xs font-semibold border-t pt-1">
-                          <span>Total</span>
-                          <span>€{training.price || 0}</span>
-                        </div>
-                      )}
-                    </div>
-                  ) : training.price ? (
-                    <div className="flex items-center text-sm">
-                      <span className="text-green-600 font-medium">€{training.price}</span>
-                    </div>
-                  ) : (
-                    <span className="text-sm text-gray-500">Free</span>
-                  )}
-                  
                   {/* Features */}
                   {training.code95_points && training.code95_points > 0 && (
                     <div className="flex items-center">

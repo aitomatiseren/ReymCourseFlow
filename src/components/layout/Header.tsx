@@ -14,6 +14,7 @@ import { usePermissions } from '@/context/PermissionsContext';
 import { useNotifications } from '@/hooks/useNotifications';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { SearchDialog } from '@/components/layout/SearchDialog';
+import { clearAuthSession } from '@/utils/sessionUtils';
 
 export const Header: React.FC = () => {
   const { userProfile, isAdmin, roleName } = usePermissions();
@@ -23,15 +24,25 @@ export const Header: React.FC = () => {
 
   const handleLogout = async () => {
     try {
+      // Clear all authentication data first
+      clearAuthSession();
+      
+      // Sign out from Supabase (this may fail but we continue)
       const { error } = await supabase.auth.signOut();
-      if (error) {
-        throw error;
+      if (error && error.name !== 'AuthSessionMissingError') {
+        console.error('Supabase signout error (continuing anyway):', error);
       }
+      
+      // Force hard reload to clear all state and prevent auto-login
       toast.success('Successfully logged out');
-      navigate('/login');
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 100);
     } catch (error) {
       console.error('Logout error:', error);
-      toast.error('Error logging out');
+      // Even on error, clear storage and redirect
+      clearAuthSession();
+      window.location.href = '/login';
     }
   };
 
@@ -130,7 +141,7 @@ export const Header: React.FC = () => {
                       {getDisplayName()}
                     </p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {roleName ? `Role: ${roleName}` : 'Loading...'}
+                      {roleName ? `Role: ${roleName}` : 'Not authenticated'}
                     </p>
                   </div>
                 </DropdownMenuLabel>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { usePermissions } from '@/context/PermissionsContext';
+import { clearLogoutFlag, wasExplicitlyLoggedOut } from '@/utils/sessionUtils';
 
 export default function Login() {
     const navigate = useNavigate();
@@ -14,17 +15,17 @@ export default function Login() {
         if (!loading && !hasCheckedAuth) {
             setHasCheckedAuth(true);
 
-            // Check if user is authenticated (has userProfile or permissions)
-            const isAuthenticated = userProfile || (permissions && permissions.permissions.size > 0);
+            // Don't redirect if user explicitly logged out
+            if (wasExplicitlyLoggedOut()) {
+                console.log('User explicitly logged out, staying on login page');
+                return;
+            }
+
+            // Check if user is authenticated
+            const isAuthenticated = !!(userProfile || permissions);
 
             if (isAuthenticated) {
                 console.log('User already authenticated, redirecting to dashboard');
-                console.log('Auth state:', {
-                    hasUserProfile: !!userProfile,
-                    hasPermissions: !!permissions,
-                    permissionsCount: permissions?.permissions?.size || 0,
-                    isAdmin: permissions?.isAdmin || false
-                });
                 navigate('/', { replace: true });
             }
         }
@@ -32,6 +33,9 @@ export default function Login() {
 
     const handleLoginSuccess = () => {
         console.log('Login successful, setting up redirect...');
+        
+        // Clear the explicit logout flag to re-enable auto-refresh
+        clearLogoutFlag();
 
         // Clear any existing timer
         if (redirectTimer) {
