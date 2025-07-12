@@ -218,7 +218,7 @@ export class IntegrationService {
                             priority: 'high',
                             related_entity_type: 'training',
                             related_entity_id: training.id,
-                            action_url: `/training-scheduler/${training.id}`,
+                            action_url: `/scheduling/${training.id}`,
                             metadata: {
                                 employeeId,
                                 trainingId: training.id,

@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { CreateNotificationData, CreateBulkNotificationData } from '@/hooks/useNotifications';
+import { DeepLinks, getNotificationDeepLink } from '@/utils/deepLinkUtils';
 
 export class NotificationService {
 
@@ -77,7 +78,7 @@ export class NotificationService {
             priority,
             related_entity_type: 'certificate',
             related_entity_id: certificateId,
-            action_url: '/certifications'
+            action_url: DeepLinks.certificateExpiry()
         });
     }
 
@@ -97,7 +98,7 @@ export class NotificationService {
             priority: 'medium',
             related_entity_type: 'training',
             related_entity_id: trainingId,
-            action_url: `/scheduling?training=${trainingId}`
+            action_url: getNotificationDeepLink('training_reminder', trainingId, 'training')
         });
     }
 
@@ -116,7 +117,7 @@ export class NotificationService {
             priority: 'low',
             related_entity_type: 'training',
             related_entity_id: trainingId,
-            action_url: `/scheduling?training=${trainingId}`
+            action_url: getNotificationDeepLink('training_enrollment', trainingId, 'training')
         });
     }
 
@@ -159,7 +160,7 @@ export class NotificationService {
             priority: 'medium',
             related_entity_type: 'training',
             related_entity_id: trainingId,
-            action_url: `/scheduling?training=${trainingId}`
+            action_url: getNotificationDeepLink('location_change', trainingId, 'training')
         });
     }
 
@@ -180,7 +181,7 @@ export class NotificationService {
             priority: 'low',
             related_entity_type: 'training',
             related_entity_id: trainingId,
-            action_url: `/scheduling?training=${trainingId}`
+            action_url: getNotificationDeepLink('instructor_change', trainingId, 'training')
         });
     }
 
@@ -201,7 +202,7 @@ export class NotificationService {
             priority: 'medium',
             related_entity_type: relatedEntityType,
             related_entity_id: relatedEntityId,
-            action_url: `/communications`
+            action_url: getNotificationDeepLink('approval_required', relatedEntityId, relatedEntityType)
         });
     }
 
@@ -218,7 +219,7 @@ export class NotificationService {
             title: title,
             message: message,
             priority: priority,
-            action_url: '/communications'
+            action_url: getNotificationDeepLink('system_announcement')
         });
     }
 
@@ -227,7 +228,8 @@ export class NotificationService {
         recipientId: string,
         employeeName: string,
         startDate: string,
-        department: string
+        department: string,
+        employeeId?: string
     ): Promise<string | null> {
         return this.createNotification({
             recipient_id: recipientId,
@@ -236,7 +238,8 @@ export class NotificationService {
             message: `${employeeName} has joined the ${department} department starting ${new Date(startDate).toLocaleDateString()}. Please make them feel welcome!`,
             priority: 'low',
             related_entity_type: 'employee',
-            action_url: '/participants'
+            related_entity_id: employeeId,
+            action_url: getNotificationDeepLink('employee_onboarding', employeeId, 'employee')
         });
     }
 
@@ -245,7 +248,8 @@ export class NotificationService {
         recipientIds: string[],
         employeeName: string,
         lastWorkingDay: string,
-        department: string
+        department: string,
+        employeeId?: string
     ): Promise<number> {
         return this.createBulkNotifications({
             recipient_ids: recipientIds,
@@ -254,7 +258,8 @@ export class NotificationService {
             message: `${employeeName} from the ${department} department will be leaving us on ${new Date(lastWorkingDay).toLocaleDateString()}. Please join us in wishing them well.`,
             priority: 'low',
             related_entity_type: 'employee',
-            action_url: '/participants'
+            related_entity_id: employeeId,
+            action_url: getNotificationDeepLink('employee_departure', employeeId, 'employee')
         });
     }
 
