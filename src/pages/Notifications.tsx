@@ -9,7 +9,7 @@ export default function Notifications() {
   return (
     <Layout>
       <NotificationSystem
-        userId={userProfile?.employee?.id}
+        userId={userProfile?.employee_id}
         enableRealTime={true}
       />
     </Layout>

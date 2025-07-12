@@ -100,7 +100,7 @@ export const Header: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-4">
-            <NotificationBell />
+            <NotificationBell userId={userProfile?.employee_id} />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
