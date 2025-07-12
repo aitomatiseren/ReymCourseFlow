@@ -14,6 +14,132 @@ export type Database = {
   }
   public: {
     Tables: {
+      course_provider_courses: {
+        Row: {
+          active: boolean | null
+          cost_breakdown: Json | null
+          course_id: string
+          created_at: string | null
+          duration_hours: number | null
+          id: string
+          location: string | null
+          max_participants: number | null
+          notes: string | null
+          price: number | null
+          provider_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          cost_breakdown?: Json | null
+          course_id: string
+          created_at?: string | null
+          duration_hours?: number | null
+          id?: string
+          location?: string | null
+          max_participants?: number | null
+          notes?: string | null
+          price?: number | null
+          provider_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          cost_breakdown?: Json | null
+          course_id?: string
+          created_at?: string | null
+          duration_hours?: number | null
+          id?: string
+          location?: string | null
+          max_participants?: number | null
+          notes?: string | null
+          price?: number | null
+          provider_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_provider_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_provider_courses_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "course_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_providers: {
+        Row: {
+          active: boolean | null
+          additional_locations: Json | null
+          additional_locations_backup: string[] | null
+          address: string | null
+          city: string | null
+          contact_person: string | null
+          country: string | null
+          created_at: string | null
+          default_location: string | null
+          description: string | null
+          email: string | null
+          id: string
+          instructors: string[] | null
+          name: string
+          notes: string | null
+          phone: string | null
+          postcode: string | null
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          additional_locations?: Json | null
+          additional_locations_backup?: string[] | null
+          address?: string | null
+          city?: string | null
+          contact_person?: string | null
+          country?: string | null
+          created_at?: string | null
+          default_location?: string | null
+          description?: string | null
+          email?: string | null
+          id?: string
+          instructors?: string[] | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          postcode?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          additional_locations?: Json | null
+          additional_locations_backup?: string[] | null
+          address?: string | null
+          city?: string | null
+          contact_person?: string | null
+          country?: string | null
+          created_at?: string | null
+          default_location?: string | null
+          description?: string | null
+          email?: string | null
+          id?: string
+          instructors?: string[] | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          postcode?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
       course_sessions: {
         Row: {
           course_id: string | null
@@ -57,6 +183,7 @@ export type Database = {
           category: string | null
           checklist_items: Json | null
           code95_points: number | null
+          cost_breakdown: Json | null
           created_at: string
           description: string | null
           duration_hours: number | null
@@ -71,6 +198,7 @@ export type Database = {
           category?: string | null
           checklist_items?: Json | null
           code95_points?: number | null
+          cost_breakdown?: Json | null
           created_at?: string
           description?: string | null
           duration_hours?: number | null
@@ -85,6 +213,7 @@ export type Database = {
           category?: string | null
           checklist_items?: Json | null
           code95_points?: number | null
+          cost_breakdown?: Json | null
           created_at?: string
           description?: string | null
           duration_hours?: number | null
@@ -202,35 +331,65 @@ export type Database = {
           country: string | null
           created_at: string
           date_of_birth: string | null
+          death_date: string | null
           department: string
+          divorce_date: string | null
+          driving_license_a: boolean | null
+          driving_license_a_expiry_date: string | null
+          driving_license_a_start_date: string | null
+          driving_license_b: boolean | null
+          driving_license_b_expiry_date: string | null
+          driving_license_b_start_date: string | null
+          driving_license_be: boolean | null
+          driving_license_be_expiry_date: string | null
+          driving_license_be_start_date: string | null
+          driving_license_c: boolean | null
+          driving_license_c_expiry_date: string | null
+          driving_license_c_start_date: string | null
+          driving_license_ce: boolean | null
+          driving_license_ce_expiry_date: string | null
+          driving_license_ce_start_date: string | null
+          driving_license_code95: boolean | null
+          driving_license_code95_expiry_date: string | null
+          driving_license_code95_start_date: string | null
+          driving_license_d: boolean | null
+          driving_license_d_expiry_date: string | null
+          driving_license_d_start_date: string | null
           email: string
           emergency_contact_name: string | null
           emergency_contact_phone: string | null
           emergency_contact_relationship: string | null
           employee_number: string
+          first_name: string | null
+          gender: string | null
           hire_date: string | null
           id: string
+          id_proof_expiry_date: string | null
+          id_proof_number: string | null
+          id_proof_type: string | null
           job_title: string | null
+          last_name: string | null
           manager_id: string | null
           marital_status: string | null
+          marriage_date: string | null
           mobile_phone: string | null
           name: string
-          first_name: string | null
-          last_name: string | null
-          tussenvoegsel: string | null
-          roepnaam: string | null
           nationality: string | null
           notes: string | null
           personal_id: string | null
           phone: string | null
           postcode: string | null
+          private_email: string | null
+          roepnaam: string | null
           role_id: string | null
           salary: number | null
           status: string | null
           status_end_date: string | null
           status_reason: string | null
           status_start_date: string | null
+          tussenvoegsel: string | null
           updated_at: string
+          website: string | null
           work_location: string | null
           working_hours: number | null
         }
@@ -243,35 +402,65 @@ export type Database = {
           country?: string | null
           created_at?: string
           date_of_birth?: string | null
+          death_date?: string | null
           department: string
+          divorce_date?: string | null
+          driving_license_a?: boolean | null
+          driving_license_a_expiry_date?: string | null
+          driving_license_a_start_date?: string | null
+          driving_license_b?: boolean | null
+          driving_license_b_expiry_date?: string | null
+          driving_license_b_start_date?: string | null
+          driving_license_be?: boolean | null
+          driving_license_be_expiry_date?: string | null
+          driving_license_be_start_date?: string | null
+          driving_license_c?: boolean | null
+          driving_license_c_expiry_date?: string | null
+          driving_license_c_start_date?: string | null
+          driving_license_ce?: boolean | null
+          driving_license_ce_expiry_date?: string | null
+          driving_license_ce_start_date?: string | null
+          driving_license_code95?: boolean | null
+          driving_license_code95_expiry_date?: string | null
+          driving_license_code95_start_date?: string | null
+          driving_license_d?: boolean | null
+          driving_license_d_expiry_date?: string | null
+          driving_license_d_start_date?: string | null
           email: string
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           emergency_contact_relationship?: string | null
           employee_number: string
+          first_name?: string | null
+          gender?: string | null
           hire_date?: string | null
           id?: string
+          id_proof_expiry_date?: string | null
+          id_proof_number?: string | null
+          id_proof_type?: string | null
           job_title?: string | null
+          last_name?: string | null
           manager_id?: string | null
           marital_status?: string | null
+          marriage_date?: string | null
           mobile_phone?: string | null
           name: string
-          first_name?: string | null
-          last_name?: string | null
-          tussenvoegsel?: string | null
-          roepnaam?: string | null
           nationality?: string | null
           notes?: string | null
           personal_id?: string | null
           phone?: string | null
           postcode?: string | null
+          private_email?: string | null
+          roepnaam?: string | null
           role_id?: string | null
           salary?: number | null
           status?: string | null
           status_end_date?: string | null
           status_reason?: string | null
           status_start_date?: string | null
+          tussenvoegsel?: string | null
           updated_at?: string
+          website?: string | null
           work_location?: string | null
           working_hours?: number | null
         }
@@ -284,35 +473,65 @@ export type Database = {
           country?: string | null
           created_at?: string
           date_of_birth?: string | null
+          death_date?: string | null
           department?: string
+          divorce_date?: string | null
+          driving_license_a?: boolean | null
+          driving_license_a_expiry_date?: string | null
+          driving_license_a_start_date?: string | null
+          driving_license_b?: boolean | null
+          driving_license_b_expiry_date?: string | null
+          driving_license_b_start_date?: string | null
+          driving_license_be?: boolean | null
+          driving_license_be_expiry_date?: string | null
+          driving_license_be_start_date?: string | null
+          driving_license_c?: boolean | null
+          driving_license_c_expiry_date?: string | null
+          driving_license_c_start_date?: string | null
+          driving_license_ce?: boolean | null
+          driving_license_ce_expiry_date?: string | null
+          driving_license_ce_start_date?: string | null
+          driving_license_code95?: boolean | null
+          driving_license_code95_expiry_date?: string | null
+          driving_license_code95_start_date?: string | null
+          driving_license_d?: boolean | null
+          driving_license_d_expiry_date?: string | null
+          driving_license_d_start_date?: string | null
           email?: string
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           emergency_contact_relationship?: string | null
           employee_number?: string
+          first_name?: string | null
+          gender?: string | null
           hire_date?: string | null
           id?: string
+          id_proof_expiry_date?: string | null
+          id_proof_number?: string | null
+          id_proof_type?: string | null
           job_title?: string | null
+          last_name?: string | null
           manager_id?: string | null
           marital_status?: string | null
+          marriage_date?: string | null
           mobile_phone?: string | null
           name?: string
-          first_name?: string | null
-          last_name?: string | null
-          tussenvoegsel?: string | null
-          roepnaam?: string | null
           nationality?: string | null
           notes?: string | null
           personal_id?: string | null
           phone?: string | null
           postcode?: string | null
+          private_email?: string | null
+          roepnaam?: string | null
           role_id?: string | null
           salary?: number | null
           status?: string | null
           status_end_date?: string | null
           status_reason?: string | null
           status_start_date?: string | null
+          tussenvoegsel?: string | null
           updated_at?: string
+          website?: string | null
           work_location?: string | null
           working_hours?: number | null
         }
@@ -362,52 +581,52 @@ export type Database = {
       }
       notifications: {
         Row: {
-          id: string
-          recipient_id: string
-          type: string
-          title: string
-          message: string
-          read: boolean
-          read_at: string | null
-          priority: string
-          related_entity_type: string | null
-          related_entity_id: string | null
           action_url: string | null
+          created_at: string | null
+          id: string
+          message: string
           metadata: Json | null
-          created_at: string
-          updated_at: string
+          priority: string | null
+          read: boolean | null
+          read_at: string | null
+          recipient_id: string
+          related_entity_id: string | null
+          related_entity_type: string | null
+          title: string
+          type: string
+          updated_at: string | null
         }
         Insert: {
-          id?: string
-          recipient_id: string
-          type: string
-          title: string
-          message: string
-          read?: boolean
-          read_at?: string | null
-          priority?: string
-          related_entity_type?: string | null
-          related_entity_id?: string | null
           action_url?: string | null
+          created_at?: string | null
+          id?: string
+          message: string
           metadata?: Json | null
-          created_at?: string
-          updated_at?: string
+          priority?: string | null
+          read?: boolean | null
+          read_at?: string | null
+          recipient_id: string
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          title: string
+          type: string
+          updated_at?: string | null
         }
         Update: {
-          id?: string
-          recipient_id?: string
-          type?: string
-          title?: string
-          message?: string
-          read?: boolean
-          read_at?: string | null
-          priority?: string
-          related_entity_type?: string | null
-          related_entity_id?: string | null
           action_url?: string | null
+          created_at?: string | null
+          id?: string
+          message?: string
           metadata?: Json | null
-          created_at?: string
-          updated_at?: string
+          priority?: string | null
+          read?: boolean | null
+          read_at?: string | null
+          recipient_id?: string
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          title?: string
+          type?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -533,6 +752,7 @@ export type Database = {
       trainings: {
         Row: {
           checklist: Json | null
+          cost_breakdown: Json | null
           course_id: string | null
           created_at: string
           date: string
@@ -544,6 +764,7 @@ export type Database = {
           notes: string | null
           organizer_id: string | null
           price: number | null
+          provider_id: string | null
           requires_approval: boolean | null
           session_dates: Json | null
           session_end_times: Json | null
@@ -555,6 +776,7 @@ export type Database = {
         }
         Insert: {
           checklist?: Json | null
+          cost_breakdown?: Json | null
           course_id?: string | null
           created_at?: string
           date: string
@@ -566,6 +788,7 @@ export type Database = {
           notes?: string | null
           organizer_id?: string | null
           price?: number | null
+          provider_id?: string | null
           requires_approval?: boolean | null
           session_dates?: Json | null
           session_end_times?: Json | null
@@ -577,6 +800,7 @@ export type Database = {
         }
         Update: {
           checklist?: Json | null
+          cost_breakdown?: Json | null
           course_id?: string | null
           created_at?: string
           date?: string
@@ -588,6 +812,7 @@ export type Database = {
           notes?: string | null
           organizer_id?: string | null
           price?: number | null
+          provider_id?: string | null
           requires_approval?: boolean | null
           session_dates?: Json | null
           session_end_times?: Json | null
@@ -603,6 +828,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainings_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "course_providers"
             referencedColumns: ["id"]
           },
         ]
@@ -687,25 +919,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_user_permissions: {
+      create_bulk_notifications: {
         Args: {
-          user_id: string
-        }
-        Returns: {
-          permission_name: string
-          permission_category: string
-        }[]
-      }
-      user_has_permission: {
-        Args: {
-          user_id: string
-          permission_name: string
-        }
-        Returns: boolean
-      }
-      get_unread_notification_count: {
-        Args: {
-          user_id: string
+          p_recipient_ids: string[]
+          p_type: string
+          p_title: string
+          p_message: string
+          p_priority?: string
+          p_related_entity_type?: string
+          p_related_entity_id?: string
+          p_action_url?: string
+          p_metadata?: Json
         }
         Returns: number
       }
@@ -723,21 +947,26 @@ export type Database = {
         }
         Returns: string
       }
-      create_bulk_notifications: {
-        Args: {
-          p_recipient_ids: string[]
-          p_type: string
-          p_title: string
-          p_message: string
-          p_priority?: string
-          p_related_entity_type?: string
-          p_related_entity_id?: string
-          p_action_url?: string
-          p_metadata?: Json
-        }
+      get_unread_notification_count: {
+        Args: { user_id: string }
         Returns: number
       }
-    }
+      get_user_permissions: {
+        Args: { user_id: string }
+        Returns: {
+          permission_name: string
+          permission_category: string
+        }[]
+      }
+      is_admin_user: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      user_has_permission: {
+        Args: { user_id: string; permission_name: string }
+        Returns: boolean
+      }
+      }
     Enums: {
       [_ in never]: never
     }
@@ -753,116 +982,116 @@ type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-  | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-  | { schema: keyof DatabaseWithoutInternals },
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-  ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-  : never = never,
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
-  ? R
-  : never
+    ? R
+    : never
   : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-    DefaultSchema["Views"])
-  ? (DefaultSchema["Tables"] &
-    DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-      Row: infer R
-    }
-  ? R
-  : never
-  : never
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-  | keyof DefaultSchema["Tables"]
-  | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-  : never = never,
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-    Insert: infer I
-  }
-  ? I
-  : never
+      Insert: infer I
+    }
+    ? I
+    : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-    Insert: infer I
-  }
-  ? I
-  : never
-  : never
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-  | keyof DefaultSchema["Tables"]
-  | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-  : never = never,
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-    Update: infer U
-  }
-  ? U
-  : never
+      Update: infer U
+    }
+    ? U
+    : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-    Update: infer U
-  }
-  ? U
-  : never
-  : never
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-  | keyof DefaultSchema["Enums"]
-  | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-  ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-  : never = never,
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-  ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-  : never
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-  | keyof DefaultSchema["CompositeTypes"]
-  | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-  ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-  : never = never,
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-  ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-  : never
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
 
 export const Constants = {
   public: {

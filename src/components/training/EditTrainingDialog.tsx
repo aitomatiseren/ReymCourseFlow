@@ -8,11 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useUpdateTraining } from "@/hooks/useUpdateTraining";
 import { useToast } from "@/hooks/use-toast";
-import { Training } from "@/hooks/useTrainings";
+import { Training, CostComponent } from "@/hooks/useTrainings";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Minus, Calendar, Copy } from "lucide-react";
+import { Plus, Minus, Calendar, Copy, DollarSign, X } from "lucide-react";
 
 // Custom DialogContent component - defined outside to prevent re-renders
 const CustomDialogContent = forwardRef<
@@ -62,7 +62,7 @@ export function EditTrainingDialog({ open, onOpenChange, training }: EditTrainin
     sessionEndTimes: [] as string[],
     checklist: [] as Array<{ id: string; text: string; completed: boolean }>,
     notes: "",
-    price: ""
+    costBreakdown: [] as CostComponent[]
   });
 
   const updateTraining = useUpdateTraining();
@@ -92,7 +92,7 @@ export function EditTrainingDialog({ open, onOpenChange, training }: EditTrainin
         sessionEndTimes: sessionEndTimes.map((time: string) => time?.slice(0, 5) || ""),
         checklist: training.checklist || [],
         notes: training.notes || "",
-        price: training.price?.toString() || ""
+        costBreakdown: training.cost_breakdown || []
       });
     }
   }, [training]);
@@ -293,6 +293,29 @@ export function EditTrainingDialog({ open, onOpenChange, training }: EditTrainin
     setFormData(prev => ({ ...prev, checklist: newChecklist }));
   };
 
+  const addCostComponent = () => {
+    const newComponent: CostComponent = {
+      name: "",
+      amount: 0,
+      description: ""
+    };
+    setFormData(prev => ({
+      ...prev,
+      costBreakdown: [...prev.costBreakdown, newComponent]
+    }));
+  };
+
+  const updateCostComponent = (index: number, field: keyof CostComponent, value: string | number) => {
+    const newCostBreakdown = [...formData.costBreakdown];
+    newCostBreakdown[index] = { ...newCostBreakdown[index], [field]: value };
+    setFormData(prev => ({ ...prev, costBreakdown: newCostBreakdown }));
+  };
+
+  const removeCostComponent = (index: number) => {
+    const newCostBreakdown = formData.costBreakdown.filter((_, i) => i !== index);
+    setFormData(prev => ({ ...prev, costBreakdown: newCostBreakdown }));
+  };
+
   const validateForm = () => {
     if (!formData.title || !formData.location || !formData.maxParticipants) {
       toast({
@@ -363,7 +386,9 @@ export function EditTrainingDialog({ open, onOpenChange, training }: EditTrainin
           : (formData.sessionEndTimes[0] ? [formData.sessionEndTimes[0]] : null),
         checklist: formData.checklist,
         notes: formData.notes,
-        price: formData.price ? parseFloat(formData.price) : null
+        cost_breakdown: formData.costBreakdown,
+        price: formData.costBreakdown.length > 0 ? 
+          formData.costBreakdown.reduce((sum, item) => sum + item.amount, 0) : null
       };
       
       await updateTraining.mutateAsync(updateData);
@@ -554,16 +579,10 @@ export function EditTrainingDialog({ open, onOpenChange, training }: EditTrainin
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="price">Price per Participant (€)</Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.price}
-                onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
-                placeholder="Enter price"
-              />
+              <Label>Total Price</Label>
+              <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                €{formData.costBreakdown.reduce((sum, item) => sum + item.amount, 0).toFixed(2)}
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -580,6 +599,82 @@ export function EditTrainingDialog({ open, onOpenChange, training }: EditTrainin
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Cost Breakdown Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                Cost Breakdown
+              </Label>
+              <Button type="button" variant="outline" size="sm" onClick={addCostComponent}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Cost Item
+              </Button>
+            </div>
+            
+            {formData.costBreakdown.length === 0 ? (
+              <div className="text-center py-8 text-gray-500 border-2 border-dashed rounded-lg">
+                <p className="text-sm">No cost items added yet</p>
+                <p className="text-xs">Click "Add Cost Item" to create pricing structure</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {formData.costBreakdown.map((cost, index) => (
+                  <div key={index} className="grid grid-cols-12 gap-3 items-center p-3 border rounded-lg bg-gray-50">
+                    <div className="col-span-3">
+                      <Label className="text-xs text-gray-600">Name</Label>
+                      <Input
+                        value={cost.name}
+                        onChange={(e) => updateCostComponent(index, 'name', e.target.value)}
+                        placeholder="e.g., Theory"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <Label className="text-xs text-gray-600">Amount (€)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={cost.amount}
+                        onChange={(e) => updateCostComponent(index, 'amount', parseFloat(e.target.value) || 0)}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div className="col-span-6">
+                      <Label className="text-xs text-gray-600">Description</Label>
+                      <Input
+                        value={cost.description}
+                        onChange={(e) => updateCostComponent(index, 'description', e.target.value)}
+                        placeholder="e.g., Theoretical training session"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div className="col-span-1 flex justify-end">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeCostComponent(index)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                
+                {formData.costBreakdown.length > 0 && (
+                  <div className="flex justify-end p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="text-sm font-semibold">
+                      Total: €{formData.costBreakdown.reduce((sum, item) => sum + item.amount, 0).toFixed(2)}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center space-x-2">

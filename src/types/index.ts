@@ -90,6 +90,12 @@ export interface Certificate {
   replacementType?: string; // For HDO -> HDO-M replacement
 }
 
+export interface CostComponent {
+  name: string;
+  amount: number;
+  description: string;
+}
+
 export interface Training {
   id: string;
   title: string;
@@ -106,6 +112,8 @@ export interface Training {
   code95Points?: number;
   requiresApproval: boolean;
   organizerId: string;
+  price?: number;
+  cost_breakdown?: CostComponent[];
 }
 
 export interface TrainingParticipant {

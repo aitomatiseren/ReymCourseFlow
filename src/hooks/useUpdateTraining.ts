@@ -1,6 +1,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { CostComponent } from "./useTrainings";
 
 interface UpdateTrainingData {
   id: string;
@@ -17,6 +18,7 @@ interface UpdateTrainingData {
   session_times?: string[] | null;
   session_end_times?: string[] | null;
   price?: number | null;
+  cost_breakdown?: CostComponent[];
   notes?: string;
   checklist?: Array<{ id: string; text: string; completed: boolean }>;
 }
@@ -44,6 +46,7 @@ export function useUpdateTraining() {
           ...(updateData.session_times !== undefined && { session_times: updateData.session_times }),
           ...(updateData.session_end_times !== undefined && { session_end_times: updateData.session_end_times }),
           ...(updateData.price !== undefined && { price: updateData.price }),
+          ...(updateData.cost_breakdown !== undefined && { cost_breakdown: updateData.cost_breakdown }),
           ...(updateData.notes !== undefined && { notes: updateData.notes }),
           ...(updateData.checklist !== undefined && { checklist: updateData.checklist })
         })

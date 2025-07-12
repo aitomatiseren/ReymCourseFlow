@@ -19,11 +19,9 @@ import {
   Loader2
 } from "lucide-react";
 import { useEmployees } from "@/hooks/useEmployees";
-import { EmployeeStatus, ALL_STATUSES } from "@/constants/employeeStatus";
+import { EmployeeStatus, ALL_STATUSES, getStatusLabel } from "@/constants/employeeStatus";
 import { EmployeeStatusBadge } from "@/components/employee/EmployeeStatusBadge";
-import type { Database } from "@/integrations/supabase/types";
-
-type Employee = Database['public']['Tables']['employees']['Row'];
+import type { Employee } from "@/types";
 
 export function UserList() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -37,8 +35,8 @@ export function UserList() {
     const matchesSearch = employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          employee.employeeNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (employee.first_name && employee.first_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                         (employee.last_name && employee.last_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (employee.firstName && employee.firstName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (employee.lastName && employee.lastName.toLowerCase().includes(searchTerm.toLowerCase())) ||
                          (employee.roepnaam && employee.roepnaam.toLowerCase().includes(searchTerm.toLowerCase())) ||
                          (employee.tussenvoegsel && employee.tussenvoegsel.toLowerCase().includes(searchTerm.toLowerCase()));
     
@@ -49,26 +47,26 @@ export function UserList() {
   });
 
   const getInitials = (employee: Employee) => {
-    if (employee.roepnaam && employee.last_name) {
-      return (employee.roepnaam[0] + employee.last_name[0]).toUpperCase();
+    if (employee.roepnaam && employee.lastName) {
+      return (employee.roepnaam[0] + employee.lastName[0]).toUpperCase();
     }
     return employee.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
   };
 
   const getDisplayName = (employee: Employee) => {
-    if (employee.roepnaam && employee.last_name) {
+    if (employee.roepnaam && employee.lastName) {
       const parts = [employee.roepnaam];
       if (employee.tussenvoegsel) {
         parts.push(employee.tussenvoegsel);
       }
-      parts.push(employee.last_name);
+      parts.push(employee.lastName);
       return parts.join(' ');
     }
     return employee.name;
   };
 
   const getNickname = (employee: Employee) => {
-    return employee.roepnaam || employee.first_name || employee.name.split(' ')[0];
+    return employee.roepnaam || employee.firstName || employee.name.split(' ')[0];
   };
 
   const handleViewProfile = (employeeId: string) => {
@@ -154,7 +152,7 @@ export function UserList() {
                   </Avatar>
                   <div>
                     <h3 className="font-semibold text-gray-900">{getDisplayName(employee)}</h3>
-                    {employee.roepnaam && employee.roepnaam !== employee.first_name && (
+                    {employee.roepnaam && employee.roepnaam !== employee.firstName && (
                       <p className="text-xs text-blue-600">Roepnaam: {getNickname(employee)}</p>
                     )}
                     <p className="text-sm text-gray-500">#{employee.employeeNumber}</p>

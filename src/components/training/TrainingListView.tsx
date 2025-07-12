@@ -1,7 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, MapPin, Users, User, Eye, Truck } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Calendar, Clock, MapPin, Users, User, Eye, Truck, Euro } from "lucide-react";
 import { Training } from "@/hooks/useTrainings";
 import { useNavigate } from "react-router-dom";
 
@@ -19,6 +20,7 @@ export function TrainingListView({
   highlightedTrainingId
 }: TrainingListViewProps) {
   const navigate = useNavigate();
+  
   const formatTime = (time: string, endTime?: string) => {
     const formattedTime = time ? time.slice(0, 5) : '';
     if (endTime) {
@@ -31,38 +33,50 @@ export function TrainingListView({
     return new Date(dateString).toLocaleDateString('en-GB');
   };
 
+  if (trainings.length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-12 text-center">
+          <p className="text-gray-500">No trainings scheduled yet.</p>
+          <Button 
+            className="mt-4" 
+            onClick={onCreateTraining}
+          >
+            Schedule First Training
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <div className="space-y-4">
-      {trainings.length === 0 ? (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <p className="text-gray-500">No trainings scheduled yet.</p>
-            <Button 
-              className="mt-4" 
-              onClick={onCreateTraining}
-            >
-              Schedule First Training
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        trainings.map((training) => {
-          const isMultiSession = (training.sessions_count || 1) > 1;
-          
-          return (
-            <Card 
-              key={training.id} 
-              className={`transition-all hover:shadow-md ${
-                highlightedTrainingId === training.id ? 'ring-2 ring-blue-500 ring-offset-2' : ''
-              }`}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 space-y-3">
-                    {/* Header */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <h3 className="font-semibold text-lg">{training.title}</h3>
+    <Card>
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-left font-medium">Training</TableHead>
+              <TableHead className="text-left font-medium">Date & Time</TableHead>
+              <TableHead className="text-left font-medium">Location</TableHead>
+              <TableHead className="text-left font-medium">Participants</TableHead>
+              <TableHead className="text-left font-medium">Instructor</TableHead>
+              <TableHead className="text-left font-medium">Pricing & Features</TableHead>
+              <TableHead className="text-right font-medium">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {trainings.map((training) => {
+              const isMultiSession = (training.sessions_count || 1) > 1;
+              
+              return (
+                <TableRow 
+                  key={training.id}
+                  className={`hover:bg-gray-50 ${highlightedTrainingId === training.id ? 'bg-blue-50' : ''}`}
+                >
+                  <TableCell>
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <div className="font-medium">{training.title}</div>
                         <Badge variant="outline" className={
                           training.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
                           training.status === 'confirmed' ? 'bg-green-100 text-green-800' :
@@ -72,96 +86,111 @@ export function TrainingListView({
                         }>
                           {training.status}
                         </Badge>
-                        {isMultiSession && (
-                          <Badge variant="secondary" className="text-xs">
-                            {training.sessions_count} sessions
+                      </div>
+                      {training.courseName && (
+                        <div className="text-sm text-gray-500">Course: {training.courseName}</div>
+                      )}
+                      {isMultiSession && (
+                        <Badge variant="secondary" className="text-xs">
+                          {training.sessions_count} sessions
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
+                  
+                  <TableCell>
+                    {isMultiSession && training.session_dates && training.session_times ? (
+                      <div className="space-y-1">
+                        <div className="text-sm font-medium">Multi-session training</div>
+                        <div className="text-xs text-gray-500">
+                          {training.session_dates.length} sessions starting {formatDate(training.session_dates[0])}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          <Clock className="h-3 w-3 inline mr-1" />
+                          {formatTime(training.session_times[0], training.session_end_times?.[0])}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <div className="flex items-center text-sm">
+                          <Calendar className="h-3 w-3 mr-1" />
+                          {formatDate(training.date)}
+                        </div>
+                        <div className="flex items-center text-sm text-gray-500">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {formatTime(training.time, training.session_end_times?.[0])}
+                        </div>
+                      </div>
+                    )}
+                  </TableCell>
+                  
+                  <TableCell>
+                    <div className="flex items-center text-sm">
+                      <MapPin className="h-3 w-3 mr-1" />
+                      {training.location || 'Not specified'}
+                    </div>
+                  </TableCell>
+                  
+                  <TableCell>
+                    <div className="flex items-center text-sm">
+                      <Users className="h-3 w-3 mr-1" />
+                      {training.participantCount || 0}/{training.maxParticipants || 'N/A'}
+                    </div>
+                  </TableCell>
+                  
+                  <TableCell>
+                    {training.instructor ? (
+                      <div className="flex items-center text-sm">
+                        <User className="h-3 w-3 mr-1" />
+                        {training.instructor}
+                      </div>
+                    ) : (
+                      <span className="text-sm text-gray-500">Not assigned</span>
+                    )}
+                  </TableCell>
+                  
+                  <TableCell>
+                    <div className="space-y-2">
+                      {/* Pricing Breakdown */}
+                      {training.cost_breakdown && training.cost_breakdown.length > 0 ? (
+                        <div className="space-y-1">
+                          {training.cost_breakdown.map((cost, index) => (
+                            <div key={index} className="flex items-center justify-between text-xs">
+                              <span className="text-gray-600">{cost.name}</span>
+                              <span className="font-medium">€{cost.amount}</span>
+                            </div>
+                          ))}
+                          {training.cost_breakdown.length > 1 && (
+                            <div className="flex items-center justify-between text-xs font-semibold border-t pt-1">
+                              <span>Total</span>
+                              <span>€{training.price || 0}</span>
+                            </div>
+                          )}
+                        </div>
+                      ) : training.price ? (
+                        <div className="flex items-center text-xs">
+                          <Euro className="h-3 w-3 mr-1" />
+                          <span>€{training.price}</span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-500">Free</span>
+                      )}
+                      
+                      {/* Features */}
+                      <div className="flex flex-wrap gap-1">
+                        {training.code95_points && training.code95_points > 0 && (
+                          <Badge variant="outline" className="bg-blue-100 text-blue-800 text-xs">
+                            <Truck className="h-3 w-3 mr-1" />
+                            {training.code95_points} pts
                           </Badge>
                         )}
                       </div>
                     </div>
-
-                    {/* Session Information */}
-                    {isMultiSession && training.session_dates && training.session_times ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {training.session_dates.map((date, index) => (
-                          <div key={index} className="bg-gray-50 rounded-md p-3 border">
-                            <div className="font-medium text-sm text-gray-900 mb-1">
-                              Session {index + 1}
-                            </div>
-                            <div className="space-y-1">
-                              <div className="flex items-center text-gray-600 text-xs">
-                                <Calendar className="h-3 w-3 mr-1" />
-                                {formatDate(date)}
-                              </div>
-                              <div className="flex items-center text-gray-600 text-xs">
-                                <Clock className="h-3 w-3 mr-1" />
-                                {formatTime(
-                                  training.session_times?.[index] || "",
-                                  training.session_end_times?.[index]
-                                )}
-                              </div>
-                              <div className="flex items-center text-gray-600 text-xs">
-                                <MapPin className="h-3 w-3 mr-1" />
-                                {training.location}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="flex items-center space-x-6 text-sm text-gray-600">
-                        <div className="flex items-center">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          {formatDate(training.date)}
-                        </div>
-                        <div className="flex items-center">
-                          <Clock className="h-4 w-4 mr-1" />
-                          {formatTime(training.time)}
-                        </div>
-                        <div className="flex items-center">
-                          <MapPin className="h-4 w-4 mr-1" />
-                          {training.location}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Additional Info */}
-                    <div className="flex items-center space-x-6 text-sm text-gray-600">
-                      <div className="flex items-center">
-                        <Users className="h-4 w-4 mr-1" />
-                        {training.participantCount}/{training.maxParticipants}
-                      </div>
-                      {training.instructor && (
-                        <div className="flex items-center">
-                          <User className="h-4 w-4 mr-1" />
-                          {training.instructor}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Course and Price */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4 text-sm text-gray-600">
-                        {training.courseName && (
-                          <span>Course: {training.courseName}</span>
-                        )}
-                        {training.price && (
-                          <span className="text-green-600 font-medium">€{training.price}</span>
-                        )}
-                        {training.code95_points && training.code95_points > 0 && (
-                          <div className="flex items-center text-blue-600">
-                            <Truck className="h-4 w-4 mr-1" />
-                            <span className="font-medium">Code 95: {training.code95_points} points</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Action Button */}
-                  <div className="ml-6">
+                  </TableCell>
+                  
+                  <TableCell className="text-right">
                     <Button 
-                      size="sm" 
+                      size="sm"
                       className="bg-slate-800 text-white hover:bg-slate-900"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -171,13 +200,13 @@ export function TrainingListView({
                       <Eye className="h-4 w-4 mr-1" />
                       View
                     </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })
-      )}
-    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }
