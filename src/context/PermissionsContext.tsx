@@ -213,23 +213,10 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
             if (currentUser.email === 'admin@admin.com') {
                 console.log('Admin user detected, setting admin permissions directly');
 
-                // Try to get the admin employee ID first
-                let adminEmployeeId = null;
-                try {
-                    const { data: adminEmployee } = await supabase
-                        .from('employees')
-                        .select('id')
-                        .eq('email', 'admin@admin.com')
-                        .single();
-                    adminEmployeeId = adminEmployee?.id;
-                } catch (error) {
-                    console.log('Could not find admin employee, notifications will not work');
-                }
-
-                // Create a mock admin profile
+                // Create a mock admin profile without employee_id (system admin, not employee)
                 const adminProfile = {
                     id: currentUser.id,
-                    employee_id: adminEmployeeId,
+                    employee_id: null, // System admin is not an employee
                     role_id: 'admin-role-id',
                     is_active: true,
                     created_at: new Date().toISOString(),

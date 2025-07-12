@@ -62,7 +62,7 @@ export function NotificationBell({
         isDeletingNotification
     } = useNotifications(userId);
 
-    // Enable real-time notifications if requested
+    // Enable real-time notifications if requested and user has employee record
     useEffect(() => {
         if (enableRealTime && userId) {
             enableRT();
@@ -74,6 +74,15 @@ export function NotificationBell({
             }
         };
     }, [enableRealTime, userId, enableRT, disableRT]);
+
+    // If user has no employee record, don't show notifications
+    if (!userId) {
+        return (
+            <Button variant="ghost" size="sm" className="relative" disabled>
+                <Bell className="h-5 w-5 text-gray-400" />
+            </Button>
+        );
+    }
 
     const handleNotificationClick = (notification: Notification) => {
         // Mark as read
