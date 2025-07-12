@@ -180,9 +180,9 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
             }
 
             if (!currentUser) {
-                // User not authenticated - set default permissions
-                console.log('User not authenticated, setting default permissions');
-                setPermissions(createUserPermissions([]));
+                // User not authenticated - set null permissions
+                console.log('User not authenticated, setting null permissions');
+                setPermissions(null);
                 setUserProfile(null);
                 setLoading(false);
                 setInitialized(true);
@@ -245,34 +245,49 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                 return;
             }
 
-            // For other users, try the database approach
+            // For other users, try the database approach with timeout
             console.log('Fetching user profile...');
-            const { data: profile, error: profileError } = await supabase
-                .from('user_profiles')
-                .select(`
-                    *,
-                    role:user_roles(*),
-                    employee:employees(*)
-                `)
-                .eq('id', currentUser.id)
-                .single();
+            let profile, profileError;
+            try {
+                const profilePromise = supabase
+                    .from('user_profiles')
+                    .select(`
+                        *,
+                        role:user_roles(*),
+                        employee:employees(*)
+                    `)
+                    .eq('id', currentUser.id)
+                    .single();
+                
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
+                );
+                
+                const result = await Promise.race([profilePromise, timeoutPromise]) as any;
+                profile = result.data;
+                profileError = result.error;
+            } catch (timeoutError) {
+                console.warn('User profile fetch timed out:', timeoutError);
+                profileError = timeoutError;
+                profile = null;
+            }
 
             let userProfileData = profile;
             console.log('Profile query result:', { profile, profileError });
 
             if (profileError) {
-                console.warn('No user profile found:', profileError);
-                // Set basic permissions for authenticated user without profile
+                console.warn('No user profile found or fetch timed out:', profileError);
+                
+                // For any profile error, redirect to login to avoid issues
                 setUserProfile(null);
-                setPermissions(createUserPermissions(['view_own_profile', 'edit_own_profile', 'view_own_certificates', 'view_own_trainings']));
+                setPermissions(null);
                 setLoading(false);
                 setInitialized(true);
                 setFetchingPermissions(false);
                 clearInitializationTimeout();
                 
-                // Log this for debugging
-                console.log(`User ${currentUser.email} (${currentUser.id}) has no profile in user_profiles table`);
-                console.log('Consider creating a profile for this user if they need access to the system');
+                console.log(`User ${currentUser.email} (${currentUser.id}) profile fetch failed:`, profileError);
+                console.log('User will be redirected to login page');
                 return;
             }
 
@@ -297,12 +312,18 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
             let permissionsError: any = null;
             
             try {
-                const result = await supabase.rpc('get_user_permissions', { user_id: currentUser.id });
+                // Add timeout to RPC call to prevent hanging
+                const rpcPromise = supabase.rpc('get_user_permissions', { user_id: currentUser.id });
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('RPC timeout')), 10000)
+                );
+                
+                const result = await Promise.race([rpcPromise, timeoutPromise]) as any;
                 userPermissions = result.data;
                 permissionsError = result.error;
             } catch (rpcError) {
-                console.warn('RPC function get_user_permissions not found, using fallback permissions');
-                // Fallback: Use role-based permissions if RPC function doesn't exist
+                console.warn('RPC function get_user_permissions failed or timed out, using fallback permissions:', rpcError);
+                // Fallback: Use role-based permissions if RPC function doesn't exist or times out
                 if (userProfileData?.role?.name) {
                     const roleName = userProfileData.role.name;
                     console.log('Using role-based permissions for role:', roleName);
@@ -381,13 +402,22 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
 
         } catch (err) {
             console.error('Error fetching user permissions:', err);
-            setError(err instanceof Error ? err.message : 'Failed to load permissions');
-            // Set null permissions on error
+            
+            // On any error, redirect to login to avoid infinite loading
+            setError('Authentication failed - please log in again');
             setPermissions(null);
             setUserProfile(null);
             setLoading(false);
             setInitialized(true);
+            setFetchingPermissions(false);
             clearInitializationTimeout();
+            
+            // Force clear any auth data that might be causing issues
+            try {
+                await supabase.auth.signOut();
+            } catch (signOutError) {
+                console.warn('Failed to sign out on error:', signOutError);
+            }
         } finally {
             // Always reset fetchingPermissions to prevent getting stuck
             setFetchingPermissions(false);
@@ -432,7 +462,7 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
 
         // Set a maximum loading time to prevent infinite spinners
         initializationTimeoutRef.current = setTimeout(() => {
-            console.warn('Authentication check timed out after 10 seconds');
+            console.warn('Authentication check timed out after 15 seconds');
             // Set unauthenticated state on timeout
             if (!initialized) {
                 setPermissions(null);
@@ -442,7 +472,7 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                 setFetchingPermissions(false);
                 setError('Authentication timeout - please refresh the page');
             }
-        }, 10000); // 10 second timeout
+        }, 15000); // 15 second timeout
 
         // Listen for auth changes first, then check initial session
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -450,10 +480,13 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
             console.log('Current state:', { loading, initialized, fetchingPermissions });
 
             if (event === 'INITIAL_SESSION') {
-                console.log('Initial session event');
+                console.log('=== INITIAL_SESSION event ===');
+                console.log('Session user:', session?.user?.id, session?.user?.email);
+                console.log('Was explicitly logged out:', wasExplicitlyLoggedOut());
+                
                 // Check if we were explicitly logged out
                 if (wasExplicitlyLoggedOut()) {
-                    console.log('User explicitly logged out, ignoring session');
+                    console.log('User explicitly logged out, ignoring session and staying unauthenticated');
                     setPermissions(null);
                     setUserProfile(null);
                     setLoading(false);
@@ -463,11 +496,16 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                 }
                 
                 if (session?.user) {
-                    console.log('User found in initial session');
+                    console.log('User found in initial session, fetching permissions...');
                     setLoading(true);
-                    await fetchUserPermissions(session.user);
+                    try {
+                        await fetchUserPermissions(session.user);
+                        console.log('=== Initial session permission fetch completed ===');
+                    } catch (error) {
+                        console.error('=== Initial session permission fetch failed ===', error);
+                    }
                 } else {
-                    console.log('No user in initial session');
+                    console.log('No user in initial session, setting unauthenticated state');
                     setPermissions(null);
                     setUserProfile(null);
                     setLoading(false);
@@ -475,11 +513,30 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                     clearInitializationTimeout();
                 }
             } else if (event === 'SIGNED_IN' && session?.user) {
+                console.log('=== SIGNED_IN event ===');
                 console.log('User signed in');
+                
                 clearLogoutFlag(); // Clear flag on successful sign in
+                
+                // Set loading state but don't fetch immediately - let INITIAL_SESSION handle it
+                // This avoids the race condition where SIGNED_IN times out but INITIAL_SESSION succeeds
                 setLoading(true);
                 setInitialized(false);
-                await fetchUserPermissions(session.user);
+                
+                console.log('SIGNED_IN: Setting loading state, waiting for INITIAL_SESSION to handle permission fetch');
+                
+                // Set a short timeout to fetch permissions if INITIAL_SESSION doesn't fire
+                setTimeout(async () => {
+                    if (!initialized && loading) {
+                        console.log('INITIAL_SESSION did not fire, fetching permissions from SIGNED_IN');
+                        try {
+                            await fetchUserPermissions(session.user);
+                            console.log('=== SIGNED_IN permission fetch completed ===');
+                        } catch (error) {
+                            console.error('=== SIGNED_IN permission fetch failed ===', error);
+                        }
+                    }
+                }, 2000); // Wait 2 seconds for INITIAL_SESSION
             } else if (event === 'SIGNED_OUT') {
                 console.log('User signed out');
                 setPermissions(null);
