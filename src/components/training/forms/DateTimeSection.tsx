@@ -11,16 +11,20 @@ import { cn } from "@/lib/utils";
 interface DateTimeSectionProps {
   date: string;
   time: string;
+  endTime?: string;
   onDateChange: (date: string) => void;
   onTimeChange: (time: string) => void;
+  onEndTimeChange?: (endTime: string) => void;
   onDateChangeComplete?: () => void;
 }
 
 export function DateTimeSection({
   date,
   time,
+  endTime,
   onDateChange,
   onTimeChange,
+  onEndTimeChange,
   onDateChangeComplete
 }: DateTimeSectionProps) {
   const handleDateChange = (newDate: string) => {
@@ -36,7 +40,7 @@ export function DateTimeSection({
   };
 
   return (
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-3 gap-4">
       <div className="space-y-2">
         <Label htmlFor="date">Start Date</Label>
         <div className="flex gap-2">
@@ -73,13 +77,24 @@ export function DateTimeSection({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="time">Time</Label>
+        <Label htmlFor="time">Start Time</Label>
         <Input
           id="time"
           type="time"
           value={time}
           onChange={(e) => onTimeChange(e.target.value)}
           required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="end-time">End Time</Label>
+        <Input
+          id="end-time"
+          type="time"
+          value={endTime || ""}
+          onChange={(e) => onEndTimeChange?.(e.target.value)}
+          placeholder="Optional"
         />
       </div>
     </div>

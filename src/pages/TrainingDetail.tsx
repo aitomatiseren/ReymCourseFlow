@@ -43,9 +43,12 @@ export default function TrainingDetail() {
     { id: '4', text: 'Participants notified', completed: false },
   ];
 
+  // Only show checklist if training has checklist data
+  const shouldShowChecklist = training?.checklist && Array.isArray(training.checklist) && training.checklist.length > 0;
+  
   const { checklist, updateChecklistItem } = useTrainingChecklist(
     id || '', 
-    training?.checklist || defaultChecklist
+    shouldShowChecklist ? training.checklist : []
   );
 
   // Set current status when training loads
@@ -228,7 +231,7 @@ export default function TrainingDetail() {
                 <Clock className="h-4 w-4 text-gray-500" />
                 <span>
                   {formatTime(training.time)}
-                  {training.end_time && ` - ${formatTime(training.end_time)}`}
+                  {(training.end_time || training.session_end_times?.[0]) && ` - ${formatTime(training.end_time || training.session_end_times?.[0])}`}
                 </span>
               </div>
             </div>

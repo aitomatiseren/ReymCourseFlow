@@ -565,7 +565,7 @@ export function EditTrainingDialog({ open, onOpenChange, training }: EditTrainin
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="maxParticipants">Max Participants</Label>
               <Input
@@ -576,13 +576,6 @@ export function EditTrainingDialog({ open, onOpenChange, training }: EditTrainin
                 onChange={(e) => setFormData(prev => ({ ...prev, maxParticipants: e.target.value }))}
                 required
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Total Price</Label>
-              <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                €{formData.costBreakdown.reduce((sum, item) => sum + item.amount, 0).toFixed(2)}
-              </div>
             </div>
 
             <div className="space-y-2">
