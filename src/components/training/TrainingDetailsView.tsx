@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { EditTrainingDialog } from "./EditTrainingDialog";
 import { useTrainingChecklist } from "@/hooks/useTrainingChecklist";
 import { useTrainingParticipants } from "@/hooks/useTrainingParticipants";
+import { EmployeeStatusBadge } from "@/components/employee/EmployeeStatusBadge";
+import { EmployeeStatus } from "@/constants/employeeStatus";
 
 interface TrainingDetailsViewProps {
   training: Training;
@@ -282,13 +284,6 @@ export function TrainingDetailsView({
               ) : (
                 participants.map((participant) => {
                   const currentEmployeeStatus = participantStatuses[participant.employees?.id || ''] || participant.employees?.status || 'active';
-                  const employeeStatusBadge = {
-                    active: <Badge className="bg-green-100 text-green-800">active</Badge>,
-                    inactive: <Badge className="bg-gray-100 text-gray-800">inactive</Badge>,
-                    on_leave: <Badge className="bg-yellow-100 text-yellow-800">on leave</Badge>,
-                    sick: <Badge className="bg-red-100 text-red-800">sick</Badge>,
-                    terminated: <Badge className="bg-red-100 text-red-800">terminated</Badge>
-                  }[currentEmployeeStatus] || <Badge variant="secondary">{currentEmployeeStatus}</Badge>;
 
                   return (
                     <div
@@ -304,7 +299,7 @@ export function TrainingDetailsView({
                         </div>
                       </div>
                       <div className="flex items-center space-x-4">
-                        {employeeStatusBadge}
+                        <EmployeeStatusBadge status={currentEmployeeStatus as EmployeeStatus} />
                         {currentStatus === 'completed' && (
                           <label className="flex items-center space-x-2">
                             <Checkbox

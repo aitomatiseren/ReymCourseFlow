@@ -25,13 +25,9 @@ import {
   ArrowDown
 } from "lucide-react";
 import { useEmployees } from "@/hooks/useEmployees";
+import { EmployeeStatusBadge } from "@/components/employee/EmployeeStatusBadge";
+import { EmployeeStatus } from "@/constants/employeeStatus";
 
-const statusColors = {
-  active: "bg-green-100 text-green-800",
-  inactive: "bg-gray-100 text-gray-800",
-  on_leave: "bg-yellow-100 text-yellow-800",
-  terminated: "bg-red-100 text-red-800"
-};
 
 type SortField = 'name' | 'department' | 'job_title' | 'email' | 'status';
 type SortDirection = 'asc' | 'desc';
@@ -239,9 +235,7 @@ export function UserListTable() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={statusColors[employee.status]}>
-                      {employee.status.replace('_', ' ')}
-                    </Badge>
+                    <EmployeeStatusBadge status={employee.status as EmployeeStatus} />
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">

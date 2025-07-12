@@ -29,12 +29,13 @@ export default function UserProfile() {
             <p className="text-gray-600 mt-1">View and manage employee information and training progress.</p>
           </div>
           <Button
-            variant="outline"
+            variant="ghost"
+            size="sm"
             onClick={() => navigate('/participants')}
-            className="flex items-center gap-2"
+            className="flex items-center space-x-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Participants
+            <span>Back to Participants</span>
           </Button>
         </div>
         <UserProfileHeader userId={id} />

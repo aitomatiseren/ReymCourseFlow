@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ViewToggle } from "@/components/ui/view-toggle";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Calendar, Users, DollarSign, Edit, Trash2, Loader2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Search, Calendar, Users, DollarSign, Edit, Trash2, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Eye } from "lucide-react";
 import { AddCourseDialog } from "@/components/courses/AddCourseDialog";
 import { EditCourseDialog } from "@/components/courses/EditCourseDialog";
 import { useCourses, useDeleteCourse, Course } from "@/hooks/useCourses";
@@ -28,6 +28,7 @@ type SortDirection = 'asc' | 'desc';
 
 export default function Courses() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [showCode95Only, setShowCode95Only] = useState(false);
@@ -37,10 +38,21 @@ export default function Courses() {
   const [viewMode, setViewMode] = useViewMode('courses');
   const [sortField, setSortField] = useState<SortField>('title');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [highlightedCourseId, setHighlightedCourseId] = useState<string | null>(null);
 
   const { data: courses = [], isLoading, error } = useCourses();
   const deleteCourse = useDeleteCourse();
   const { toast } = useToast();
+
+  // Check for highlight parameter in URL
+  useEffect(() => {
+    const highlightId = searchParams.get('highlight');
+    if (highlightId) {
+      setHighlightedCourseId(highlightId);
+      // Clear the highlight after a few seconds
+      setTimeout(() => setHighlightedCourseId(null), 3000);
+    }
+  }, [searchParams]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -219,30 +231,19 @@ export default function Courses() {
         {!isLoading && viewMode === 'grid' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {sortedAndFilteredCourses.map((course) => (
-              <Card key={course.id} className="hover:shadow-lg transition-shadow flex flex-col h-full">
+              <Card 
+                key={course.id} 
+                className={`hover:shadow-lg transition-shadow flex flex-col h-full ${
+                  highlightedCourseId === course.id ? 'ring-2 ring-blue-500 ring-offset-2' : ''
+                }`}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="space-y-2">
                       <CardTitle className="text-lg">{course.title}</CardTitle>
                       <div className="flex items-center space-x-2 flex-wrap">
-                        {course.category && (
-                          <Badge className={categoryColors[course.category as keyof typeof categoryColors] || 'bg-gray-100 text-gray-800'}>
-                            {course.category}
-                          </Badge>
-                        )}
                         <Badge className="bg-green-100 text-green-800">
                           Active
                         </Badge>
-                        {course.sessions_required && course.sessions_required > 1 && (
-                          <Badge variant="outline" className="bg-purple-100 text-purple-800">
-                            {course.sessions_required} Sessions
-                          </Badge>
-                        )}
-                        {course.has_checklist && (
-                          <Badge variant="outline" className="bg-orange-100 text-orange-800">
-                            Checklist Required
-                          </Badge>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -277,23 +278,19 @@ export default function Courses() {
                         €{course.price} per participant
                       </div>
                     )}
-                    {course.code95_points && course.code95_points > 0 && (
-                      <div className="mt-2">
-                        <Badge variant="outline" className="bg-blue-100 text-blue-800">
-                          Code 95: {course.code95_points} points
-                        </Badge>
-                      </div>
-                    )}
                   </div>
                   
                   <div className="mt-auto">
                     <Button 
                       size="sm" 
-                      className="w-full h-9"
-                      onClick={() => handleEditCourse(course)}
+                      className="w-full h-9 bg-slate-800 text-white hover:bg-slate-900"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/courses/${course.id}`);
+                      }}
                     >
-                      <Edit className="h-4 w-4 mr-1" />
-                      Edit
+                      <Eye className="h-4 w-4 mr-1" />
+                      View
                     </Button>
                   </div>
                 </CardContent>
@@ -348,7 +345,10 @@ export default function Courses() {
                 </TableHeader>
                 <TableBody>
                     {sortedAndFilteredCourses.map((course) => (
-                      <TableRow key={course.id}>
+                      <TableRow 
+                        key={course.id}
+                        className={`hover:bg-gray-50 ${highlightedCourseId === course.id ? 'bg-blue-50' : ''}`}
+                      >
                         <TableCell>
                           <div>
                             <div className="font-medium">{course.title}</div>
@@ -392,10 +392,14 @@ export default function Courses() {
                         <TableCell className="text-right">
                           <Button 
                             size="sm"
-                            onClick={() => handleEditCourse(course)}
+                            className="bg-slate-800 text-white hover:bg-slate-900"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/courses/${course.id}`);
+                            }}
                           >
-                            <Edit className="h-4 w-4 mr-1" />
-                            Edit
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
                           </Button>
                         </TableCell>
                       </TableRow>

@@ -9,6 +9,8 @@ import { PermissionsProvider } from "./context/PermissionsContext";
 import { AuthGuard } from "./components/auth/AuthGuard";
 import Dashboard from "./pages/Dashboard";
 import Courses from "./pages/Courses";
+import CourseDetail from "./pages/CourseDetail";
+import TrainingDetail from "./pages/TrainingDetail";
 import CourseProviders from "./pages/CourseProviders";
 import ProviderProfile from "./pages/ProviderProfile";
 import Certifications from "./pages/Certifications";
@@ -48,6 +50,11 @@ const App = () => (
                   <Courses />
                 </AuthGuard>
               } />
+              <Route path="/courses/:id" element={
+                <AuthGuard>
+                  <CourseDetail />
+                </AuthGuard>
+              } />
               <Route path="/participants" element={
                 <AuthGuard>
                   <Participants />
@@ -71,6 +78,11 @@ const App = () => (
               <Route path="/scheduling" element={
                 <AuthGuard>
                   <TrainingSchedulerPage />
+                </AuthGuard>
+              } />
+              <Route path="/trainings/:id" element={
+                <AuthGuard>
+                  <TrainingDetail />
                 </AuthGuard>
               } />
               <Route path="/employee-dashboard" element={

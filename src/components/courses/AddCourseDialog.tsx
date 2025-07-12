@@ -32,11 +32,9 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    category: "",
     max_participants: "",
     price: "",
     sessions_required: "1",
-    has_checklist: false,
     is_code95: false
   });
 
@@ -108,14 +106,13 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
       await createCourse.mutateAsync({
         title: formData.title,
         description: formData.description || undefined,
-        category: formData.category || undefined,
         max_participants: formData.max_participants ? Number(formData.max_participants) : undefined,
         price: totalPrice || undefined,
         cost_breakdown: validCostComponents.map(({ id, ...component }) => component),
         code95_points: formData.is_code95 ? 7 : null,
         sessions_required: Number(formData.sessions_required),
-        has_checklist: formData.has_checklist,
-        checklist_items: formData.has_checklist ? checklistItems.filter(item => item.text.trim()) : []
+        has_checklist: checklistItems.length > 0,
+        checklist_items: checklistItems.filter(item => item.text.trim())
       });
       
       toast({
@@ -126,11 +123,9 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
       setFormData({
         title: "",
         description: "",
-        category: "",
         max_participants: "",
         price: "",
         sessions_required: "1",
-        has_checklist: false,
         is_code95: false
       });
       setChecklistItems([]);
@@ -181,19 +176,13 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
           
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="category">Category</Label>
-              <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Safety">Safety</SelectItem>
-                  <SelectItem value="Equipment">Equipment</SelectItem>
-                  <SelectItem value="Medical">Medical</SelectItem>
-                  <SelectItem value="Technical">Technical</SelectItem>
-                  <SelectItem value="Management">Management</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="max_participants">Max Participants</Label>
+              <Input
+                id="max_participants"
+                type="number"
+                value={formData.max_participants}
+                onChange={(e) => setFormData({ ...formData, max_participants: e.target.value })}
+              />
             </div>
 
             <div>
@@ -207,16 +196,6 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
               />
               <p className="text-xs text-gray-500 mt-1">How many sessions this course requires</p>
             </div>
-          </div>
-          
-          <div>
-            <Label htmlFor="max_participants">Max Participants</Label>
-            <Input
-              id="max_participants"
-              type="number"
-              value={formData.max_participants}
-              onChange={(e) => setFormData({ ...formData, max_participants: e.target.value })}
-            />
           </div>
           
           <div>
@@ -288,19 +267,24 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
               />
               <Label htmlFor="is_code95">Code 95 Course (7 points)</Label>
             </div>
+            
+            {checklistItems.length === 0 && (
+              <div className="flex items-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addChecklistItem}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Checklist Items
+                </Button>
+              </div>
+            )}
           </div>
 
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="has_checklist"
-                checked={formData.has_checklist}
-                onCheckedChange={(checked) => setFormData({ ...formData, has_checklist: !!checked })}
-              />
-              <Label htmlFor="has_checklist">This course requires a checklist</Label>
-            </div>
-
-            {formData.has_checklist && (
+          {(checklistItems.length > 0) && (
+            <div className="space-y-4">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label>Checklist Items</Label>
@@ -343,8 +327,8 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
                   </div>
                 ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
           
           <div className="flex justify-end space-x-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

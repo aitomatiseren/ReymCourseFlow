@@ -6,6 +6,10 @@ import { Edit, Bell, CheckSquare, UserPlus, List } from "lucide-react";
 import { Training } from "@/hooks/useTrainings";
 import { StatusToggle } from "./StatusToggle";
 import { SessionManager } from "./SessionManager";
+import { EmployeeStatusBadge } from "@/components/employee/EmployeeStatusBadge";
+import { EmployeeStatus } from "@/constants/employeeStatus";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TrainingDetailsPanelProps {
   training: Training | null;
@@ -28,6 +32,40 @@ export function TrainingDetailsPanel({
   onStatusChange,
   onRemoveParticipant
 }: TrainingDetailsPanelProps) {
+  // Fetch current status for participants from employee_status_history
+  const { data: participantStatuses = {} } = useQuery({
+    queryKey: ['participant-current-statuses-panel', participants.map(p => p.employees?.id).filter(Boolean)],
+    queryFn: async () => {
+      const employeeIds = participants.map(p => p.employees?.id).filter(Boolean);
+      if (employeeIds.length === 0) return {};
+      
+      const now = new Date().toISOString();
+      const { data, error } = await supabase
+        .from('employee_status_history')
+        .select('employee_id, status, start_date')
+        .in('employee_id', employeeIds)
+        .is('end_date', null)
+        .lte('start_date', now)
+        .order('start_date', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching employee statuses:', error);
+        throw error;
+      }
+      
+      // Create a map of employee_id -> current status
+      const statusMap: Record<string, string> = {};
+      data.forEach(record => {
+        if (!statusMap[record.employee_id]) {
+          statusMap[record.employee_id] = record.status;
+        }
+      });
+      
+      return statusMap;
+    },
+    enabled: participants.length > 0
+  });
+
   if (!training) {
     return (
       <Card>
@@ -91,24 +129,29 @@ export function TrainingDetailsPanel({
             </div>
           ) : (
             <div className="space-y-2">
-              {participants.map((participant) => (
-                <div key={participant.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                  <div>
-                    <p className="font-medium">{participant.employees?.name}</p>
-                    <p className="text-sm text-gray-600">{participant.employees?.employee_number}</p>
+              {participants.map((participant) => {
+                const currentEmployeeStatus = participantStatuses[participant.employees?.id || ''] || participant.employees?.status || 'active';
+                
+                return (
+                  <div key={participant.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <div>
+                      <p className="font-medium">{participant.employees?.name}</p>
+                      <p className="text-sm text-gray-600">{participant.employees?.employee_number}</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <EmployeeStatusBadge status={currentEmployeeStatus as EmployeeStatus} />
+                      <Badge variant="outline">{participant.status}</Badge>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => onRemoveParticipant(participant.id)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Badge variant="outline">{participant.status}</Badge>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => onRemoveParticipant(participant.id)}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>

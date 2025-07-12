@@ -75,7 +75,7 @@ export function UpcomingCourses() {
               <div 
                 key={training.id} 
                 className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
-                onClick={() => navigate(`/training-scheduler`)}
+                onClick={() => navigate(`/trainings/${training.id}`)}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">

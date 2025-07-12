@@ -26,6 +26,7 @@ export function TrainingScheduler() {
     const saved = localStorage.getItem('training-scheduler-view');
     return (saved as TrainingViewMode) || 'list';
   });
+  const [highlightedTrainingId, setHighlightedTrainingId] = useState<string | null>(null);
 
   const handleDisplayModeChange = (mode: TrainingViewMode) => {
     setDisplayMode(mode);
@@ -47,6 +48,16 @@ export function TrainingScheduler() {
       setShowCreateForm(true);
     }
   }, [preSelectedCourseId, courses.length]);
+
+  // Check for highlight parameter in URL
+  useEffect(() => {
+    const highlightId = searchParams.get('highlight');
+    if (highlightId) {
+      setHighlightedTrainingId(highlightId);
+      // Clear the highlight after a few seconds
+      setTimeout(() => setHighlightedTrainingId(null), 3000);
+    }
+  }, [searchParams]);
 
   const handleTrainingSelect = (trainingId: string) => {
     setSelectedTrainingId(trainingId);
@@ -133,6 +144,7 @@ export function TrainingScheduler() {
           trainings={trainings}
           onTrainingSelect={handleTrainingSelect}
           onCreateTraining={() => setShowCreateForm(true)}
+          highlightedTrainingId={highlightedTrainingId}
         />
       )}
 
@@ -141,6 +153,7 @@ export function TrainingScheduler() {
           trainings={trainings}
           onTrainingSelect={handleTrainingSelect}
           onCreateTraining={() => setShowCreateForm(true)}
+          highlightedTrainingId={highlightedTrainingId}
         />
       )}
 

@@ -1,6 +1,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { requiresCode95 } from "@/utils/code95Utils";
 
 interface AddParticipantData {
   trainingId: string;
@@ -22,6 +23,7 @@ export function useTrainingParticipants(trainingId?: string) {
           status,
           approval_status,
           registration_date,
+          code95_eligible,
           employees (
             id,
             name,
@@ -40,13 +42,26 @@ export function useTrainingParticipants(trainingId?: string) {
 
   const addParticipant = useMutation({
     mutationFn: async ({ trainingId, employeeId }: AddParticipantData) => {
+      // First fetch the employee to check Code 95 requirements
+      const { data: employee, error: employeeError } = await supabase
+        .from('employees')
+        .select('*')
+        .eq('id', employeeId)
+        .single();
+      
+      if (employeeError) throw employeeError;
+      
+      // Determine if employee requires Code 95
+      const code95Eligible = requiresCode95(employee);
+      
       const { data, error } = await supabase
         .from('training_participants')
         .insert([{
           training_id: trainingId,
           employee_id: employeeId,
           status: 'enrolled',
-          registration_date: new Date().toISOString()
+          registration_date: new Date().toISOString(),
+          code95_eligible: code95Eligible
         }])
         .select()
         .single();

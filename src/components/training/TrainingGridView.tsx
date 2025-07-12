@@ -4,18 +4,22 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, MapPin, Users, User, CheckSquare, Eye, Clock } from "lucide-react";
 import { Training } from "@/hooks/useTrainings";
+import { useNavigate } from "react-router-dom";
 
 interface TrainingGridViewProps {
   trainings: Training[];
   onTrainingSelect: (trainingId: string) => void;
   onCreateTraining: () => void;
+  highlightedTrainingId?: string | null;
 }
 
 export function TrainingGridView({
   trainings,
   onTrainingSelect,
-  onCreateTraining
+  onCreateTraining,
+  highlightedTrainingId
 }: TrainingGridViewProps) {
+  const navigate = useNavigate();
   const formatTime = (time: string, endTime?: string) => {
     const formattedTime = time ? time.slice(0, 5) : '';
     if (endTime) {
@@ -51,7 +55,9 @@ export function TrainingGridView({
           return (
             <Card 
               key={training.id} 
-              className="transition-all hover:shadow-md flex flex-col"
+              className={`transition-all hover:shadow-md flex flex-col ${
+                highlightedTrainingId === training.id ? 'ring-2 ring-blue-500 ring-offset-2' : ''
+              }`}
             >
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -134,7 +140,10 @@ export function TrainingGridView({
                 <div className="mt-auto pt-4">
                   <Button 
                     className="w-full h-10 bg-slate-800 text-white hover:bg-slate-900" 
-                    onClick={() => onTrainingSelect(training.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/trainings/${training.id}`);
+                    }}
                   >
                     <Eye className="h-4 w-4 mr-2" />
                     View

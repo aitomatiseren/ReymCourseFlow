@@ -96,7 +96,7 @@ export default function Dashboard() {
             }}
             color="orange"
             isLoading={trainingsLoading}
-            href="/training-scheduler"
+            href="/scheduling"
           />
         </div>
 

@@ -35,7 +35,7 @@ export function RecentActivity() {
           timestamp: timestamp,
           icon: Calendar,
           color: 'bg-blue-100 text-blue-800',
-          href: '/training-scheduler'
+          href: `/trainings/${training.id}`
         });
       }
     });
@@ -77,7 +77,7 @@ export function RecentActivity() {
           timestamp: timestamp,
           icon: BookOpen,
           color: 'bg-purple-100 text-purple-800',
-          href: '/courses'
+          href: `/courses/${course.id}`
         });
       }
     });

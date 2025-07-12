@@ -429,6 +429,7 @@ export type Database = {
       training_participants: {
         Row: {
           approval_status: string | null
+          code95_eligible: boolean | null
           employee_id: string | null
           id: string
           registration_date: string
@@ -437,6 +438,7 @@ export type Database = {
         }
         Insert: {
           approval_status?: string | null
+          code95_eligible?: boolean | null
           employee_id?: string | null
           id?: string
           registration_date?: string
@@ -445,6 +447,7 @@ export type Database = {
         }
         Update: {
           approval_status?: string | null
+          code95_eligible?: boolean | null
           employee_id?: string | null
           id?: string
           registration_date?: string

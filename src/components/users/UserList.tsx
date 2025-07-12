@@ -19,7 +19,8 @@ import {
   Loader2
 } from "lucide-react";
 import { useEmployees } from "@/hooks/useEmployees";
-import { EmployeeStatus, getStatusColor, getStatusLabel, ALL_STATUSES } from "@/constants/employeeStatus";
+import { EmployeeStatus, ALL_STATUSES } from "@/constants/employeeStatus";
+import { EmployeeStatusBadge } from "@/components/employee/EmployeeStatusBadge";
 import type { Database } from "@/integrations/supabase/types";
 
 type Employee = Database['public']['Tables']['employees']['Row'];
@@ -159,9 +160,7 @@ export function UserList() {
                     <p className="text-sm text-gray-500">#{employee.employeeNumber}</p>
                   </div>
                 </div>
-                <Badge className={getStatusColor(employee.status as EmployeeStatus)}>
-                  {getStatusLabel(employee.status as EmployeeStatus)}
-                </Badge>
+                <EmployeeStatusBadge status={employee.status as EmployeeStatus} />
               </div>
 
               <div className="space-y-2 mb-4">

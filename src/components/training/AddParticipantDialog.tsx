@@ -21,6 +21,8 @@ import {
   calculateCode95Progress 
 } from "@/utils/code95Utils";
 import { useCertificates } from "@/hooks/useCertificates";
+import { EmployeeStatusBadge } from "@/components/employee/EmployeeStatusBadge";
+import { EmployeeStatus } from "@/constants/employeeStatus";
 
 interface AddParticipantDialogProps {
   open: boolean;
@@ -28,13 +30,6 @@ interface AddParticipantDialogProps {
   trainingId: string;
 }
 
-const statusColors = {
-  active: "bg-green-100 text-green-800",
-  inactive: "bg-gray-100 text-gray-800",
-  on_leave: "bg-yellow-100 text-yellow-800",
-  sick: "bg-red-100 text-red-800",
-  terminated: "bg-red-100 text-red-800"
-};
 
 export function AddParticipantDialog({ open, onOpenChange, trainingId }: AddParticipantDialogProps) {
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
@@ -334,9 +329,7 @@ export function AddParticipantDialog({ open, onOpenChange, trainingId }: AddPart
                         <TableCell>{employee.department}</TableCell>
                         <TableCell>{employee.jobTitle || "N/A"}</TableCell>
                         <TableCell>
-                          <Badge className={statusColors[currentStatus as keyof typeof statusColors] || statusColors.inactive}>
-                            {currentStatus.replace('_', ' ')}
-                          </Badge>
+                          <EmployeeStatusBadge status={currentStatus as EmployeeStatus} />
                         </TableCell>
                         {offersCode95 && (
                           <TableCell>

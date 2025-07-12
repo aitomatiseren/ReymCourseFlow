@@ -28,12 +28,13 @@ export default function ProviderProfile() {
             <p className="text-gray-600 mt-1">View and manage training provider information and offerings.</p>
           </div>
           <Button
-            variant="outline"
+            variant="ghost"
+            size="sm"
             onClick={() => navigate('/providers')}
-            className="flex items-center gap-2"
+            className="flex items-center space-x-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Providers
+            <span>Back to Providers</span>
           </Button>
         </div>
         <ProviderProfileHeader providerId={id} />

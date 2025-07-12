@@ -3,18 +3,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, MapPin, Users, User, Eye } from "lucide-react";
 import { Training } from "@/hooks/useTrainings";
+import { useNavigate } from "react-router-dom";
 
 interface TrainingListViewProps {
   trainings: Training[];
   onTrainingSelect: (trainingId: string) => void;
   onCreateTraining: () => void;
+  highlightedTrainingId?: string | null;
 }
 
 export function TrainingListView({
   trainings,
   onTrainingSelect,
-  onCreateTraining
+  onCreateTraining,
+  highlightedTrainingId
 }: TrainingListViewProps) {
+  const navigate = useNavigate();
   const formatTime = (time: string, endTime?: string) => {
     const formattedTime = time ? time.slice(0, 5) : '';
     if (endTime) {
@@ -46,7 +50,12 @@ export function TrainingListView({
           const isMultiSession = (training.sessions_count || 1) > 1;
           
           return (
-            <Card key={training.id} className="transition-all hover:shadow-md">
+            <Card 
+              key={training.id} 
+              className={`transition-all hover:shadow-md ${
+                highlightedTrainingId === training.id ? 'ring-2 ring-blue-500 ring-offset-2' : ''
+              }`}
+            >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex-1 space-y-3">
@@ -148,7 +157,10 @@ export function TrainingListView({
                     <Button 
                       size="sm" 
                       className="bg-slate-800 text-white hover:bg-slate-900"
-                      onClick={() => onTrainingSelect(training.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/trainings/${training.id}`);
+                      }}
                     >
                       <Eye className="h-4 w-4 mr-1" />
                       View
