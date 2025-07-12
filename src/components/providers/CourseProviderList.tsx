@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useProviders } from "@/hooks/useProviders";
 import {
   Card,
   CardContent,
@@ -65,28 +66,7 @@ export function CourseProviderList() {
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
 
-  const { data: providers, isLoading } = useQuery({
-    queryKey: ["course-providers"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("course_providers")
-        .select(`
-          *,
-          course_provider_courses (
-            course_id,
-            courses (
-              id,
-              title,
-              category
-            )
-          )
-        `)
-        .order("name");
-
-      if (error) throw error;
-      return data as CourseProvider[];
-    },
-  });
+  const { data: providers, isLoading } = useProviders(true) as { data: CourseProvider[] | undefined, isLoading: boolean };
 
   const filteredProviders = providers?.filter(
     (provider) =>

@@ -162,8 +162,8 @@ export function TrainingDetailsView({
                 <div className="flex items-center space-x-2">
                   <Clock className="h-4 w-4 text-gray-500" />
                   <span>{formatTime(training.time)}</span>
-                  {training.session_end_times?.[0] && (
-                    <span>- {formatTime(training.session_end_times[0])}</span>
+                  {(training.session_end_times?.[0] || training.end_time) && (
+                    <span>- {formatTime(training.session_end_times?.[0] || training.end_time)}</span>
                   )}
                 </div>
               </div>

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTrainings } from "@/hooks/useTrainings";
 import { useCourses } from "@/hooks/useCourses";
@@ -23,6 +23,7 @@ export default function TrainingDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showAddParticipant, setShowAddParticipant] = useState(false);
   const [currentStatus, setCurrentStatus] = useState('scheduled');
@@ -45,7 +46,7 @@ export default function TrainingDetail() {
 
   const { checklist, updateChecklistItem } = useTrainingChecklist(
     id || '', 
-    training?.checklist || defaultChecklist
+    training?.checklist || []
   );
 
   // Set current status when training loads
@@ -54,6 +55,43 @@ export default function TrainingDetail() {
       setCurrentStatus(training.status);
     }
   }, [training]);
+
+  // Real-time subscriptions for automatic updates
+  useEffect(() => {
+    if (!id) return;
+
+    // Subscribe to training data changes
+    const trainingChannel = supabase
+      .channel(`training-${id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'trainings',
+        filter: `id=eq.${id}`
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['trainings'] });
+      })
+      .subscribe();
+
+    // Subscribe to training participants changes
+    const participantsChannel = supabase
+      .channel(`training-participants-${id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'training_participants',
+        filter: `training_id=eq.${id}`
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['training-participants', id] });
+        queryClient.invalidateQueries({ queryKey: ['trainings'] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(trainingChannel);
+      supabase.removeChannel(participantsChannel);
+    };
+  }, [id, queryClient]);
 
   // Fetch current status for participants from employee_status_history
   const { data: participantStatuses = {} } = useQuery({
@@ -228,7 +266,7 @@ export default function TrainingDetail() {
                 <Clock className="h-4 w-4 text-gray-500" />
                 <span>
                   {formatTime(training.time)}
-                  {training.end_time && ` - ${formatTime(training.end_time)}`}
+                  {(training.end_time || training.session_end_times?.[0]) && ` - ${formatTime(training.end_time || training.session_end_times?.[0])}`}
                 </span>
               </div>
             </div>

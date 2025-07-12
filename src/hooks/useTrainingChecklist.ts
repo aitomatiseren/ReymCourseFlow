@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -11,6 +11,11 @@ interface ChecklistItem {
 export function useTrainingChecklist(trainingId: string, initialChecklist: ChecklistItem[] = []) {
   const [checklist, setChecklist] = useState<ChecklistItem[]>(initialChecklist);
   const queryClient = useQueryClient();
+
+  // Sync internal state when training data changes (e.g., from real-time updates)
+  useEffect(() => {
+    setChecklist(initialChecklist);
+  }, [initialChecklist]);
 
   const updateChecklistMutation = useMutation({
     mutationFn: async (newChecklist: ChecklistItem[]) => {

@@ -31,18 +31,23 @@ export function EditableChecklist({
 
   // Helper function to safely get checklist items
   const getChecklistItems = (): string[] => {
-    if (!training?.courseName) return [];
+    // Return training checklist if available
+    if (training?.checklist && Array.isArray(training.checklist)) {
+      return training.checklist;
+    }
     
-    // This would typically come from the course data
-    // For now, using some default items as an example
-    const defaultItems = [
-      "Review safety procedures",
-      "Complete practical exercises", 
-      "Pass written assessment",
-      "Obtain certification"
-    ];
+    // Only return default items if training has a course name and checklist is enabled
+    if (training?.courseName && training?.enableChecklist !== false) {
+      const defaultItems = [
+        "Review safety procedures",
+        "Complete practical exercises", 
+        "Pass written assessment",
+        "Obtain certification"
+      ];
+      return defaultItems;
+    }
     
-    return defaultItems;
+    return [];
   };
 
   const items = getChecklistItems();

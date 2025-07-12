@@ -39,6 +39,8 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
     const [initialized, setInitialized] = useState(false);
     const [fetchingPermissions, setFetchingPermissions] = useState(false);
     const initializationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const lastAuthEventRef = useRef<{ event: string; timestamp: number; userId?: string } | null>(null);
+    const isAuthenticatedRef = useRef<boolean>(false);
 
     // Helper to clear timeout when initialization is complete
     const clearInitializationTimeout = () => {
@@ -240,6 +242,7 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                 setLoading(false);
                 setInitialized(true);
                 setFetchingPermissions(false);
+                isAuthenticatedRef.current = true; // Mark as authenticated
                 clearInitializationTimeout();
                 console.log('Admin permissions set directly');
                 return;
@@ -260,7 +263,7 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                     .single();
                 
                 const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
+                    setTimeout(() => reject(new Error('Profile fetch timeout')), 8000)
                 );
                 
                 const result = await Promise.race([profilePromise, timeoutPromise]) as any;
@@ -315,7 +318,7 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                 // Add timeout to RPC call to prevent hanging
                 const rpcPromise = supabase.rpc('get_user_permissions', { user_id: currentUser.id });
                 const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('RPC timeout')), 10000)
+                    setTimeout(() => reject(new Error('RPC timeout')), 8000)
                 );
                 
                 const result = await Promise.race([rpcPromise, timeoutPromise]) as any;
@@ -397,6 +400,7 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
             setLoading(false);
             setInitialized(true);
             setFetchingPermissions(false);
+            isAuthenticatedRef.current = true; // Mark as authenticated
             clearInitializationTimeout();
             console.log('Permissions context initialized successfully');
 
@@ -456,13 +460,49 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
     const isAdmin = permissions?.isAdmin || false;
     const roleName = permissions?.role?.name || null;
 
+    // Handle page visibility changes (tab switching, minimizing) - DISABLED to prevent unnecessary re-auth
+    // The constant re-authentication on minimize/maximize is bad UX
+    /*
+    useEffect(() => {
+        let visibilityCheckTimeout: NodeJS.Timeout | null = null;
+        
+        const handleVisibilityChange = () => {
+            // Only handle extreme cases where session is actually lost
+            if (document.visibilityState === 'visible' && !initialized && loading) {
+                console.log('Page became visible but stuck in loading, triggering recovery...');
+                if (initializationTimeoutRef.current) {
+                    clearTimeout(initializationTimeoutRef.current);
+                    initializationTimeoutRef.current = setTimeout(() => {
+                        if (!initialized) {
+                            setPermissions(null);
+                            setUserProfile(null);
+                            setLoading(false);
+                            setInitialized(true);
+                            setFetchingPermissions(false);
+                            setError('Authentication timeout - please refresh the page');
+                        }
+                    }, 3000);
+                }
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            if (visibilityCheckTimeout) {
+                clearTimeout(visibilityCheckTimeout);
+            }
+        };
+    }, [initialized, loading]);
+    */
+
     // Fetch permissions on mount and when auth state changes
     useEffect(() => {
         console.log('PermissionsProvider useEffect triggered');
 
-        // Set a maximum loading time to prevent infinite spinners
+        // Set a maximum loading time to prevent infinite spinners  
         initializationTimeoutRef.current = setTimeout(() => {
-            console.warn('Authentication check timed out after 15 seconds');
+            console.warn('Authentication check timed out after 12 seconds');
             // Set unauthenticated state on timeout
             if (!initialized) {
                 setPermissions(null);
@@ -472,7 +512,7 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                 setFetchingPermissions(false);
                 setError('Authentication timeout - please refresh the page');
             }
-        }, 15000); // 15 second timeout
+        }, 12000); // 12 second timeout
 
         // Listen for auth changes first, then check initial session
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -516,6 +556,26 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                 console.log('=== SIGNED_IN event ===');
                 console.log('User signed in');
                 
+                // If user is already authenticated with permissions, COMPLETELY IGNORE this event
+                // This prevents the ridiculous re-authentication on minimize/maximize
+                if (isAuthenticatedRef.current && initialized && userProfile && permissions) {
+                    console.log('User already authenticated with permissions, COMPLETELY IGNORING SIGNED_IN event');
+                    return;
+                }
+                
+                // Check if this is a duplicate event (debouncing)
+                const now = Date.now();
+                const lastEvent = lastAuthEventRef.current;
+                if (lastEvent && 
+                    lastEvent.event === 'SIGNED_IN' && 
+                    lastEvent.userId === session.user.id && 
+                    now - lastEvent.timestamp < 10000) {
+                    console.log('Ignoring duplicate SIGNED_IN event within 10 seconds');
+                    return;
+                }
+                
+                lastAuthEventRef.current = { event: 'SIGNED_IN', timestamp: now, userId: session.user.id };
+                
                 clearLogoutFlag(); // Clear flag on successful sign in
                 
                 // Set loading state but don't fetch immediately - let INITIAL_SESSION handle it
@@ -543,6 +603,7 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                 setUserProfile(null);
                 setLoading(false);
                 setInitialized(true);
+                isAuthenticatedRef.current = false; // Reset authentication flag
                 clearInitializationTimeout();
             }
             // Remove TOKEN_REFRESHED handler to prevent auto-login issues
@@ -555,6 +616,43 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
             subscription.unsubscribe();
         };
     }, []); // Empty dependency array to prevent re-running
+
+    // Real-time subscriptions for user permissions and roles
+    useEffect(() => {
+        if (!userProfile?.id) return;
+
+        // Subscribe to user profile changes
+        const profileChannel = supabase
+            .channel(`user-profile-${userProfile.id}`)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'user_profiles',
+                filter: `id=eq.${userProfile.id}`
+            }, () => {
+                console.log('User profile changed, refreshing permissions...');
+                refreshPermissions();
+            })
+            .subscribe();
+
+        // Subscribe to user role changes
+        const rolesChannel = supabase
+            .channel(`user-roles-${userProfile.role?.id}`)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'user_roles'
+            }, () => {
+                console.log('User roles changed, refreshing permissions...');
+                refreshPermissions();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(profileChannel);
+            supabase.removeChannel(rolesChannel);
+        };
+    }, [userProfile?.id, userProfile?.role?.id, refreshPermissions]);
 
     const value: PermissionsContextType = {
         permissions,

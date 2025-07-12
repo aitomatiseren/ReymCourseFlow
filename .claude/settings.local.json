@@ -12,7 +12,8 @@
       "mcp__supabase__apply_migration",
       "Bash(npm run build:*)",
       "Bash(npm run lint:*)",
-      "mcp__supabase__list_projects"
+      "mcp__supabase__list_projects",
+      "mcp__desktop-commander__read_file"
     ],
     "deny": []
   }
