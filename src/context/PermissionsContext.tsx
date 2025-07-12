@@ -40,6 +40,7 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
     const [fetchingPermissions, setFetchingPermissions] = useState(false);
     const initializationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const lastAuthEventRef = useRef<{ event: string; timestamp: number; userId?: string } | null>(null);
+    const isAuthenticatedRef = useRef<boolean>(false);
 
     // Helper to clear timeout when initialization is complete
     const clearInitializationTimeout = () => {
@@ -241,6 +242,7 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                 setLoading(false);
                 setInitialized(true);
                 setFetchingPermissions(false);
+                isAuthenticatedRef.current = true; // Mark as authenticated
                 clearInitializationTimeout();
                 console.log('Admin permissions set directly');
                 return;
@@ -398,6 +400,7 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
             setLoading(false);
             setInitialized(true);
             setFetchingPermissions(false);
+            isAuthenticatedRef.current = true; // Mark as authenticated
             clearInitializationTimeout();
             console.log('Permissions context initialized successfully');
 
@@ -457,53 +460,28 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
     const isAdmin = permissions?.isAdmin || false;
     const roleName = permissions?.role?.name || null;
 
-    // Handle page visibility changes (tab switching, minimizing)
+    // Handle page visibility changes (tab switching, minimizing) - DISABLED to prevent unnecessary re-auth
+    // The constant re-authentication on minimize/maximize is bad UX
+    /*
     useEffect(() => {
         let visibilityCheckTimeout: NodeJS.Timeout | null = null;
         
         const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') {
-                console.log('Page became visible...');
-                
-                // Only check if we're in a potentially stuck state
-                if (!initialized && loading) {
-                    console.log('Page became visible but stuck in loading, triggering faster recovery...');
-                    // If we're stuck in loading state when tab becomes visible, reduce timeout
-                    if (initializationTimeoutRef.current) {
-                        clearTimeout(initializationTimeoutRef.current);
-                        initializationTimeoutRef.current = setTimeout(() => {
-                            console.warn('Fast authentication check timed out after visibility change');
-                            if (!initialized) {
-                                setPermissions(null);
-                                setUserProfile(null);
-                                setLoading(false);
-                                setInitialized(true);
-                                setFetchingPermissions(false);
-                                setError('Authentication timeout - please refresh the page');
-                            }
-                        }, 5000); // Faster timeout when coming back from background
-                    }
-                } else if (initialized && userProfile) {
-                    // Only do a lightweight check, and debounce it to avoid repeated calls
-                    if (visibilityCheckTimeout) {
-                        clearTimeout(visibilityCheckTimeout);
-                    }
-                    
-                    visibilityCheckTimeout = setTimeout(() => {
-                        console.log('Doing lightweight auth check after visibility change...');
-                        supabase.auth.getUser().then(({ data: { user }, error }) => {
-                            if (error) {
-                                console.warn('Auth check failed on visibility change:', error);
-                                return;
-                            }
-                            
-                            if (!user && userProfile) {
-                                console.log('User session lost while tab was in background, clearing state');
-                                setPermissions(null);
-                                setUserProfile(null);
-                            }
-                        });
-                    }, 1000); // Debounce visibility checks
+            // Only handle extreme cases where session is actually lost
+            if (document.visibilityState === 'visible' && !initialized && loading) {
+                console.log('Page became visible but stuck in loading, triggering recovery...');
+                if (initializationTimeoutRef.current) {
+                    clearTimeout(initializationTimeoutRef.current);
+                    initializationTimeoutRef.current = setTimeout(() => {
+                        if (!initialized) {
+                            setPermissions(null);
+                            setUserProfile(null);
+                            setLoading(false);
+                            setInitialized(true);
+                            setFetchingPermissions(false);
+                            setError('Authentication timeout - please refresh the page');
+                        }
+                    }, 3000);
                 }
             }
         };
@@ -515,7 +493,8 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                 clearTimeout(visibilityCheckTimeout);
             }
         };
-    }, [initialized, userProfile, loading]);
+    }, [initialized, loading]);
+    */
 
     // Fetch permissions on mount and when auth state changes
     useEffect(() => {
@@ -577,14 +556,21 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                 console.log('=== SIGNED_IN event ===');
                 console.log('User signed in');
                 
+                // If user is already authenticated with permissions, COMPLETELY IGNORE this event
+                // This prevents the ridiculous re-authentication on minimize/maximize
+                if (isAuthenticatedRef.current && initialized && userProfile && permissions) {
+                    console.log('User already authenticated with permissions, COMPLETELY IGNORING SIGNED_IN event');
+                    return;
+                }
+                
                 // Check if this is a duplicate event (debouncing)
                 const now = Date.now();
                 const lastEvent = lastAuthEventRef.current;
                 if (lastEvent && 
                     lastEvent.event === 'SIGNED_IN' && 
                     lastEvent.userId === session.user.id && 
-                    now - lastEvent.timestamp < 3000) { // 3 second debounce
-                    console.log('Ignoring duplicate SIGNED_IN event within 3 seconds');
+                    now - lastEvent.timestamp < 10000) {
+                    console.log('Ignoring duplicate SIGNED_IN event within 10 seconds');
                     return;
                 }
                 
@@ -617,6 +603,7 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                 setUserProfile(null);
                 setLoading(false);
                 setInitialized(true);
+                isAuthenticatedRef.current = false; // Reset authentication flag
                 clearInitializationTimeout();
             }
             // Remove TOKEN_REFRESHED handler to prevent auto-login issues
