@@ -44,13 +44,14 @@ export function useNotifications(userId?: string) {
         queryFn: async () => {
             if (!userId) return [];
 
-            // Let RLS policy handle filtering based on auth user -> employee relationship
+            // Explicitly filter by recipient_id (employee_id) + RLS policy provides additional security
             const { data, error } = await supabase
                 .from('notifications')
                 .select(`
           *,
           recipient:employees(id, name, email, first_name, last_name)
         `)
+                .eq('recipient_id', userId)
                 .order('created_at', { ascending: false });
 
             if (error) {
@@ -71,10 +72,11 @@ export function useNotifications(userId?: string) {
         queryFn: async () => {
             if (!userId) return 0;
 
-            // Let RLS policy handle filtering based on auth user -> employee relationship
+            // Explicitly filter by recipient_id (employee_id) + RLS policy provides additional security
             const { count, error } = await supabase
                 .from('notifications')
                 .select('*', { count: 'exact', head: true })
+                .eq('recipient_id', userId)
                 .eq('read', false);
 
             if (error) {
@@ -128,10 +130,11 @@ export function useNotifications(userId?: string) {
         mutationFn: async () => {
             if (!userId) throw new Error('No user ID provided');
 
-            // Let RLS policy handle filtering based on auth user -> employee relationship
+            // Explicitly filter by recipient_id (employee_id) + RLS policy provides additional security
             const { error } = await supabase
                 .from('notifications')
                 .update({ read: true, read_at: new Date().toISOString() })
+                .eq('recipient_id', userId)
                 .eq('read', false);
 
             if (error) throw error;

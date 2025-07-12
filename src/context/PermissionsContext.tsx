@@ -213,9 +213,10 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
             if (currentUser.email === 'admin@admin.com') {
                 console.log('Admin user detected, setting admin permissions directly');
 
-                // Create a mock admin profile
+                // Create a mock admin profile without employee_id (system admin, not employee)
                 const adminProfile = {
                     id: currentUser.id,
+                    employee_id: null, // System admin is not an employee
                     role_id: 'admin-role-id',
                     is_active: true,
                     created_at: new Date().toISOString(),
@@ -266,7 +267,8 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                 .from('user_profiles')
                 .select(`
                     *,
-                    role:user_roles(*)
+                    role:user_roles(*),
+                    employee:employees(*)
                 `)
                 .eq('id', currentUser.id)
                 .single();

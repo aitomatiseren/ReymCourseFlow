@@ -89,22 +89,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-
-      <SidebarFooter className="border-t border-sidebar-border">
-        <div className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-              <span className="text-sm font-semibold text-white">RB</span>
-            </div>
-            {state === "expanded" && (
-              <div>
-                <p className="text-sm font-medium">Reym B.V.</p>
-                <p className="text-xs text-muted-foreground">Admin User</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </SidebarFooter>
     </Sidebar>
   );
 }

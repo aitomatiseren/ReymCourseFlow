@@ -1,4 +1,5 @@
 // User Roles and Permissions Types
+import { Employee } from './index';
 
 export interface UserRole {
     id: string;
@@ -37,7 +38,7 @@ export interface UserProfile {
     updated_at: string;
     // Relations
     role?: UserRole;
-    employee?: any; // Will be typed from existing employee type
+    employee?: Employee;
 }
 
 export type PermissionCategory =

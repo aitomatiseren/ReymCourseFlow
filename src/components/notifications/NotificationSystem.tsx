@@ -89,6 +89,34 @@ export function NotificationSystem({
     };
   }, [enableRealTime, userId, enableRT, disableRT]);
 
+  // If user has no employee record, show appropriate message
+  if (!userId) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+              <Bell className="h-6 w-6 mr-2" />
+              Notification Center
+            </h2>
+            <p className="text-gray-600">Automated notifications and communication management</p>
+          </div>
+        </div>
+
+        <Card>
+          <CardContent className="p-12 text-center">
+            <Bell className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Notifications Available</h3>
+            <p className="text-gray-500 max-w-md mx-auto">
+              Notifications are only available for users with employee records.
+              System administrators and external users do not receive employee-specific notifications.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const filteredNotifications = notifications.filter(notification => {
     if (filter === 'all') return true;
     if (filter === 'read') return notification.read;

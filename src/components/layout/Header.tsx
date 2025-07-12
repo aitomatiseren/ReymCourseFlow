@@ -17,7 +17,7 @@ import { SearchDialog } from '@/components/layout/SearchDialog';
 
 export const Header: React.FC = () => {
   const { userProfile, isAdmin, roleName } = usePermissions();
-  const { unreadCount } = useNotifications();
+  const { unreadCount } = useNotifications(userProfile?.employee_id);
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -52,6 +52,7 @@ export const Header: React.FC = () => {
 
   // Get user initials for avatar
   const getUserInitials = () => {
+    // For users with employee records
     if (userProfile?.employee?.name) {
       return userProfile.employee.name
         .split(' ')
@@ -60,19 +61,29 @@ export const Header: React.FC = () => {
         .toUpperCase()
         .slice(0, 2);
     }
+
+    // For system users without employee records, use role-based initials
+    if (isAdmin) {
+      return 'AD';
+    }
+
     return 'U';
   };
 
   // Get display name
   const getDisplayName = () => {
+    // For users with employee records
     if (userProfile?.employee?.name) {
       return userProfile.employee.name;
     }
+
+    // For system users without employee records
+    if (isAdmin) {
+      return 'System Administrator';
+    }
+
     return 'User';
   };
-
-  const userEmail = userProfile?.employee?.email || 'Unknown';
-  const userInitials = userEmail.substring(0, 2).toUpperCase();
 
   return (
     <>
@@ -100,7 +111,7 @@ export const Header: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-4">
-            <NotificationBell />
+            <NotificationBell userId={userProfile?.employee_id} />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
