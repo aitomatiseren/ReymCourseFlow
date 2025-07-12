@@ -411,8 +411,21 @@ export function EditEmployeeDialog({
         title: "Success",
         description: "Employee updated successfully",
       });
+      // Invalidate all employee-related queries
       queryClient.invalidateQueries({ queryKey: ["employees"] });
       queryClient.invalidateQueries({ queryKey: ["employee", employee.id] });
+      queryClient.invalidateQueries({ queryKey: ["employee-current-status", employee.id] });
+      queryClient.invalidateQueries({ queryKey: ["employee-status-history", employee.id] });
+      
+      // Invalidate certificate queries (needed for Code 95 calculations)
+      queryClient.invalidateQueries({ queryKey: ["certificates"] });
+      
+      // Invalidate training participant queries (affects Code 95 eligibility in training dialogs)
+      queryClient.invalidateQueries({ queryKey: ["training-participants"] });
+      
+      // Force refresh of all Code 95 related UI components
+      queryClient.invalidateQueries({ queryKey: ["employee-statuses"] });
+      
       onOpenChange(false);
     },
     onError: (error) => {
@@ -426,6 +439,13 @@ export function EditEmployeeDialog({
   });
 
   const onSubmit = (data: EmployeeFormData) => {
+    // If employee no longer has C, CE, or D licenses, remove Code 95
+    if (!data.drivingLicenseC && !data.drivingLicenseCE && !data.drivingLicenseD) {
+      data.drivingLicenseCode95 = false;
+      data.drivingLicenseCode95StartDate = "";
+      data.drivingLicenseCode95ExpiryDate = "";
+    }
+    
     updateEmployee.mutate(data);
   };
 
@@ -1509,58 +1529,61 @@ export function EditEmployeeDialog({
                 )}
               </div>
 
-              {/* Code 95 */}
-              <div className="space-y-2">
-                <FormField
-                  control={form.control}
-                  name="drivingLicenseCode95"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <input
-                          type="checkbox"
-                          checked={field.value}
-                          onChange={field.onChange}
-                          className="rounded border-gray-300"
-                        />
-                      </FormControl>
-                      <FormLabel className="text-sm font-normal">
-                        Code 95
-                      </FormLabel>
-                    </FormItem>
+              {/* Code 95 - Only show for employees with C, CE, or D licenses */}
+              {(form.watch("drivingLicenseC") || form.watch("drivingLicenseCE") || form.watch("drivingLicenseD")) && (
+                <div className="space-y-2">
+                  <FormField
+                    control={form.control}
+                    name="drivingLicenseCode95"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <input
+                            type="checkbox"
+                            checked={field.value}
+                            onChange={field.onChange}
+                            className="rounded border-gray-300"
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-normal">
+                          Code 95
+                        </FormLabel>
+                        <span className="text-xs text-gray-500">(Required for C, CE, D licenses)</span>
+                      </FormItem>
+                    )}
+                  />
+                  {form.watch("drivingLicenseCode95") && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-6">
+                      <FormField
+                        control={form.control}
+                        name="drivingLicenseCode95StartDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Start Date</FormLabel>
+                            <FormControl>
+                              <Input type="date" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="drivingLicenseCode95ExpiryDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Expiry Date</FormLabel>
+                            <FormControl>
+                              <Input type="date" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                   )}
-                />
-                {form.watch("drivingLicenseCode95") && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-6">
-                    <FormField
-                      control={form.control}
-                      name="drivingLicenseCode95StartDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Start Date</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="drivingLicenseCode95ExpiryDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Expiry Date</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
             {/* Emergency Contact */}

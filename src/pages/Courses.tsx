@@ -226,12 +226,9 @@ export default function Courses() {
                         Max {course.max_participants} participants
                       </div>
                     )}
-                    {course.price && (
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Euro className="h-4 w-4 mr-2" />
-                        €{course.price} per participant
-                      </div>
-                    )}
+                    <div className="text-xs text-gray-500 italic">
+                      Pricing configured per provider
+                    </div>
                   </div>
                   
                   <div className="mt-auto">

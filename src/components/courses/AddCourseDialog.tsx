@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2 } from "lucide-react";
 import { useCreateCourse } from "@/hooks/useCourses";
@@ -21,32 +20,16 @@ interface ChecklistItem {
   required: boolean;
 }
 
-interface CostComponent {
-  id: string;
-  name: string;
-  amount: number;
-  description: string;
-}
-
 export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     max_participants: "",
-    price: "",
     sessions_required: "1",
     is_code95: false
   });
 
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
-  const [costComponents, setCostComponents] = useState<CostComponent[]>([
-    {
-      id: Date.now().toString(),
-      name: "Course Fee",
-      amount: 0,
-      description: "Base course price"
-    }
-  ]);
 
   const createCourse = useCreateCourse();
   const { toast } = useToast();
@@ -63,31 +46,6 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
     setChecklistItems(checklistItems.filter(item => item.id !== id));
   };
 
-  const addCostComponent = () => {
-    setCostComponents([...costComponents, {
-      id: Date.now().toString(),
-      name: "",
-      amount: 0,
-      description: ""
-    }]);
-  };
-
-  const removeCostComponent = (id: string) => {
-    if (costComponents.length > 1) {
-      setCostComponents(costComponents.filter(item => item.id !== id));
-    }
-  };
-
-  const updateCostComponent = (id: string, field: keyof CostComponent, value: string | number) => {
-    setCostComponents(costComponents.map(item => 
-      item.id === id ? { ...item, [field]: value } : item
-    ));
-  };
-
-  const calculateTotalPrice = () => {
-    return costComponents.reduce((total, component) => total + component.amount, 0);
-  };
-
   const updateChecklistItem = (id: string, field: keyof ChecklistItem, value: string | boolean) => {
     setChecklistItems(checklistItems.map(item =>
       item.id === id ? { ...item, [field]: value } : item
@@ -98,17 +56,10 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
     e.preventDefault();
     
     try {
-      const totalPrice = calculateTotalPrice();
-      const validCostComponents = costComponents.filter(component => 
-        component.name.trim() && component.amount > 0
-      );
-
       await createCourse.mutateAsync({
         title: formData.title,
         description: formData.description || undefined,
         max_participants: formData.max_participants ? Number(formData.max_participants) : undefined,
-        price: totalPrice || undefined,
-        cost_breakdown: validCostComponents.map(({ id, ...component }) => component),
         code95_points: formData.is_code95 ? 7 : null,
         sessions_required: Number(formData.sessions_required),
         has_checklist: checklistItems.length > 0,
@@ -124,17 +75,10 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
         title: "",
         description: "",
         max_participants: "",
-        price: "",
         sessions_required: "1",
         is_code95: false
       });
       setChecklistItems([]);
-      setCostComponents([{
-        id: Date.now().toString(),
-        name: "Course Fee",
-        amount: 0,
-        description: "Base course price"
-      }]);
       
       onOpenChange(false);
     } catch (error) {
@@ -195,66 +139,6 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
                 onChange={(e) => setFormData({ ...formData, sessions_required: e.target.value })}
               />
               <p className="text-xs text-gray-500 mt-1">How many sessions this course requires</p>
-            </div>
-          </div>
-          
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <Label>Cost Breakdown</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addCostComponent}>
-                <Plus className="h-4 w-4 mr-1" />
-                Add Cost Component
-              </Button>
-            </div>
-            
-            <div className="space-y-3 border rounded-lg p-4 bg-gray-50">
-              {costComponents.map((component) => (
-                <div key={component.id} className="grid grid-cols-1 md:grid-cols-4 gap-3 p-3 bg-white rounded border">
-                  <div>
-                    <Label className="text-sm">Component Name</Label>
-                    <Input
-                      placeholder="e.g., Theory Training"
-                      value={component.name}
-                      onChange={(e) => updateCostComponent(component.id, 'name', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm">Amount (€)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={component.amount || ''}
-                      onChange={(e) => updateCostComponent(component.id, 'amount', Number(e.target.value) || 0)}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm">Description</Label>
-                    <Input
-                      placeholder="Optional description"
-                      value={component.description}
-                      onChange={(e) => updateCostComponent(component.id, 'description', e.target.value)}
-                    />
-                  </div>
-                  <div className="flex items-end">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeCostComponent(component.id)}
-                      disabled={costComponents.length <= 1}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-              
-              <div className="flex justify-between items-center pt-2 border-t bg-gray-100 px-3 py-2 rounded">
-                <span className="font-medium">Total Price:</span>
-                <span className="font-bold text-lg">€{calculateTotalPrice().toFixed(2)}</span>
-              </div>
             </div>
           </div>
           
@@ -329,6 +213,13 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
               </div>
             </div>
           )}
+
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <p className="text-sm text-yellow-800">
+              <strong>Note:</strong> Course pricing will be configured per training provider. 
+              You can set different prices for this course with each provider in the provider management section.
+            </p>
+          </div>
           
           <div className="flex justify-end space-x-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

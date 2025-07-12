@@ -2,6 +2,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export interface CostComponent {
+  name: string;
+  amount: number;
+  description: string;
+}
+
 export interface Training {
   id: string;
   title: string;
@@ -16,6 +22,7 @@ export interface Training {
   course_id?: string;
   courseName?: string;
   price?: number;
+  cost_breakdown?: CostComponent[];
   code95_points?: number;
   sessions_count?: number;
   session_dates?: string[] | null;
@@ -48,6 +55,7 @@ export function useTrainings() {
           session_times,
           session_end_times,
           price,
+          cost_breakdown,
           notes,
           checklist,
           course_id,
@@ -84,28 +92,45 @@ export function useTrainings() {
       console.log('Fetched trainings:', trainingsData);
       
       // Transform database data to match our Training interface
-      const trainings: Training[] = trainingsData.map(training => ({
-        id: training.id,
-        title: training.title,
-        instructor: training.instructor || 'TBD',
-        date: training.date,
-        time: training.time,
-        location: training.location,
-        maxParticipants: training.max_participants,
-        status: training.status as Training['status'] || 'scheduled',
-        requiresApproval: training.requires_approval || false,
-        participantCount: participantCounts[training.id] || 0,
-        course_id: training.course_id,
-        courseName: training.courses?.title,
-        price: training.price ? Number(training.price) : training.courses?.price ? Number(training.courses.price) : undefined,
-        code95_points: training.courses?.code95_points || undefined,
-        sessions_count: training.sessions_count || 1,
-        session_dates: training.session_dates as string[] | null,
-        session_times: training.session_times as string[] | null,
-        session_end_times: training.session_end_times as string[] | null,
-        checklist: training.checklist as Array<{ id: string; text: string; completed: boolean }> || [],
-        notes: training.notes || ""
-      }));
+      const trainings: Training[] = trainingsData.map(training => {
+        const finalPrice = training.price ? Number(training.price) : training.courses?.price ? Number(training.courses.price) : undefined;
+        
+        // Use existing cost breakdown from database, or create a simple one from the price
+        const costBreakdown: CostComponent[] | undefined = 
+          training.cost_breakdown && Array.isArray(training.cost_breakdown) && training.cost_breakdown.length > 0
+            ? training.cost_breakdown as unknown as CostComponent[]
+            : finalPrice ? [
+                {
+                  name: "Training Fee",
+                  amount: finalPrice,
+                  description: "Total course fee"
+                }
+              ] : undefined;
+        
+        return {
+          id: training.id,
+          title: training.title,
+          instructor: training.instructor || 'TBD',
+          date: training.date,
+          time: training.time,
+          location: training.location,
+          maxParticipants: training.max_participants,
+          status: training.status as Training['status'] || 'scheduled',
+          requiresApproval: training.requires_approval || false,
+          participantCount: participantCounts[training.id] || 0,
+          course_id: training.course_id,
+          courseName: training.courses?.title,
+          price: finalPrice,
+          cost_breakdown: costBreakdown,
+          code95_points: training.courses?.code95_points || undefined,
+          sessions_count: training.sessions_count || 1,
+          session_dates: training.session_dates as string[] | null,
+          session_times: training.session_times as string[] | null,
+          session_end_times: training.session_end_times as string[] | null,
+          checklist: training.checklist as Array<{ id: string; text: string; completed: boolean }> || [],
+          notes: training.notes || ""
+        };
+      });
       
       return trainings;
     }

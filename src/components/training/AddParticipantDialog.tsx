@@ -18,7 +18,8 @@ import {
   getCode95StatusEmoji, 
   getCode95StatusDescription,
   getCode95StatusColor,
-  calculateCode95Progress 
+  calculateCode95Progress,
+  requiresCode95
 } from "@/utils/code95Utils";
 import { useCertificates } from "@/hooks/useCertificates";
 import { EmployeeStatusBadge } from "@/components/employee/EmployeeStatusBadge";
@@ -333,16 +334,22 @@ export function AddParticipantDialog({ open, onOpenChange, trainingId }: AddPart
                         </TableCell>
                         {offersCode95 && (
                           <TableCell>
-                            <div className="text-xs">
-                              <div className={`font-medium px-2 py-1 rounded text-center ${getCode95StatusColor(code95Status)}`}>
-                                {getCode95StatusDescription(code95Status, code95Progress.daysUntilExpiry)}
-                              </div>
-                              {code95Status !== 'not_required' && (
-                                <div className="text-gray-500 text-center mt-1">
-                                  {code95Progress.pointsEarned}/{code95Progress.pointsRequired} pts
+                            {requiresCode95(employee) ? (
+                              <div className="text-xs">
+                                <div className={`font-medium px-2 py-1 rounded text-center ${getCode95StatusColor(code95Status)}`}>
+                                  {getCode95StatusDescription(code95Status, code95Progress.daysUntilExpiry)}
                                 </div>
-                              )}
-                            </div>
+                                {code95Status !== 'not_required' && (
+                                  <div className="text-gray-500 text-center mt-1">
+                                    {code95Progress.pointsEarned}/{code95Progress.pointsRequired} pts
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="text-xs text-gray-400 text-center">
+                                No C/CE/D license
+                              </div>
+                            )}
                           </TableCell>
                         )}
                         <TableCell>{formatDate(employee.dateOfBirth)}</TableCell>

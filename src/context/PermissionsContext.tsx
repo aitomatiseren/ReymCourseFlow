@@ -283,6 +283,10 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                 setInitialized(true);
                 setFetchingPermissions(false);
                 clearInitializationTimeout();
+                
+                // Log this for debugging
+                console.log(`User ${currentUser.email} (${currentUser.id}) has no profile in user_profiles table`);
+                console.log('Consider creating a profile for this user if they need access to the system');
                 return;
             }
 
@@ -302,8 +306,65 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
 
             // Get user permissions based on role
             console.log('Fetching permissions for user:', currentUser.id);
-            const { data: userPermissions, error: permissionsError } = await supabase
-                .rpc('get_user_permissions', { user_id: currentUser.id });
+            
+            let userPermissions: any[] = [];
+            let permissionsError: any = null;
+            
+            try {
+                const result = await supabase.rpc('get_user_permissions', { user_id: currentUser.id });
+                userPermissions = result.data;
+                permissionsError = result.error;
+            } catch (rpcError) {
+                console.warn('RPC function get_user_permissions not found, using fallback permissions');
+                // Fallback: Use role-based permissions if RPC function doesn't exist
+                if (userProfileData?.role?.name) {
+                    const roleName = userProfileData.role.name;
+                    console.log('Using role-based permissions for role:', roleName);
+                    
+                    // Define default permissions by role
+                    const rolePermissions: Record<string, string[]> = {
+                        'admin': [
+                            'view_own_profile', 'edit_own_profile', 'view_own_certificates', 'view_own_trainings',
+                            'view_employees', 'create_employees', 'edit_employees', 'delete_employees', 'manage_employee_roles',
+                            'view_courses', 'create_courses', 'edit_courses', 'delete_courses',
+                            'view_training_plans', 'create_training_plans', 'edit_training_plans', 'finalize_training_plans',
+                            'view_pending_approvals', 'approve_trainings', 'approve_budget',
+                            'view_schedules', 'create_trainings', 'edit_trainings', 'cancel_trainings', 'manage_participants',
+                            'view_basic_reports', 'view_advanced_reports', 'export_reports', 'create_custom_reports',
+                            'manage_system_settings', 'manage_user_roles', 'view_audit_logs', 'manage_integrations', 'system_backup'
+                        ],
+                        'hr': [
+                            'view_own_profile', 'edit_own_profile', 'view_own_certificates', 'view_own_trainings',
+                            'view_employees', 'create_employees', 'edit_employees', 'manage_employee_roles',
+                            'view_courses', 'create_courses', 'edit_courses',
+                            'view_training_plans', 'create_training_plans', 'edit_training_plans',
+                            'view_schedules', 'create_trainings', 'edit_trainings', 'manage_participants',
+                            'view_basic_reports', 'view_advanced_reports', 'export_reports'
+                        ],
+                        'manager': [
+                            'view_own_profile', 'edit_own_profile', 'view_own_certificates', 'view_own_trainings',
+                            'view_employees', 'view_courses', 'view_training_plans', 'create_training_plans',
+                            'view_pending_approvals', 'approve_trainings', 'approve_budget',
+                            'view_schedules', 'create_trainings', 'edit_trainings', 'manage_participants',
+                            'view_basic_reports', 'export_reports'
+                        ],
+                        'instructor': [
+                            'view_own_profile', 'edit_own_profile', 'view_own_certificates', 'view_own_trainings',
+                            'view_employees', 'view_courses', 'view_schedules', 'edit_trainings', 'manage_participants',
+                            'view_basic_reports'
+                        ],
+                        'employee': [
+                            'view_own_profile', 'edit_own_profile', 'view_own_certificates', 'view_own_trainings'
+                        ]
+                    };
+                    
+                    userPermissions = rolePermissions[roleName] || rolePermissions['employee'];
+                    console.log('Using fallback permissions for role:', roleName, userPermissions);
+                } else {
+                    // Default employee permissions
+                    userPermissions = ['view_own_profile', 'edit_own_profile', 'view_own_certificates', 'view_own_trainings'];
+                }
+            }
 
             console.log('Permissions query result:', { userPermissions, permissionsError });
 
@@ -318,7 +379,10 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                 return;
             }
 
-            const permissionNames = userPermissions?.map((p: any) => p.permission_name) || [];
+            // Handle both array formats (RPC result vs fallback)
+            const permissionNames = Array.isArray(userPermissions) 
+                ? userPermissions.map((p: any) => typeof p === 'string' ? p : p.permission_name).filter(Boolean)
+                : [];
             console.log('User permissions loaded:', permissionNames.length, 'permissions for role:', userProfileData?.role?.name);
             console.log('Permissions:', permissionNames);
 
@@ -420,11 +484,14 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
             } else if (event === 'TOKEN_REFRESHED' && session?.user) {
                 console.log('Token refreshed, checking if we need to refresh permissions...');
                 // Only refresh if we don't already have permissions and not currently fetching
-                if (!fetchingPermissions && (!permissions || !userProfile)) {
+                // AND we haven't already tried to fetch permissions for this user
+                if (!fetchingPermissions && !permissions && !initialized) {
                     console.log('Refreshing permissions after token refresh...');
                     setLoading(true);
                     setInitialized(false);
                     await fetchUserPermissions(session.user);
+                } else {
+                    console.log('Skipping token refresh - already initialized or fetching');
                 }
             } else if (event === 'SIGNED_OUT') {
                 console.log('User signed out, clearing permissions');

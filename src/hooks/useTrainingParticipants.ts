@@ -43,17 +43,17 @@ export function useTrainingParticipants(trainingId?: string) {
 
   const addParticipant = useMutation({
     mutationFn: async ({ trainingId, employeeId }: AddParticipantData) => {
-      // First fetch the employee to check Code 95 requirements
+      // First, get the employee data to check if they have C, CE, or D licenses
       const { data: employee, error: employeeError } = await supabase
         .from('employees')
-        .select('*')
+        .select('driving_license_c, driving_license_ce, driving_license_d')
         .eq('id', employeeId)
         .single();
-      
+
       if (employeeError) throw employeeError;
-      
-      // Determine if employee requires Code 95
-      const code95Eligible = requiresCode95(employee);
+
+      // Only set code95_eligible to true if employee has required licenses
+      const code95Eligible = !!(employee.driving_license_c || employee.driving_license_ce || employee.driving_license_d);
       
       const { data, error } = await supabase
         .from('training_participants')
@@ -115,10 +115,56 @@ export function useTrainingParticipants(trainingId?: string) {
     }
   });
 
+  const updateParticipantCode95Status = useMutation({
+    mutationFn: async ({ participantId, code95Eligible }: { participantId: string; code95Eligible: boolean }) => {
+      // First, get the participant and employee data to verify they have the required licenses
+      const { data: participant, error: participantError } = await supabase
+        .from('training_participants')
+        .select(`
+          id,
+          employees (
+            driving_license_c,
+            driving_license_ce,
+            driving_license_d
+          )
+        `)
+        .eq('id', participantId)
+        .single();
+
+      if (participantError) throw participantError;
+
+      // Only allow code95_eligible to be true if employee has required licenses
+      const hasRequiredLicenses = !!(
+        participant.employees?.driving_license_c || 
+        participant.employees?.driving_license_ce || 
+        participant.employees?.driving_license_d
+      );
+
+      if (code95Eligible && !hasRequiredLicenses) {
+        throw new Error('Employee must have C, CE, or D license to be eligible for Code 95');
+      }
+
+      const { data, error } = await supabase
+        .from('training_participants')
+        .update({ code95_eligible: code95Eligible })
+        .eq('id', participantId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['training-participants'] });
+      queryClient.invalidateQueries({ queryKey: ['trainings'] });
+    }
+  });
+
   return {
     participants,
     isLoading,
     addParticipant,
-    removeParticipant
+    removeParticipant,
+    updateParticipantCode95Status
   };
 }

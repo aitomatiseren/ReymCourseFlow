@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin, Users, User, CheckSquare, Eye, Clock, Truck } from "lucide-react";
+import { Calendar, MapPin, Users, User, CheckSquare, Eye, Clock, Truck, Euro } from "lucide-react";
 import { Training } from "@/hooks/useTrainings";
 import { useNavigate } from "react-router-dom";
 
@@ -94,7 +94,7 @@ export function TrainingGridView({
                           </div>
                           <div className="flex items-center text-gray-600 mt-1">
                             <MapPin className="h-3 w-3 mr-1" />
-                            {training.location}
+                            {training.location || 'Not specified'}
                           </div>
                         </div>
                       ))}
@@ -108,7 +108,7 @@ export function TrainingGridView({
                     </div>
                     <div className="flex items-center">
                       <MapPin className="h-4 w-4 mr-2" />
-                      {training.location}
+                      {training.location || 'Not specified'}
                     </div>
                   </div>
                 )}
@@ -117,11 +117,11 @@ export function TrainingGridView({
                 <div className="space-y-2 text-sm text-gray-600">
                   <div className="flex items-center">
                     <Users className="h-4 w-4 mr-2" />
-                    {training.participantCount}/{training.maxParticipants} participants
+                    {training.participantCount || 0}/{training.maxParticipants || 'N/A'} participants
                   </div>
                   <div className="flex items-center">
                     <User className="h-4 w-4 mr-2" />
-                    Instructor: {training.instructor}
+                    Instructor: {training.instructor || 'Not assigned'}
                   </div>
                   {training.courseName && (
                     <div className="flex items-center">
@@ -129,15 +129,38 @@ export function TrainingGridView({
                       Course: {training.courseName}
                     </div>
                   )}
-                  {training.price && (
-                    <div className="flex items-center">
+                  
+                  {/* Pricing */}
+                  {training.cost_breakdown && training.cost_breakdown.length > 0 ? (
+                    <div className="space-y-1">
+                      {training.cost_breakdown.map((cost, index) => (
+                        <div key={index} className="flex items-center justify-between text-xs">
+                          <span className="text-gray-600">{cost.name}</span>
+                          <span className="font-medium">€{cost.amount}</span>
+                        </div>
+                      ))}
+                      {training.cost_breakdown.length > 1 && (
+                        <div className="flex items-center justify-between text-xs font-semibold border-t pt-1">
+                          <span>Total</span>
+                          <span>€{training.price || 0}</span>
+                        </div>
+                      )}
+                    </div>
+                  ) : training.price ? (
+                    <div className="flex items-center text-sm">
                       <span className="text-green-600 font-medium">€{training.price}</span>
                     </div>
+                  ) : (
+                    <span className="text-sm text-gray-500">Free</span>
                   )}
+                  
+                  {/* Features */}
                   {training.code95_points && training.code95_points > 0 && (
                     <div className="flex items-center">
-                      <Truck className="h-4 w-4 mr-2 text-blue-600" />
-                      <span className="text-blue-600 font-medium">Code 95: {training.code95_points} points</span>
+                      <Badge variant="outline" className="bg-blue-100 text-blue-800 text-xs">
+                        <Truck className="h-3 w-3 mr-1" />
+                        {training.code95_points} pts
+                      </Badge>
                     </div>
                   )}
                 </div>

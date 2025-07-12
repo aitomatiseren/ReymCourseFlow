@@ -16,6 +16,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { supabase } from "@/integrations/supabase/client";
+import { Plus, Trash2, DollarSign } from "lucide-react";
+import { CostComponent } from "@/types";
 
 // Custom DialogContent that prevents outside click and has custom ESC handling
 const CustomDialogContent = forwardRef<
@@ -48,8 +51,11 @@ interface CreateTrainingDialogProps {
   preSelectedCourseId?: string;
 }
 
+
+
 export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }: CreateTrainingDialogProps) {
   const [selectedCourseId, setSelectedCourseId] = useState("");
+  const [selectedProviderId, setSelectedProviderId] = useState("");
   const [title, setTitle] = useState("");
   const [instructor, setInstructor] = useState("");
   const [location, setLocation] = useState("");
@@ -57,6 +63,7 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
   const [status, setStatus] = useState<'scheduled' | 'confirmed' | 'cancelled' | 'completed'>('scheduled');
   const [requiresApproval, setRequiresApproval] = useState(false);
   const [price, setPrice] = useState("");
+  const [costBreakdown, setCostBreakdown] = useState<CostComponent[]>([]);
   const [checklist, setChecklist] = useState<Array<{ id: string; text: string; completed: boolean }>>([]);
   const [courseChecklistItems, setCourseChecklistItems] = useState<boolean[]>([]);
 
@@ -72,6 +79,60 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
 
   const selectedCourse = courses.find(course => course.id === selectedCourseId);
 
+  // Auto-populate pricing when provider is selected
+  const handleProviderChange = async (providerId: string) => {
+    setSelectedProviderId(providerId);
+    
+    if (providerId && selectedCourseId) {
+      try {
+        const { data, error } = await supabase
+          .from('course_provider_courses')
+          .select('price, cost_breakdown')
+          .eq('course_id', selectedCourseId)
+          .eq('provider_id', providerId)
+          .single();
+
+        if (error) throw error;
+
+        if (data) {
+          // Auto-populate from provider-specific pricing
+          if (data.cost_breakdown && Array.isArray(data.cost_breakdown)) {
+            const components = data.cost_breakdown as unknown as CostComponent[];
+            setCostBreakdown(components);
+            const totalPrice = components.reduce((sum: number, item: CostComponent) => sum + (item.amount || 0), 0);
+            setPrice(totalPrice.toString());
+          } else if (data.price) {
+            // Fallback to simple price
+            setPrice(data.price.toString());
+            setCostBreakdown([{
+              name: "Course Fee",
+              amount: data.price,
+              description: "Base course price"
+            }]);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching provider pricing:', error);
+        // Don't show error to user, just keep existing pricing
+      }
+    }
+  };
+
+  // Handle provider details change (auto-fill location, instructor)
+  const handleProviderDetailsChange = (provider: any) => {
+    if (provider) {
+      // Auto-fill location from provider default location
+      if (provider.default_location && !location) {
+        setLocation(provider.default_location);
+      }
+      
+      // Auto-fill instructor from provider contact person if available
+      if (provider.contact_person && !instructor) {
+        setInstructor(provider.contact_person);
+      }
+    }
+  };
+
   // Set pre-selected course
   useEffect(() => {
     if (preSelectedCourseId && courses.length > 0) {
@@ -81,7 +142,6 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
         setTitle(course.title);
         setMaxParticipants(course.max_participants?.toString() || "");
         setSessions(course.sessions_required || 1);
-        setPrice(course.price?.toString() || "");
         
         // Initialize checklist from course
         if (course.has_checklist && course.checklist_items) {
@@ -121,15 +181,18 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
     }
   }, [sessions]);
 
-
   const handleCourseChange = (courseId: string) => {
     setSelectedCourseId(courseId);
+    // Reset provider when course changes
+    setSelectedProviderId("");
+    setCostBreakdown([]);
+    setPrice("");
+    
     const course = courses.find(c => c.id === courseId);
     if (course) {
       setTitle(course.title);
       setMaxParticipants(course.max_participants?.toString() || "");
       setSessions(course.sessions_required || 1);
-      setPrice(course.price?.toString() || "");
       
       // Reset and initialize checklist
       setCourseChecklistItems([]);
@@ -144,6 +207,30 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
     const newItems = [...courseChecklistItems];
     newItems[index] = checked;
     setCourseChecklistItems(newItems);
+  };
+
+  const addCostComponent = () => {
+    setCostBreakdown([...costBreakdown, {
+      name: "",
+      amount: 0,
+      description: ""
+    }]);
+  };
+
+  const removeCostComponent = (index: number) => {
+    if (costBreakdown.length > 1) {
+      setCostBreakdown(costBreakdown.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateCostComponent = (index: number, field: keyof CostComponent, value: string | number) => {
+    const newComponents = [...costBreakdown];
+    newComponents[index] = { ...newComponents[index], [field]: value };
+    setCostBreakdown(newComponents);
+    
+    // Update total price
+    const total = newComponents.reduce((sum, item) => sum + item.amount, 0);
+    setPrice(total.toString());
   };
 
   const handleSessionDateChange = useCallback((index: number, date: string) => {
@@ -263,6 +350,7 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
 
   const resetForm = () => {
     setSelectedCourseId("");
+    setSelectedProviderId("");
     setTitle("");
     setInstructor("");
     setLocation("");
@@ -270,6 +358,7 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
     setStatus('scheduled');
     setRequiresApproval(false);
     setPrice("");
+    setCostBreakdown([]);
     setChecklist([]);
     setCourseChecklistItems([]);
     setSessions(1);
@@ -279,10 +368,10 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
   };
 
   const validateForm = () => {
-    if (!selectedCourseId || !title || !instructor || !location || !maxParticipants) {
+    if (!selectedCourseId || !selectedProviderId || !title || !instructor || !location || !maxParticipants) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields",
+        description: "Please fill in all required fields including provider selection",
         variant: "destructive"
       });
       return false;
@@ -313,6 +402,7 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
     try {
       const trainingData = {
         course_id: selectedCourseId,
+        provider_id: selectedProviderId,
         title,
         instructor,
         date: sessionDates[0] || "",
@@ -321,6 +411,8 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
         max_participants: parseInt(maxParticipants),
         status,
         requires_approval: requiresApproval,
+        price: parseFloat(price) || null,
+        cost_breakdown: costBreakdown.length > 0 ? costBreakdown : null,
         sessions_count: sessions,
         session_dates: sessionDates.length > 0 ? sessionDates : null,
         session_times: sessionTimes.length > 0 ? sessionTimes : null,
@@ -345,7 +437,6 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
     }
   };
 
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange} modal>
       <CustomDialogContent 
@@ -364,8 +455,11 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
             courses={courses}
             selectedCourseId={selectedCourseId}
             title={title}
+            selectedProviderId={selectedProviderId}
             onCourseChange={handleCourseChange}
             onTitleChange={setTitle}
+            onProviderChange={handleProviderChange}
+            onProviderDetailsChange={handleProviderDetailsChange}
           />
 
           {selectedCourse && (
@@ -382,18 +476,91 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
             </>
           )}
 
-          <div className="space-y-2">
-            <Label htmlFor="price">Price per Participant (€)</Label>
-            <Input
-              id="price"
-              type="number"
-              step="0.01"
-              min="0"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              placeholder="Enter price"
-            />
-          </div>
+          {/* Cost Breakdown Section */}
+          {selectedProviderId && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-medium flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  Pricing & Cost Breakdown
+                </Label>
+                <Button type="button" variant="outline" size="sm" onClick={addCostComponent}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Cost Component
+                </Button>
+              </div>
+              
+              {costBreakdown.length > 0 ? (
+                <div className="space-y-3 border rounded-lg p-4 bg-gray-50">
+                  {costBreakdown.map((component, index) => (
+                    <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-3 p-3 bg-white rounded border">
+                      <div>
+                        <Label className="text-sm">Component Name</Label>
+                        <Input
+                          placeholder="e.g., Theory Training"
+                          value={component.name}
+                          onChange={(e) => updateCostComponent(index, 'name', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm">Amount (€)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={component.amount || ''}
+                          onChange={(e) => updateCostComponent(index, 'amount', Number(e.target.value) || 0)}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm">Description</Label>
+                        <Input
+                          placeholder="Optional description"
+                          value={component.description}
+                          onChange={(e) => updateCostComponent(index, 'description', e.target.value)}
+                        />
+                      </div>
+                      <div className="flex items-end">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeCostComponent(index)}
+                          disabled={costBreakdown.length <= 1}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  <div className="flex justify-between items-center pt-2 border-t bg-blue-50 px-3 py-2 rounded">
+                    <span className="font-medium">Total Price per Participant:</span>
+                    <span className="font-bold text-lg text-blue-600">
+                      €{costBreakdown.reduce((sum, item) => sum + item.amount, 0).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="price">Price per Participant (€)</Label>
+                  <Input
+                    id="price"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    placeholder="Enter price"
+                  />
+                  <p className="text-sm text-gray-500">
+                    💡 Select a provider first to auto-populate pricing, or enter manually
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           <SmartMultiSessionSection
             selectedCourse={selectedCourse}

@@ -34,6 +34,7 @@ import {
   needsCode95Training,
   requiresCode95
 } from "@/utils/code95Utils";
+import { getStatusLabel } from "@/constants/employeeStatus";
 import { format } from "date-fns";
 
 const statusColors = {
@@ -158,7 +159,7 @@ export function UserProfileHeader({ userId }: UserProfileHeaderProps) {
                 <p className="text-lg text-gray-600">{employee.jobTitle}</p>
                 <div className="flex items-center space-x-4 mt-2">
                   <Badge className={statusColors[currentStatus as keyof typeof statusColors] || statusColors.inactive}>
-                    {currentStatus.replace('_', ' ')}
+                    {getStatusLabel(currentStatus as any)}
                   </Badge>
                   <span className="text-sm text-gray-500">#{employee.employeeNumber}</span>
                 </div>

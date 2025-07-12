@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Training, TrainingParticipant, TrainingMaterial } from "@/types";
 import { EditableChecklist } from "@/components/training/EditableChecklist";
 import { ArrowLeft, Calendar, Clock } from "lucide-react";
+import { getStatusLabel } from "@/constants/employeeStatus";
 
 interface TrainingEditorProps {
   training: Training;
@@ -395,7 +396,7 @@ export function TrainingEditor({
                         <div className="text-sm text-gray-500 flex items-center space-x-2">
                           <span>{participant.employees?.department}</span>
                           <Badge className={statusColor}>
-                            {currentEmployeeStatus.replace('_', ' ')}
+                            {getStatusLabel(currentEmployeeStatus as any)}
                           </Badge>
                         </div>
                       </div>

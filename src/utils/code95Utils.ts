@@ -14,13 +14,13 @@ export interface Code95Progress {
 
 /**
  * Determines if an employee needs Code 95 certification based on their driving licenses
+ * Code 95 is only required for employees with C, CE, or D licenses
  */
 export const requiresCode95 = (employee: Employee): boolean => {
   return !!(
     employee.drivingLicenseC ||
     employee.drivingLicenseCE ||
-    employee.drivingLicenseD ||
-    employee.drivingLicenseCode95
+    employee.drivingLicenseD
   );
 };
 
