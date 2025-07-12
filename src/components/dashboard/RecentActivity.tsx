@@ -73,7 +73,7 @@ export function RecentActivity() {
           id: `course-${course.id}`,
           type: 'course',
           title: `Course updated: ${course.title}`,
-          description: `${course.category || 'Uncategorized'} category`,
+          description: course.description || 'Course details',
           timestamp: timestamp,
           icon: BookOpen,
           color: 'bg-purple-100 text-purple-800',
