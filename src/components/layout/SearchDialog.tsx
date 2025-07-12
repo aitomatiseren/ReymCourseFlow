@@ -55,7 +55,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
 
   const filteredCourses = courses.filter(course =>
     course.title.toLowerCase().includes(query.toLowerCase()) ||
-    course.category?.toLowerCase().includes(query.toLowerCase())
+    course.description?.toLowerCase().includes(query.toLowerCase())
   );
 
   const filteredProviders = providers.filter(provider =>
@@ -173,9 +173,11 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                       <BookOpen className="h-4 w-4 mr-3 flex-shrink-0" />
                       <div className="text-left">
                         <div className="font-medium">{course.title}</div>
-                        <div className="text-sm text-gray-500">
-                          {course.category}
-                        </div>
+                        {course.description && (
+                          <div className="text-sm text-gray-500">
+                            {course.description}
+                          </div>
+                        )}
                       </div>
                     </Button>
                   ))}

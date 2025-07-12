@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, MapPin, Users, User, Eye } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, User, Eye, Truck } from "lucide-react";
 import { Training } from "@/hooks/useTrainings";
 import { useNavigate } from "react-router-dom";
 
@@ -147,6 +147,12 @@ export function TrainingListView({
                         )}
                         {training.price && (
                           <span className="text-green-600 font-medium">€{training.price}</span>
+                        )}
+                        {training.code95_points && training.code95_points > 0 && (
+                          <div className="flex items-center text-blue-600">
+                            <Truck className="h-4 w-4 mr-1" />
+                            <span className="font-medium">Code 95: {training.code95_points} points</span>
+                          </div>
                         )}
                       </div>
                     </div>

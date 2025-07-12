@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CertificateExpiryReport } from "@/components/reports/CertificateExpiryReport";
+import { Code95Dashboard } from "@/components/certificates/Code95Dashboard";
 import {
   Plus,
   Search,
@@ -19,7 +20,8 @@ import {
   Download,
   Eye,
   Award,
-  FileText
+  FileText,
+  Truck
 } from "lucide-react";
 import { useCertificates } from "@/hooks/useCertificates";
 import { format } from "date-fns";
@@ -77,7 +79,7 @@ export default function Certifications() {
         </div>
 
         <Tabs defaultValue="all" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="all" className="flex items-center gap-2">
               <Award className="h-4 w-4" />
               All Certificates
@@ -85,6 +87,10 @@ export default function Certifications() {
             <TabsTrigger value="expiry" className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4" />
               Expiry Tracking
+            </TabsTrigger>
+            <TabsTrigger value="code95" className="flex items-center gap-2">
+              <Truck className="h-4 w-4" />
+              Code 95
             </TabsTrigger>
             <TabsTrigger value="reports" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
@@ -215,6 +221,10 @@ export default function Certifications() {
 
           <TabsContent value="expiry">
             <CertificateExpiryReport />
+          </TabsContent>
+
+          <TabsContent value="code95">
+            <Code95Dashboard />
           </TabsContent>
 
           <TabsContent value="reports">

@@ -6,7 +6,6 @@ export interface Course {
   id: string;
   title: string;
   description?: string;
-  category?: string;
   duration_hours?: number;
   max_participants?: number;
   price?: number;

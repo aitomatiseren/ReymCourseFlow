@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin, Users, User, CheckSquare, Eye, Clock } from "lucide-react";
+import { Calendar, MapPin, Users, User, CheckSquare, Eye, Clock, Truck } from "lucide-react";
 import { Training } from "@/hooks/useTrainings";
 import { useNavigate } from "react-router-dom";
 
@@ -132,6 +132,12 @@ export function TrainingGridView({
                   {training.price && (
                     <div className="flex items-center">
                       <span className="text-green-600 font-medium">€{training.price}</span>
+                    </div>
+                  )}
+                  {training.code95_points && training.code95_points > 0 && (
+                    <div className="flex items-center">
+                      <Truck className="h-4 w-4 mr-2 text-blue-600" />
+                      <span className="text-blue-600 font-medium">Code 95: {training.code95_points} points</span>
                     </div>
                   )}
                 </div>

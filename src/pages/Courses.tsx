@@ -8,29 +8,20 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ViewToggle } from "@/components/ui/view-toggle";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Calendar, Users, DollarSign, Edit, Trash2, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Eye } from "lucide-react";
+import { Plus, Search, Calendar, Users, Euro, Edit, Trash2, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Eye } from "lucide-react";
 import { AddCourseDialog } from "@/components/courses/AddCourseDialog";
 import { EditCourseDialog } from "@/components/courses/EditCourseDialog";
 import { useCourses, useDeleteCourse, Course } from "@/hooks/useCourses";
 import { useToast } from "@/hooks/use-toast";
 import { useViewMode } from "@/hooks/useViewMode";
 
-const categoryColors = {
-  Safety: "bg-red-100 text-red-800",
-  Equipment: "bg-blue-100 text-blue-800",
-  Medical: "bg-green-100 text-green-800",
-  Technical: "bg-purple-100 text-purple-800",
-  Management: "bg-orange-100 text-orange-800"
-};
-
-type SortField = 'title' | 'category' | 'duration_hours' | 'created_at';
+type SortField = 'title' | 'created_at';
 type SortDirection = 'asc' | 'desc';
 
 export default function Courses() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
   const [showCode95Only, setShowCode95Only] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -73,10 +64,9 @@ export default function Courses() {
       const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            (course.description && course.description.toLowerCase().includes(searchTerm.toLowerCase()));
       
-      const matchesCategory = selectedCategory === "all" || course.category === selectedCategory;
       const matchesCode95 = !showCode95Only || (course.code95_points && course.code95_points > 0);
       
-      return matchesSearch && matchesCategory && matchesCode95;
+      return matchesSearch && matchesCode95;
     })
     .sort((a, b) => {
       let aValue: any = a[sortField];
@@ -166,18 +156,6 @@ export default function Courses() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <select 
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-              >
-                <option value="all">All Categories</option>
-                <option value="Safety">Safety</option>
-                <option value="Equipment">Equipment</option>
-                <option value="Medical">Medical</option>
-                <option value="Technical">Technical</option>
-                <option value="Management">Management</option>
-              </select>
               <label className="flex items-center space-x-2">
                 <input
                   type="checkbox"
@@ -196,24 +174,6 @@ export default function Courses() {
                 >
                   <span>Title</span>
                   {getSortIcon('title')}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => handleSort('category')}
-                  className="flex items-center space-x-1"
-                >
-                  <span>Category</span>
-                  {getSortIcon('category')}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => handleSort('duration_hours')}
-                  className="flex items-center space-x-1"
-                >
-                  <span>Duration</span>
-                  {getSortIcon('duration_hours')}
                 </Button>
               </div>
             </div>
@@ -260,12 +220,6 @@ export default function Courses() {
                         Sessions: {course.sessions_required}
                       </div>
                     )}
-                    {course.duration_hours && (
-                      <div className="flex items-center text-sm text-gray-600 mb-2">
-                        <Calendar className="h-4 w-4 mr-2" />
-                        Duration: {course.duration_hours} hours
-                      </div>
-                    )}
                     {course.max_participants && (
                       <div className="flex items-center text-sm text-gray-600 mb-2">
                         <Users className="h-4 w-4 mr-2" />
@@ -274,7 +228,7 @@ export default function Courses() {
                     )}
                     {course.price && (
                       <div className="flex items-center text-sm text-gray-600">
-                        <DollarSign className="h-4 w-4 mr-2" />
+                        <Euro className="h-4 w-4 mr-2" />
                         €{course.price} per participant
                       </div>
                     )}
@@ -316,30 +270,9 @@ export default function Courses() {
                         {getSortIcon('title')}
                       </Button>
                     </TableHead>
-                    <TableHead className="text-left font-medium">
-                      <Button 
-                        variant="ghost" 
-                        onClick={() => handleSort('category')}
-                        className="flex items-center space-x-1 -ml-4"
-                      >
-                        <span>Category</span>
-                        {getSortIcon('category')}
-                      </Button>
-                    </TableHead>
-                    <TableHead className="text-left font-medium">
-                      <Button 
-                        variant="ghost" 
-                        onClick={() => handleSort('duration_hours')}
-                        className="flex items-center space-x-1 -ml-4"
-                      >
-                        <span>Duration</span>
-                        {getSortIcon('duration_hours')}
-                      </Button>
-                    </TableHead>
                     <TableHead className="text-left font-medium">Sessions</TableHead>
                     <TableHead className="text-left font-medium">Max Participants</TableHead>
                     <TableHead className="text-left font-medium w-24">Code 95</TableHead>
-                    <TableHead className="text-left font-medium">Features</TableHead>
                     <TableHead className="text-right font-medium">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -358,16 +291,6 @@ export default function Courses() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {course.category && (
-                            <Badge className={categoryColors[course.category as keyof typeof categoryColors] || 'bg-gray-100 text-gray-800'}>
-                              {course.category}
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {course.duration_hours ? `${course.duration_hours}h` : 'N/A'}
-                        </TableCell>
-                        <TableCell>
                           {course.sessions_required || 1}
                         </TableCell>
                         <TableCell>
@@ -379,15 +302,6 @@ export default function Courses() {
                               {course.code95_points} pts
                             </Badge>
                           ) : 'N/A'}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {course.has_checklist && (
-                              <Badge variant="outline" className="bg-orange-100 text-orange-800 text-xs">
-                                Checklist
-                              </Badge>
-                            )}
-                          </div>
                         </TableCell>
                         <TableCell className="text-right">
                           <Button 
