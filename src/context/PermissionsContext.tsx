@@ -267,7 +267,8 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                 .from('user_profiles')
                 .select(`
                     *,
-                    role:user_roles(*)
+                    role:user_roles(*),
+                    employee:employees(*)
                 `)
                 .eq('id', currentUser.id)
                 .single();
