@@ -1,9 +1,47 @@
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Employee } from "@/types";
 
-export function useEmployees() {
+export function useEmployees(enableRealTime = true) {
+  const queryClient = useQueryClient();
+
+  // Real-time subscriptions for employee data
+  useEffect(() => {
+    if (!enableRealTime) return;
+
+    // Subscribe to employee table changes
+    const employeesChannel = supabase
+      .channel('employees-global')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'employees'
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['employees'] });
+      })
+      .subscribe();
+
+    // Subscribe to employee status history changes (critical for status tracking)
+    const statusChannel = supabase
+      .channel('employee-status-global')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'employee_status_history'
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['employees'] });
+        queryClient.invalidateQueries({ queryKey: ['employee-status'] });
+        queryClient.invalidateQueries({ queryKey: ['participant-current-statuses'] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(employeesChannel);
+      supabase.removeChannel(statusChannel);
+    };
+  }, [enableRealTime, queryClient]);
   return useQuery({
     queryKey: ['employees'],
     queryFn: async () => {

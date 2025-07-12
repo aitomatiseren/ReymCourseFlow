@@ -1,5 +1,6 @@
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface CostComponent {
@@ -32,7 +33,44 @@ export interface Training {
   notes?: string;
 }
 
-export function useTrainings() {
+export function useTrainings(enableRealTime = true) {
+  const queryClient = useQueryClient();
+
+  // Real-time subscriptions for training data
+  useEffect(() => {
+    if (!enableRealTime) return;
+
+    // Subscribe to trainings table changes
+    const trainingsChannel = supabase
+      .channel('trainings-global')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'trainings'
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['trainings'] });
+      })
+      .subscribe();
+
+    // Subscribe to training participants changes (affects training capacity display)
+    const participantsChannel = supabase
+      .channel('training-participants-global')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'training_participants'
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['trainings'] });
+        queryClient.invalidateQueries({ queryKey: ['training-participants'] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(trainingsChannel);
+      supabase.removeChannel(participantsChannel);
+    };
+  }, [enableRealTime, queryClient]);
+
   return useQuery({
     queryKey: ['trainings'],
     queryFn: async () => {

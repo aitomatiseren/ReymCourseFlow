@@ -617,6 +617,43 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
         };
     }, []); // Empty dependency array to prevent re-running
 
+    // Real-time subscriptions for user permissions and roles
+    useEffect(() => {
+        if (!userProfile?.id) return;
+
+        // Subscribe to user profile changes
+        const profileChannel = supabase
+            .channel(`user-profile-${userProfile.id}`)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'user_profiles',
+                filter: `id=eq.${userProfile.id}`
+            }, () => {
+                console.log('User profile changed, refreshing permissions...');
+                refreshPermissions();
+            })
+            .subscribe();
+
+        // Subscribe to user role changes
+        const rolesChannel = supabase
+            .channel(`user-roles-${userProfile.role?.id}`)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'user_roles'
+            }, () => {
+                console.log('User roles changed, refreshing permissions...');
+                refreshPermissions();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(profileChannel);
+            supabase.removeChannel(rolesChannel);
+        };
+    }, [userProfile?.id, userProfile?.role?.id, refreshPermissions]);
+
     const value: PermissionsContextType = {
         permissions,
         userProfile,

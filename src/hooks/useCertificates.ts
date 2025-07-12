@@ -1,5 +1,6 @@
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Certificate {
@@ -14,7 +15,46 @@ export interface Certificate {
   category: string;
 }
 
-export function useCertificates() {
+export function useCertificates(enableRealTime = true) {
+  const queryClient = useQueryClient();
+
+  // Real-time subscriptions for certificate data
+  useEffect(() => {
+    if (!enableRealTime) return;
+
+    // Subscribe to employee licenses changes (certificates)
+    const certificatesChannel = supabase
+      .channel('certificates-global')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'employee_licenses'
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['certificates'] });
+        queryClient.invalidateQueries({ queryKey: ['employee-licenses'] });
+        queryClient.invalidateQueries({ queryKey: ['certificate-expiry'] });
+      })
+      .subscribe();
+
+    // Subscribe to licenses table changes (license definitions)
+    const licensesChannel = supabase
+      .channel('licenses-global')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'licenses'
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['certificates'] });
+        queryClient.invalidateQueries({ queryKey: ['licenses'] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(certificatesChannel);
+      supabase.removeChannel(licensesChannel);
+    };
+  }, [enableRealTime, queryClient]);
+
   return useQuery({
     queryKey: ['certificates'],
     queryFn: async () => {

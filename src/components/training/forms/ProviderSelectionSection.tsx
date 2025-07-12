@@ -3,6 +3,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useProvidersForCourse } from "@/hooks/useProviders";
 import { Badge } from "@/components/ui/badge";
 import { Building2, MapPin, Phone, Mail } from "lucide-react";
 
@@ -31,39 +32,7 @@ export function ProviderSelectionSection({
   onProviderDetailsChange
 }: ProviderSelectionSectionProps) {
   // Fetch providers that offer the selected course
-  const { data: providers = [], isLoading } = useQuery({
-    queryKey: ["course-providers-for-course", selectedCourseId],
-    queryFn: async () => {
-      if (!selectedCourseId) return [];
-      
-      const { data, error } = await supabase
-        .from("course_provider_courses")
-        .select(`
-          provider_id,
-          course_providers (
-            id,
-            name,
-            default_location,
-            contact_person,
-            email,
-            phone,
-            city,
-            active
-          )
-        `)
-        .eq("course_id", selectedCourseId)
-        .eq("active", true)
-        .order("course_providers(name)");
-
-      if (error) throw error;
-      
-      return data
-        .map(item => item.course_providers)
-        .filter(Boolean)
-        .filter(provider => provider.active) as CourseProvider[];
-    },
-    enabled: !!selectedCourseId,
-  });
+  const { data: providers = [], isLoading } = useProvidersForCourse(selectedCourseId) as { data: CourseProvider[] | undefined, isLoading: boolean };
 
   // Get selected provider details
   const selectedProvider = providers.find(p => p.id === selectedProviderId);

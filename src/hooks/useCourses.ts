@@ -1,5 +1,6 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Course {
@@ -16,7 +17,45 @@ export interface Course {
   created_at: string;
 }
 
-export function useCourses() {
+export function useCourses(enableRealTime = true) {
+  const queryClient = useQueryClient();
+
+  // Real-time subscriptions for course data
+  useEffect(() => {
+    if (!enableRealTime) return;
+
+    // Subscribe to courses table changes
+    const coursesChannel = supabase
+      .channel('courses-global')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'courses'
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['courses'] });
+        queryClient.invalidateQueries({ queryKey: ['trainings'] }); // Course changes affect trainings
+      })
+      .subscribe();
+
+    // Subscribe to course sessions changes
+    const sessionsChannel = supabase
+      .channel('course-sessions-global')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'course_sessions'
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['courses'] });
+        queryClient.invalidateQueries({ queryKey: ['course-sessions'] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(coursesChannel);
+      supabase.removeChannel(sessionsChannel);
+    };
+  }, [enableRealTime, queryClient]);
+
   return useQuery({
     queryKey: ['courses'],
     queryFn: async () => {
