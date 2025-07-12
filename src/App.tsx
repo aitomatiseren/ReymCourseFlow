@@ -27,28 +27,30 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ChatProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/courses" element={<Courses />} />
-            <Route path="/participants" element={<Participants />} />
-            <Route path="/participants/:id" element={<UserProfile />} />
-            <Route path="/certifications" element={<Certifications />} />
-            <Route path="/scheduling" element={<TrainingSchedulerPage />} />
-            <Route path="/employee-dashboard" element={<EmployeeDashboard />} />
-            <Route path="/providers" element={<Dashboard />} />
-            <Route path="/communications" element={<Notifications />} />
-            <Route path="/reports" element={<Dashboard />} />
-            <Route path="/settings" element={<Dashboard />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </ChatProvider>
+    <PermissionsProvider>
+      <ChatProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/courses" element={<Courses />} />
+              <Route path="/participants" element={<Participants />} />
+              <Route path="/participants/:id" element={<UserProfile />} />
+              <Route path="/certifications" element={<Certifications />} />
+              <Route path="/scheduling" element={<TrainingSchedulerPage />} />
+              <Route path="/employee-dashboard" element={<EmployeeDashboard />} />
+              <Route path="/providers" element={<Dashboard />} />
+              <Route path="/communications" element={<Notifications />} />
+              <Route path="/reports" element={<Dashboard />} />
+              <Route path="/settings" element={<Dashboard />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </ChatProvider>
+    </PermissionsProvider>
   </QueryClientProvider>
 );
 

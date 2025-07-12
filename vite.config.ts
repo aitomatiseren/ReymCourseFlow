@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: 'localhost',
     port: 3000,
-    strictPort: false,
+    strictPort: true,
     watch: {
       usePolling: true  // Better for WSL
     }
