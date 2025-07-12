@@ -30,6 +30,14 @@ import {
   Eye,
 } from "lucide-react";
 
+interface ProviderLocation {
+  name: string;
+  address: string;
+  postcode?: string;
+  city?: string;
+  country?: string;
+}
+
 interface CourseProvider {
   id: string;
   name: string;
@@ -40,7 +48,7 @@ interface CourseProvider {
   address: string | null;
   city: string | null;
   country: string | null;
-  additional_locations: string[] | null;
+  additional_locations: ProviderLocation[] | string[] | null;
   instructors: string[] | null;
   active: boolean;
   course_provider_courses: {
@@ -132,7 +140,6 @@ export function CourseProviderList() {
                 <TableHead>Phone</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Website</TableHead>
-                <TableHead>Location</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -141,22 +148,9 @@ export function CourseProviderList() {
               {filteredProviders?.map((provider) => (
                 <TableRow key={provider.id}>
                   <TableCell>
-                    <div className="space-y-1">
-                      <div className="font-medium flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-gray-400" />
-                        {provider.name}
-                      </div>
-                      {provider.website && (
-                        <a
-                          href={provider.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-blue-600 hover:underline flex items-center gap-1"
-                        >
-                          <Globe className="h-3 w-3" />
-                          Website
-                        </a>
-                      )}
+                    <div className="font-medium flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-gray-400" />
+                      {provider.name}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -185,25 +179,11 @@ export function CourseProviderList() {
                         rel="noopener noreferrer"
                         className="text-blue-600 hover:underline text-sm"
                       >
-                        <Globe className="h-3 w-3 inline mr-1" />
-                        Website
+                        {provider.website}
                       </a>
                     ) : (
                       <span className="text-gray-400 text-sm">-</span>
                     )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      {provider.city && (
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3 text-gray-400" />
-                          {provider.city}
-                          {provider.country && provider.country !== "Netherlands" && (
-                            <span className="text-gray-500">, {provider.country}</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge

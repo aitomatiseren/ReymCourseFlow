@@ -24,7 +24,6 @@ export default function ProviderProfile() {
       <div className="space-y-6">
         <div className="flex items-center">
           <Button
-            variant="outline"
             onClick={() => navigate('/providers')}
             className="flex items-center gap-2"
           >

@@ -82,12 +82,8 @@ export function ProviderProfileTabs({ providerId }: ProviderProfileTabsProps) {
   };
 
   return (
-    <Tabs defaultValue="basic" className="space-y-6">
-      <TabsList className="grid w-full grid-cols-4">
-        <TabsTrigger value="basic" className="flex items-center gap-2">
-          <Info className="h-4 w-4" />
-          Basic Information
-        </TabsTrigger>
+    <Tabs defaultValue="courses" className="space-y-6">
+      <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="courses" className="flex items-center gap-2">
           <BookOpen className="h-4 w-4" />
           Offered Courses
@@ -102,114 +98,6 @@ export function ProviderProfileTabs({ providerId }: ProviderProfileTabsProps) {
         </TabsTrigger>
       </TabsList>
 
-      {/* Basic Information Tab */}
-      <TabsContent value="basic" className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Contact Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Contact Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {provider?.contact_person && (
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Contact Person</label>
-                  <p className="text-sm">{provider.contact_person}</p>
-                </div>
-              )}
-              {provider?.email && (
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Email</label>
-                  <p className="text-sm">
-                    <a href={`mailto:${provider.email}`} className="text-blue-600 hover:underline">
-                      {provider.email}
-                    </a>
-                  </p>
-                </div>
-              )}
-              {provider?.phone && (
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Phone</label>
-                  <p className="text-sm">
-                    <a href={`tel:${provider.phone}`} className="text-blue-600 hover:underline">
-                      {provider.phone}
-                    </a>
-                  </p>
-                </div>
-              )}
-              {provider?.website && (
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Website</label>
-                  <p className="text-sm">
-                    <a 
-                      href={provider.website} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
-                      {provider.website}
-                    </a>
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Address Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Address</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {provider?.address && (
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Street Address</label>
-                  <p className="text-sm">{provider.address}</p>
-                </div>
-              )}
-              {(provider?.postcode || provider?.city) && (
-                <div>
-                  <label className="text-sm font-medium text-gray-600">City</label>
-                  <p className="text-sm">
-                    {provider.postcode && `${provider.postcode} `}
-                    {provider.city}
-                  </p>
-                </div>
-              )}
-              {provider?.country && (
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Country</label>
-                  <p className="text-sm">{provider.country}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Description */}
-        {provider?.description && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Description</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm whitespace-pre-wrap">{provider.description}</p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Internal Notes */}
-        {provider?.notes && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-yellow-700">Internal Notes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm whitespace-pre-wrap bg-yellow-50 p-3 rounded">{provider.notes}</p>
-            </CardContent>
-          </Card>
-        )}
-      </TabsContent>
 
       {/* Offered Courses Tab */}
       <TabsContent value="courses" className="space-y-4">
@@ -303,57 +191,91 @@ export function ProviderProfileTabs({ providerId }: ProviderProfileTabsProps) {
 
       {/* Locations & Instructors Tab */}
       <TabsContent value="locations" className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Training Locations */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                Training Locations
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {provider?.additional_locations && provider.additional_locations.length > 0 ? (
-                <div className="space-y-2">
-                  {provider.additional_locations.map((location: string, index: number) => (
-                    <div key={index} className="p-2 bg-gray-50 rounded text-sm font-semibold">
-                      {location}
+        {/* Training Locations */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              Training Locations ({provider?.additional_locations?.length || 0})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {provider?.additional_locations && provider.additional_locations.length > 0 ? (
+              <div className="space-y-4">
+                {provider.additional_locations.map((location: any, index: number) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <h3 className="font-medium">
+                          {typeof location === 'string' ? location : location.name || 'Unnamed Location'}
+                        </h3>
+                        <Badge variant="outline" className="text-xs">
+                          <MapPin className="h-3 w-3 mr-1" />
+                          Location
+                        </Badge>
+                      </div>
+                      {typeof location === 'object' && location.address && (
+                        <div className="text-sm text-gray-600 mt-2">
+                          <div>{location.address}</div>
+                          {(location.postcode || location.city) && (
+                            <div>
+                              {location.postcode && `${location.postcode} `}
+                              {location.city}
+                              {location.country && location.country !== 'Netherlands' && `, ${location.country}`}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500">
-                  No additional training locations specified
-                </p>
-              )}
-            </CardContent>
-          </Card>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">
+                No training locations specified for this provider
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
-          {/* Instructors */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                Instructors
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {provider?.instructors && provider.instructors.length > 0 ? (
-                <div className="space-y-2">
-                  {provider.instructors.map((instructor: string, index: number) => (
-                    <div key={index} className="p-2 bg-gray-50 rounded text-sm font-medium">
-                      {instructor}
+        {/* Instructors */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Instructors ({provider?.instructors?.length || 0})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {provider?.instructors && provider.instructors.length > 0 ? (
+              <div className="space-y-4">
+                {provider.instructors.map((instructor: string, index: number) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <h3 className="font-medium">{instructor}</h3>
+                        <Badge variant="outline" className="text-xs">
+                          <User className="h-3 w-3 mr-1" />
+                          Instructor
+                        </Badge>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500">
-                  No instructors specified for this provider
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">
+                No instructors specified for this provider
+              </p>
+            )}
+          </CardContent>
+        </Card>
       </TabsContent>
     </Tabs>
   );

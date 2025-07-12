@@ -28,8 +28,8 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Plus, Trash2 } from "lucide-react";
-import { AddressLookup } from "@/components/users/AddressLookup";
 import { EnhancedPhoneInput } from "@/components/users/EnhancedPhoneInput";
+import { AddressLookup } from "@/components/users/AddressLookup";
 
 const providerSchema = z.object({
   name: z.string().min(1, "Provider name is required"),
@@ -46,7 +46,13 @@ const providerSchema = z.object({
   postcode: z.string().optional(),
   city: z.string().optional(),
   country: z.string().default("Netherlands"),
-  additional_locations: z.array(z.string()).default([]),
+  additional_locations: z.array(z.object({
+    name: z.string().min(1, "Location name is required"),
+    address: z.string(),
+    postcode: z.string().optional(),
+    city: z.string().optional(),
+    country: z.string().optional(),
+  })).default([]),
   instructors: z.array(z.string()).default([]),
   description: z.string().optional(),
   notes: z.string().optional(),
@@ -71,6 +77,7 @@ export function EditProviderDialog({
   const [addressQuery, setAddressQuery] = useState("");
   const [emailError, setEmailError] = useState("");
   const [phoneError, setPhoneError] = useState("");
+  const [websiteError, setWebsiteError] = useState("");
   const [newLocation, setNewLocation] = useState("");
   const [newInstructor, setNewInstructor] = useState("");
   const queryClient = useQueryClient();
@@ -104,12 +111,67 @@ export function EditProviderDialog({
       postcode: "",
       city: "",
       country: "Netherlands",
+      additional_locations: [],
+      instructors: [],
       description: "",
       notes: "",
       active: true,
       courses: [],
     },
   });
+
+  // Helper function to convert locations from different formats
+  const normalizeLocations = (locations: any) => {
+    if (!locations || !Array.isArray(locations)) return [];
+    
+    return locations.map((location: any) => {
+      // If it's already an object with name and address, use it as is
+      if (typeof location === 'object' && location.name && typeof location.address !== 'undefined') {
+        return location;
+      }
+      // If it's a string that looks like JSON, skip it (corrupted data)
+      if (typeof location === 'string' && (location.includes('{') || location.includes('name:') || location.includes('address:'))) {
+        return {
+          name: 'Corrupted Location Data',
+          address: '',
+          postcode: '',
+          city: '',
+          country: 'Netherlands'
+        };
+      }
+      // If it's a clean string, convert to object format
+      if (typeof location === 'string') {
+        return {
+          name: location,
+          address: '',
+          postcode: '',
+          city: '',
+          country: 'Netherlands'
+        };
+      }
+      // Fallback for any other format
+      return {
+        name: 'Unknown Location',
+        address: '',
+        postcode: '',
+        city: '',
+        country: 'Netherlands'
+      };
+    });
+  };
+
+  // Helper function to convert structured locations back to simple strings for database storage
+  const locationsToStrings = (locations: any[]) => {
+    if (!locations || !Array.isArray(locations)) return [];
+    
+    return locations.map((location: any) => {
+      if (typeof location === 'object' && location.name) {
+        // Just use the location name for TEXT[] storage
+        return location.name;
+      }
+      return String(location);
+    });
+  };
 
   // Load provider data when dialog opens
   useEffect(() => {
@@ -124,8 +186,8 @@ export function EditProviderDialog({
         postcode: provider.postcode || "",
         city: provider.city || "",
         country: provider.country || "Netherlands",
-        additional_locations: provider.additional_locations || [],
-        instructors: provider.instructors || [],
+        additional_locations: normalizeLocations(provider.additional_locations) || [],
+        instructors: Array.isArray(provider.instructors) ? provider.instructors : [],
         description: provider.description || "",
         notes: provider.notes || "",
         active: provider.active ?? true,
@@ -199,6 +261,7 @@ export function EditProviderDialog({
     onSuccess: () => {
       toast.success("Provider updated successfully");
       queryClient.invalidateQueries({ queryKey: ["course-providers"] });
+      queryClient.invalidateQueries({ queryKey: ["provider", provider.id] });
       onOpenChange(false);
     },
     onError: (error) => {
@@ -238,6 +301,15 @@ export function EditProviderDialog({
     return "";
   };
 
+  const validateWebsite = (website: string) => {
+    if (!website) return "";
+    const urlPattern = /^(https?:\/\/)?(www\.)?[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}([\/?#][^\s]*)?$/;
+    if (!urlPattern.test(website)) {
+      return "Invalid URL format";
+    }
+    return "";
+  };
+
   const handleAddressSelect = (address: { street: string; city: string; postcode: string; country: string }) => {
     form.setValue("address", address.street);
     form.setValue("postcode", address.postcode);
@@ -253,6 +325,18 @@ export function EditProviderDialog({
       form.setValue("additional_locations", [...currentLocations, newLocation.trim()]);
       setNewLocation("");
     }
+  };
+
+  const handleLocationSelect = (address: { street: string; city: string; postcode: string; country: string }) => {
+    const locationName = `${address.city} Location`; // Default name based on city
+    const currentLocations = form.getValues("additional_locations");
+    form.setValue("additional_locations", [...currentLocations, {
+      name: locationName,
+      address: address.street,
+      postcode: address.postcode,
+      city: address.city,
+      country: address.country
+    }]);
   };
 
   const removeLocation = (index: number) => {
@@ -304,7 +388,7 @@ export function EditProviderDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(90vh-120px)] pr-4">
+        <ScrollArea className="max-h-[calc(90vh-120px)] pr-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               {/* Basic Information */}
@@ -401,8 +485,21 @@ export function EditProviderDialog({
                       <FormItem>
                         <FormLabel>Website</FormLabel>
                         <FormControl>
-                          <Input type="url" {...field} />
+                          <Input 
+                            type="text" 
+                            placeholder="www.provider.com"
+                            {...field}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              setWebsiteError(validateWebsite(e.target.value));
+                            }}
+                            onBlur={() => {
+                              field.onBlur();
+                              setWebsiteError(validateWebsite(field.value || ""));
+                            }}
+                          />
                         </FormControl>
+                        {websiteError && <p className="text-sm text-red-500 mt-1">{websiteError}</p>}
                         <FormMessage />
                       </FormItem>
                     )}
@@ -493,27 +590,14 @@ export function EditProviderDialog({
                   <FormLabel>Training Locations</FormLabel>
                   
                   {/* Add new location */}
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Add additional location..."
-                      value={newLocation}
-                      onChange={(e) => setNewLocation(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          addLocation();
-                        }
-                      }}
+                  <div className="space-y-2">
+                    <AddressLookup
+                      onAddressSelect={handleLocationSelect}
+                      placeholder="Search and add training location..."
                     />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={addLocation}
-                      disabled={!newLocation.trim()}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
+                    <p className="text-xs text-gray-500">
+                      Type an address, city name, or postcode to search for training locations
+                    </p>
                   </div>
 
                   {/* Existing locations */}
@@ -521,26 +605,33 @@ export function EditProviderDialog({
                     control={form.control}
                     name="additional_locations"
                     render={({ field }) => (
-                      <div className="space-y-2">
-                        {field.value.map((location, index) => (
-                          <div key={index} className="flex gap-2 p-2 border rounded-lg bg-gray-50">
-                            <Input
-                              value={location}
-                              onChange={(e) => {
-                                const newLocations = [...field.value];
-                                newLocations[index] = e.target.value;
-                                field.onChange(newLocations);
-                              }}
-                              className="bg-white"
-                            />
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => removeLocation(index)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                      <div className="space-y-3">
+                        {field.value && field.value.length > 0 && field.value.map((location, index) => (
+                          <div key={index} className="p-3 border rounded-lg bg-gray-50 space-y-2">
+                            <div className="flex gap-2">
+                              <Input
+                                placeholder="Location name"
+                                value={location.name}
+                                onChange={(e) => {
+                                  const newLocations = [...field.value];
+                                  newLocations[index] = { ...newLocations[index], name: e.target.value };
+                                  field.onChange(newLocations);
+                                }}
+                                className="bg-white font-medium"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => removeLocation(index)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <div className="text-sm text-gray-600 px-3 py-2 bg-white rounded border">
+                              <div className="font-medium">Address:</div>
+                              <div>{location.address}</div>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -586,7 +677,7 @@ export function EditProviderDialog({
                     name="instructors"
                     render={({ field }) => (
                       <div className="space-y-2">
-                        {field.value.map((instructor, index) => (
+                        {field.value && field.value.length > 0 && field.value.map((instructor, index) => (
                           <div key={index} className="flex gap-2 p-2 border rounded-lg bg-gray-50">
                             <Input
                               value={instructor}

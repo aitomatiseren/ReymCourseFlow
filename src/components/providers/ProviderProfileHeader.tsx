@@ -145,18 +145,24 @@ export function ProviderProfileHeader({ providerId }: ProviderProfileHeaderProps
                         rel="noopener noreferrer"
                         className="text-blue-600 hover:underline"
                       >
-                        Website
+                        {provider.website}
                       </a>
                     </div>
                   )}
                   
-                  {(provider.city || provider.country) && (
+                  {(provider.address || provider.city || provider.country) && (
                     <div className="flex items-center space-x-2">
                       <MapPin className="h-4 w-4" />
                       <span>
-                        {provider.city && provider.city}
-                        {provider.city && provider.country && ", "}
-                        {provider.country && provider.country}
+                        {provider.address && (
+                          <>
+                            {provider.address}
+                            {(provider.postcode || provider.city || provider.country) && ", "}
+                          </>
+                        )}
+                        {provider.postcode && `${provider.postcode} `}
+                        {provider.city}
+                        {provider.country && provider.country !== "Netherlands" && `, ${provider.country}`}
                       </span>
                     </div>
                   )}
@@ -200,7 +206,6 @@ export function ProviderProfileHeader({ providerId }: ProviderProfileHeaderProps
             </div>
 
             <Button
-              variant="outline"
               onClick={() => setShowEditDialog(true)}
               className="flex items-center gap-2"
             >

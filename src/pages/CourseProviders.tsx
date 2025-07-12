@@ -3,10 +3,14 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/layout/Layout";
 import { CourseProviderList } from "@/components/providers/CourseProviderList";
+import { CourseProviderGrid } from "@/components/providers/CourseProviderGrid";
 import { AddProviderDialog } from "@/components/providers/AddProviderDialog";
+import { ViewToggle } from "@/components/ui/view-toggle";
+import { useViewMode } from "@/hooks/useViewMode";
 
 export default function CourseProviders() {
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [viewMode, setViewMode] = useViewMode('providers');
 
   return (
     <Layout>
@@ -18,13 +22,16 @@ export default function CourseProviders() {
               Manage training providers and their course offerings
             </p>
           </div>
-          <Button onClick={() => setShowAddDialog(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Provider
-          </Button>
+          <div className="flex items-center gap-4">
+            <ViewToggle value={viewMode} onValueChange={setViewMode} />
+            <Button onClick={() => setShowAddDialog(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Provider
+            </Button>
+          </div>
         </div>
 
-        <CourseProviderList />
+        {viewMode === 'grid' ? <CourseProviderGrid /> : <CourseProviderList />}
 
         <AddProviderDialog
           open={showAddDialog}
