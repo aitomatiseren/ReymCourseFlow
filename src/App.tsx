@@ -9,6 +9,7 @@ import { PermissionsProvider } from "./context/PermissionsContext";
 import { AuthGuard } from "./components/auth/AuthGuard";
 import Dashboard from "./pages/Dashboard";
 import Courses from "./pages/Courses";
+import CourseProviders from "./pages/CourseProviders";
 import Certifications from "./pages/Certifications";
 import TrainingSchedulerPage from "./pages/TrainingScheduler";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
