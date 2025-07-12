@@ -12,10 +12,7 @@ import {
   Users,
   Check,
   X,
-  Send,
-  Trash2,
-  Eye,
-  FilterX
+  Trash2
 } from "lucide-react";
 import { Notification } from "@/types";
 import { useNotifications, CreateBulkNotificationData } from "@/hooks/useNotifications";
@@ -66,14 +63,10 @@ export function NotificationSystem({
     markAsRead,
     markAllAsRead,
     deleteNotification,
-    createBulkNotifications,
-    createNotification,
-    refetch,
     isLoading,
     isMarkingAsRead,
     isMarkingAllAsRead,
     isDeletingNotification,
-    isCreatingBulkNotifications,
     enableRealTime: enableRT,
     disableRealTime: disableRT
   } = useNotifications(userId);
@@ -166,33 +159,8 @@ export function NotificationSystem({
     markAsRead(notificationId);
   };
 
-  const sendBulkNotifications = (type: string) => {
-    console.log(`Sending bulk notifications for ${type}`);
-    // This would need to be implemented based on business logic
-    // For now, just log the action
-  };
-
   const handleMarkAllAsRead = () => {
     markAllAsRead();
-  };
-
-  const handleRefresh = () => {
-    console.log('Manual refresh triggered');
-    refetch();
-  };
-
-  const handleCreateTestNotification = () => {
-    if (!userId) return;
-
-    console.log('Creating test notification for user:', userId);
-    createNotification({
-      recipient_id: userId,
-      type: 'system_announcement',
-      title: 'Test Notification',
-      message: `This is a test notification created at ${new Date().toLocaleTimeString()}. If you can see this, the notification system is working!`,
-      priority: 'high',
-      action_url: '/communications'
-    });
   };
 
   return (
@@ -220,14 +188,7 @@ export function NotificationSystem({
             <option value="unread">Unread</option>
             <option value="read">Read</option>
           </select>
-          <Button variant="outline" onClick={handleRefresh} disabled={isLoading}>
-            <Bell className="h-4 w-4 mr-2" />
-            {isLoading ? 'Refreshing...' : 'Refresh'}
-          </Button>
-          <Button variant="outline" onClick={handleCreateTestNotification} disabled={!userId}>
-            <Send className="h-4 w-4 mr-2" />
-            Create Test Notification
-          </Button>
+
           {unreadCount > 0 && (
             <Button variant="outline" onClick={handleMarkAllAsRead} disabled={isMarkingAllAsRead}>
               <Check className="h-4 w-4 mr-2" />
@@ -237,32 +198,7 @@ export function NotificationSystem({
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => sendBulkNotifications('certificate_expiry')}>
-          <CardContent className="p-4 text-center">
-            <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-orange-500" />
-            <h3 className="font-semibold">Certificate Expiry Alerts</h3>
-            <p className="text-sm text-gray-600">Send to all employees with expiring certificates</p>
-          </CardContent>
-        </Card>
 
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => sendBulkNotifications('training_reminder')}>
-          <CardContent className="p-4 text-center">
-            <Calendar className="h-8 w-8 mx-auto mb-2 text-blue-500" />
-            <h3 className="font-semibold">Training Reminders</h3>
-            <p className="text-sm text-gray-600">Remind participants about upcoming trainings</p>
-          </CardContent>
-        </Card>
-
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => sendBulkNotifications('instructor_notifications')}>
-          <CardContent className="p-4 text-center">
-            <Users className="h-8 w-8 mx-auto mb-2 text-green-500" />
-            <h3 className="font-semibold">Instructor Updates</h3>
-            <p className="text-sm text-gray-600">Notify instructors about training details</p>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Notifications List */}
       <div className="space-y-4">

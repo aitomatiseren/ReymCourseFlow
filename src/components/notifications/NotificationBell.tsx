@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, X, CheckCircle, Eye, Trash2, Send } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,11 +34,7 @@ const notificationIcons = {
     employee_departure: '👋',
 };
 
-const priorityColors = {
-    low: 'text-gray-600',
-    medium: 'text-yellow-600',
-    high: 'text-red-600',
-};
+
 
 export function NotificationBell({
     userId,
@@ -52,29 +48,31 @@ export function NotificationBell({
         notifications,
         unreadCount,
         markAsRead,
-        markAllAsRead,
-        deleteNotification,
-        createNotification,
         enableRealTime: enableRT,
         disableRealTime: disableRT,
-        isLoading,
-        isMarkingAsRead,
-        isMarkingAllAsRead,
-        isDeletingNotification
+        isLoading
     } = useNotifications(userId);
 
     // Enable real-time notifications if requested and user has employee record
     useEffect(() => {
         if (enableRealTime && userId) {
+            console.log('NotificationBell: Enabling real-time notifications for user:', userId);
             enableRT();
         }
 
         return () => {
             if (enableRealTime) {
+                console.log('NotificationBell: Disabling real-time notifications');
                 disableRT();
             }
         };
     }, [enableRealTime, userId, enableRT, disableRT]);
+
+    // Debug: Log notification updates
+    useEffect(() => {
+        console.log('NotificationBell: Notifications updated, count:', notifications.length);
+        console.log('NotificationBell: Unread count:', unreadCount);
+    }, [notifications, unreadCount]);
 
     // If user has no employee record, don't show notifications
     if (!userId) {
@@ -98,34 +96,6 @@ export function NotificationBell({
         setIsOpen(false);
     };
 
-    const handleMarkAsRead = (notificationId: string, event: React.MouseEvent) => {
-        event.stopPropagation();
-        markAsRead(notificationId);
-    };
-
-    const handleDelete = (notificationId: string, event: React.MouseEvent) => {
-        event.stopPropagation();
-        deleteNotification(notificationId);
-    };
-
-    const handleMarkAllAsRead = () => {
-        markAllAsRead();
-    };
-
-    const handleCreateTestNotification = () => {
-        if (!userId) return;
-
-        console.log('Creating test notification from bell for user:', userId);
-        createNotification({
-            recipient_id: userId,
-            type: 'training_reminder',
-            title: 'Bell Test Notification',
-            message: `Test notification from bell at ${new Date().toLocaleTimeString()}`,
-            priority: 'medium',
-            action_url: '/communications'
-        });
-    };
-
     const handleViewAll = () => {
         navigate('/communications');
         setIsOpen(false);
@@ -139,7 +109,7 @@ export function NotificationBell({
             <PopoverTrigger asChild>
                 <Button variant="ghost" size="sm" className="relative">
                     <Bell className="h-5 w-5" />
-                    {unreadCount > 0 && (
+                    {unreadCount > 0 && !isOpen && (
                         <Badge
                             variant="destructive"
                             className="absolute -top-2 -right-2 px-1 py-0 text-xs min-w-[1.25rem] h-5 flex items-center justify-center"
@@ -149,44 +119,11 @@ export function NotificationBell({
                     )}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-80 p-0" align="end">
+            <PopoverContent className="w-[28rem] p-0" align="end">
                 <Card className="border-0 shadow-lg">
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                             <CardTitle className="text-base">Notifications</CardTitle>
-                            <div className="flex items-center space-x-2">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={handleCreateTestNotification}
-                                    disabled={!userId}
-                                    className="text-xs"
-                                >
-                                    <Send className="h-3 w-3 mr-1" />
-                                    Test
-                                </Button>
-                                {unreadCount > 0 && (
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={handleMarkAllAsRead}
-                                        disabled={isMarkingAllAsRead}
-                                        className="text-xs"
-                                    >
-                                        <CheckCircle className="h-3 w-3 mr-1" />
-                                        Mark All Read
-                                    </Button>
-                                )}
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={handleViewAll}
-                                    className="text-xs"
-                                >
-                                    <Eye className="h-3 w-3 mr-1" />
-                                    View All
-                                </Button>
-                            </div>
                         </div>
                         {unreadCount > 0 && (
                             <p className="text-sm text-gray-600">
@@ -206,7 +143,6 @@ export function NotificationBell({
                                 <div className="divide-y">
                                     {previewNotifications.map((notification) => {
                                         const icon = notificationIcons[notification.type as keyof typeof notificationIcons] || '📢';
-                                        const priorityColor = priorityColors[notification.priority as keyof typeof priorityColors] || priorityColors.medium;
 
                                         return (
                                             <div
@@ -222,18 +158,9 @@ export function NotificationBell({
                                                         <div className="text-lg">{icon}</div>
                                                         <div className="flex-1 min-w-0">
                                                             <div className="flex items-center space-x-2 mb-1">
-                                                                <h4 className="text-sm font-medium text-gray-900 truncate">
+                                                                <h4 className="text-sm font-medium text-gray-900">
                                                                     {notification.title}
                                                                 </h4>
-                                                                <Badge
-                                                                    variant="outline"
-                                                                    className={cn(
-                                                                        'text-xs px-1 py-0',
-                                                                        priorityColor
-                                                                    )}
-                                                                >
-                                                                    {notification.priority}
-                                                                </Badge>
                                                             </div>
                                                             <p className="text-sm text-gray-600 line-clamp-2">
                                                                 {notification.message}
@@ -243,28 +170,7 @@ export function NotificationBell({
                                                             </p>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center space-x-1 ml-2">
-                                                        {!notification.read && (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                className="h-6 w-6 p-0"
-                                                                onClick={(e) => handleMarkAsRead(notification.id, e)}
-                                                                disabled={isMarkingAsRead}
-                                                            >
-                                                                <CheckCircle className="h-3 w-3 text-green-600" />
-                                                            </Button>
-                                                        )}
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className="h-6 w-6 p-0"
-                                                            onClick={(e) => handleDelete(notification.id, e)}
-                                                            disabled={isDeletingNotification}
-                                                        >
-                                                            <Trash2 className="h-3 w-3 text-red-600" />
-                                                        </Button>
-                                                    </div>
+
                                                 </div>
                                             </div>
                                         );

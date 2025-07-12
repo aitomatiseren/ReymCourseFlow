@@ -72,10 +72,10 @@ export function UpcomingCourses() {
         ) : (
           <div className="space-y-4">
             {upcomingTrainings.map((training) => (
-              <div 
-                key={training.id} 
+              <div
+                key={training.id}
                 className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
-                onClick={() => navigate(`/trainings/${training.id}`)}
+                onClick={() => navigate(`/scheduling/${training.id}`)}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">

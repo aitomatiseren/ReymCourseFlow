@@ -35,7 +35,7 @@ export function RecentActivity() {
           timestamp: timestamp,
           icon: Calendar,
           color: 'bg-blue-100 text-blue-800',
-          href: `/trainings/${training.id}`
+          href: `/scheduling/${training.id}`
         });
       }
     });
@@ -133,8 +133,8 @@ export function RecentActivity() {
             {activities.map((activity) => {
               const Icon = activity.icon;
               return (
-                <div 
-                  key={activity.id} 
+                <div
+                  key={activity.id}
                   className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
                   onClick={() => activity.href && navigate(activity.href)}
                 >

@@ -18,7 +18,7 @@ import { clearAuthSession } from '@/utils/sessionUtils';
 
 export const Header: React.FC = () => {
   const { userProfile, isAdmin, roleName } = usePermissions();
-  const { unreadCount } = useNotifications(userProfile?.employee_id);
+  const { unreadCount } = useNotifications(userProfile?.employee?.id);
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -26,13 +26,13 @@ export const Header: React.FC = () => {
     try {
       // Clear all authentication data first
       clearAuthSession();
-      
+
       // Sign out from Supabase (this may fail but we continue)
       const { error } = await supabase.auth.signOut();
       if (error && error.name !== 'AuthSessionMissingError') {
         console.error('Supabase signout error (continuing anyway):', error);
       }
-      
+
       // Force hard reload to clear all state and prevent auto-login
       toast.success('Successfully logged out');
       setTimeout(() => {
@@ -122,7 +122,7 @@ export const Header: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-4">
-            <NotificationBell userId={userProfile?.employee_id} />
+            <NotificationBell userId={userProfile?.employee?.id} />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

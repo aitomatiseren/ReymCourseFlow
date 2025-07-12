@@ -73,6 +73,8 @@ export interface Employee {
   };
   notes?: string;
   lastActive?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Certificate {

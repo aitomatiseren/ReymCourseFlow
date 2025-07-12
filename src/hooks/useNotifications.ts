@@ -289,15 +289,16 @@ export function useNotifications(userId?: string) {
                     table: 'notifications',
                     filter: `recipient_id=eq.${userId}`,
                 },
-                (payload) => {
+                async (payload) => {
                     console.log('New notification received via real-time:', payload.new);
 
-                    // Force immediate refetch instead of just invalidating
-                    queryClient.invalidateQueries({ queryKey: ['notifications', userId] });
-                    queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count', userId] });
+                    // Force immediate refetch of both queries
+                    await Promise.all([
+                        queryClient.refetchQueries({ queryKey: ['notifications', userId] }),
+                        queryClient.refetchQueries({ queryKey: ['notifications', 'unread-count', userId] })
+                    ]);
 
-                    // Trigger immediate refetch
-                    refetch();
+                    console.log('Forced refetch completed for new notification');
 
                     // Show toast for new notification
                     const newNotification = payload.new as Notification;
@@ -316,15 +317,16 @@ export function useNotifications(userId?: string) {
                     table: 'notifications',
                     filter: `recipient_id=eq.${userId}`,
                 },
-                (payload) => {
+                async (payload) => {
                     console.log('Notification updated via real-time:', payload.new);
 
-                    // Force immediate refetch
-                    queryClient.invalidateQueries({ queryKey: ['notifications', userId] });
-                    queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count', userId] });
+                    // Force immediate refetch of both queries
+                    await Promise.all([
+                        queryClient.refetchQueries({ queryKey: ['notifications', userId] }),
+                        queryClient.refetchQueries({ queryKey: ['notifications', 'unread-count', userId] })
+                    ]);
 
-                    // Trigger immediate refetch
-                    refetch();
+                    console.log('Forced refetch completed for updated notification');
                 }
             )
             .subscribe((status) => {
@@ -335,7 +337,7 @@ export function useNotifications(userId?: string) {
             console.log('Cleaning up real-time subscription for user:', userId);
             supabase.removeChannel(channel);
         };
-    }, [userId, isRealTimeEnabled, queryClient, toast, refetch]);
+    }, [userId, isRealTimeEnabled, queryClient, toast]);
 
     // Enable real-time notifications
     const enableRealTime = useCallback(() => {

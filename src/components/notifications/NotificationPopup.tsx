@@ -118,8 +118,11 @@ export function NotificationPopup({
     useEffect(() => {
         if (!notifications.length) return;
 
-        const currentNotificationIds = new Set(notifications.map(n => n.id));
+        console.log('NotificationPopup: Checking for new notifications, total count:', notifications.length);
+        console.log('NotificationPopup: Current seen IDs:', seenNotificationIds.size);
+
         const unreadNotifications = notifications.filter(n => !n.read);
+        console.log('NotificationPopup: Unread count:', unreadNotifications.length);
 
         // Find truly new notifications (not previously seen)
         const newNotifications = unreadNotifications.filter(notification =>
@@ -127,7 +130,8 @@ export function NotificationPopup({
         );
 
         if (newNotifications.length > 0) {
-            console.log('New notifications detected for popup:', newNotifications.length);
+            console.log('NotificationPopup: New notifications detected for popup:', newNotifications.length);
+            console.log('NotificationPopup: New notification IDs:', newNotifications.map(n => n.id));
 
             // Add new notifications to visible list
             setVisibleNotifications(prev => {
@@ -139,27 +143,35 @@ export function NotificationPopup({
             setSeenNotificationIds(prev => {
                 const newSet = new Set(prev);
                 newNotifications.forEach(n => newSet.add(n.id));
-                console.log('Added new notification IDs to seen set:', newNotifications.map(n => n.id));
+                console.log('NotificationPopup: Added new notification IDs to seen set:', newNotifications.map(n => n.id));
                 return newSet;
             });
         }
+    }, [notifications, maxVisible]);
 
-        // Clean up old seen IDs to prevent memory leak
+    // Clean up old seen IDs to prevent memory leak
+    useEffect(() => {
+        if (!notifications.length) return;
+
         setSeenNotificationIds(prev => {
+            const currentNotificationIds = new Set(notifications.map(n => n.id));
             const newSet = new Set<string>();
-            notifications.forEach(n => {
-                if (prev.has(n.id)) {
-                    newSet.add(n.id);
+
+            // Only keep seen IDs that still exist in current notifications
+            prev.forEach(id => {
+                if (currentNotificationIds.has(id)) {
+                    newSet.add(id);
                 }
             });
 
             // Only update if the Set actually changed to avoid unnecessary localStorage writes
-            if (newSet.size !== prev.size || ![...newSet].every(id => prev.has(id))) {
+            if (newSet.size !== prev.size) {
+                console.log('NotificationPopup: Cleaned up old seen IDs, new count:', newSet.size);
                 return newSet;
             }
             return prev;
         });
-    }, [notifications, seenNotificationIds, maxVisible]);
+    }, [notifications]);
 
     // Auto-hide notifications after a delay
     useEffect(() => {

@@ -39,8 +39,8 @@ export function TrainingGridView({
           <Card>
             <CardContent className="p-8 text-center">
               <p className="text-gray-500">No trainings scheduled yet.</p>
-              <Button 
-                className="mt-4" 
+              <Button
+                className="mt-4"
                 onClick={onCreateTraining}
               >
                 Schedule First Training
@@ -51,23 +51,22 @@ export function TrainingGridView({
       ) : (
         trainings.map((training) => {
           const isMultiSession = (training.sessions_count || 1) > 1;
-          
+
           return (
-            <Card 
-              key={training.id} 
-              className={`transition-all hover:shadow-md flex flex-col ${
-                highlightedTrainingId === training.id ? 'ring-2 ring-blue-500 ring-offset-2' : ''
-              }`}
+            <Card
+              key={training.id}
+              className={`transition-all hover:shadow-md flex flex-col ${highlightedTrainingId === training.id ? 'ring-2 ring-blue-500 ring-offset-2' : ''
+                }`}
             >
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg">{training.title}</CardTitle>
                   <Badge variant="outline" className={
                     training.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
-                    training.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                    training.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                    training.status === 'completed' ? 'bg-gray-100 text-gray-800' :
-                    'bg-gray-100 text-gray-800'
+                      training.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                        training.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                          training.status === 'completed' ? 'bg-gray-100 text-gray-800' :
+                            'bg-gray-100 text-gray-800'
                   }>
                     {training.status}
                   </Badge>
@@ -129,7 +128,7 @@ export function TrainingGridView({
                       Course: {training.courseName}
                     </div>
                   )}
-                  
+
                   {/* Features */}
                   {training.code95_points && training.code95_points > 0 && (
                     <div className="flex items-center">
@@ -143,11 +142,11 @@ export function TrainingGridView({
 
                 {/* Consistent Button at Bottom */}
                 <div className="mt-auto pt-4">
-                  <Button 
-                    className="w-full h-10 bg-slate-800 text-white hover:bg-slate-900" 
+                  <Button
+                    className="w-full h-10 bg-slate-800 text-white hover:bg-slate-900"
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigate(`/trainings/${training.id}`);
+                      navigate(`/scheduling/${training.id}`);
                     }}
                   >
                     <Eye className="h-4 w-4 mr-2" />

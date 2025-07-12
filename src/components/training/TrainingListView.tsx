@@ -20,7 +20,7 @@ export function TrainingListView({
   highlightedTrainingId
 }: TrainingListViewProps) {
   const navigate = useNavigate();
-  
+
   const formatTime = (time: string, endTime?: string) => {
     const formattedTime = time ? time.slice(0, 5) : '';
     if (endTime) {
@@ -38,8 +38,8 @@ export function TrainingListView({
       <Card>
         <CardContent className="p-12 text-center">
           <p className="text-gray-500">No trainings scheduled yet.</p>
-          <Button 
-            className="mt-4" 
+          <Button
+            className="mt-4"
             onClick={onCreateTraining}
           >
             Schedule First Training
@@ -67,9 +67,9 @@ export function TrainingListView({
           <TableBody>
             {trainings.map((training) => {
               const isMultiSession = (training.sessions_count || 1) > 1;
-              
+
               return (
-                <TableRow 
+                <TableRow
                   key={training.id}
                   className={`hover:bg-gray-50 ${highlightedTrainingId === training.id ? 'bg-blue-50' : ''}`}
                 >
@@ -79,10 +79,10 @@ export function TrainingListView({
                         <div className="font-medium">{training.title}</div>
                         <Badge variant="outline" className={
                           training.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
-                          training.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                          training.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                          training.status === 'completed' ? 'bg-gray-100 text-gray-800' :
-                          'bg-gray-100 text-gray-800'
+                            training.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                              training.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                training.status === 'completed' ? 'bg-gray-100 text-gray-800' :
+                                  'bg-gray-100 text-gray-800'
                         }>
                           {training.status}
                         </Badge>
@@ -97,7 +97,7 @@ export function TrainingListView({
                       )}
                     </div>
                   </TableCell>
-                  
+
                   <TableCell>
                     {isMultiSession && training.session_dates && training.session_times ? (
                       <div className="space-y-1">
@@ -123,21 +123,21 @@ export function TrainingListView({
                       </div>
                     )}
                   </TableCell>
-                  
+
                   <TableCell>
                     <div className="flex items-center text-sm">
                       <MapPin className="h-3 w-3 mr-1" />
                       {training.location || 'Not specified'}
                     </div>
                   </TableCell>
-                  
+
                   <TableCell>
                     <div className="flex items-center text-sm">
                       <Users className="h-3 w-3 mr-1" />
                       {training.participantCount || 0}/{training.maxParticipants || 'N/A'}
                     </div>
                   </TableCell>
-                  
+
                   <TableCell>
                     {training.instructor ? (
                       <div className="flex items-center text-sm">
@@ -148,20 +148,20 @@ export function TrainingListView({
                       <span className="text-sm text-gray-500">Not assigned</span>
                     )}
                   </TableCell>
-                  
+
                   {/* <TableCell>
                     <div className="space-y-2">
                       Pricing info hidden
                     </div>
                   </TableCell> */}
-                  
+
                   <TableCell className="text-right">
-                    <Button 
+                    <Button
                       size="sm"
                       className="bg-slate-800 text-white hover:bg-slate-900"
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/trainings/${training.id}`);
+                        navigate(`/scheduling/${training.id}`);
                       }}
                     >
                       <Eye className="h-4 w-4 mr-1" />
