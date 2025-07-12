@@ -57,8 +57,11 @@ export function useUpdateTraining() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['trainings'] });
+      if (data?.id) {
+        queryClient.invalidateQueries({ queryKey: ['training', data.id] });
+      }
     }
   });
 }

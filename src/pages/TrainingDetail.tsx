@@ -44,12 +44,9 @@ export default function TrainingDetail() {
     { id: '4', text: 'Participants notified', completed: false },
   ];
 
-  // Only show checklist if training has checklist data
-  const shouldShowChecklist = training?.checklist && Array.isArray(training.checklist) && training.checklist.length > 0;
-  
   const { checklist, updateChecklistItem } = useTrainingChecklist(
     id || '', 
-    shouldShowChecklist ? training.checklist : []
+    training?.checklist || []
   );
 
   // Set current status when training loads
