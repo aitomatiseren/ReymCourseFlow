@@ -58,6 +58,13 @@ const providerSchema = z.object({
   notes: z.string().optional(),
   active: z.boolean().default(true),
   courses: z.array(z.string()).default([]),
+  course_pricing: z.record(z.object({
+    cost_breakdown: z.array(z.object({
+      name: z.string().min(1, "Component name is required"),
+      amount: z.number().min(0, "Amount must be positive"),
+      description: z.string().optional(),
+    })).default([]),
+  })).default({}),
 });
 
 type ProviderFormData = z.infer<typeof providerSchema>;
@@ -117,6 +124,7 @@ export function EditProviderDialog({
       notes: "",
       active: true,
       courses: [],
+      course_pricing: {},
     },
   });
 
@@ -176,6 +184,18 @@ export function EditProviderDialog({
   // Load provider data when dialog opens
   useEffect(() => {
     if (provider && open) {
+      // Build course pricing object from existing course_provider_courses data
+      const coursePricing: Record<string, any> = {};
+      if (provider.course_provider_courses) {
+        console.log("Loading provider course pricing data:", provider.course_provider_courses);
+        provider.course_provider_courses.forEach((cpc: any) => {
+          coursePricing[cpc.course_id] = {
+            cost_breakdown: Array.isArray(cpc.cost_breakdown) ? cpc.cost_breakdown : [],
+          };
+        });
+      }
+      console.log("Built course pricing object:", coursePricing);
+
       form.reset({
         name: provider.name || "",
         contact_person: provider.contact_person || "",
@@ -192,6 +212,7 @@ export function EditProviderDialog({
         notes: provider.notes || "",
         active: provider.active ?? true,
         courses: provider.course_provider_courses?.map((cpc: any) => cpc.course_id) || [],
+        course_pricing: coursePricing,
       });
     }
   }, [provider, open, form]);
@@ -201,7 +222,7 @@ export function EditProviderDialog({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("courses")
-        .select("id, title, category")
+        .select("id, title, category, price")
         .order("title");
       if (error) throw error;
       return data;
@@ -241,19 +262,37 @@ export function EditProviderDialog({
 
       if (deleteError) throw deleteError;
 
-      // Create new course associations
+      // Create new course associations with pricing
       if (data.courses.length > 0) {
-        const courseProviderData = data.courses.map((courseId) => ({
-          provider_id: provider.id,
-          course_id: courseId,
-          active: true,
-        }));
+        const courseProviderData = data.courses.map((courseId) => {
+          const pricing = data.course_pricing[courseId] || {};
+          const costBreakdown = pricing.cost_breakdown || [];
+          
+          // Calculate total price from cost breakdown components
+          const calculatedPrice = costBreakdown.reduce((sum: number, comp: any) => sum + (comp.amount || 0), 0);
+          
+          const courseData = {
+            provider_id: provider.id,
+            course_id: courseId,
+            active: true,
+            price: calculatedPrice > 0 ? calculatedPrice : null,
+            cost_breakdown: costBreakdown.length > 0 ? costBreakdown : null,
+          };
+          
+          console.log(`Course ${courseId} data:`, courseData);
+          return courseData;
+        });
 
+        console.log("Saving course provider data:", courseProviderData);
         const { error: coursesError } = await supabase
           .from("course_provider_courses")
           .insert(courseProviderData);
 
-        if (coursesError) throw coursesError;
+        if (coursesError) {
+          console.error("Error saving course provider data:", coursesError);
+          throw coursesError;
+        }
+        console.log("Successfully saved course provider data");
       }
 
       return true;
@@ -388,9 +427,9 @@ export function EditProviderDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(90vh-120px)] pr-6">
+        <ScrollArea className="max-h-[calc(90vh-120px)] pr-1">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 px-1">
               {/* Basic Information */}
               <div className="space-y-4">
                 <h3 className="text-sm font-medium">Basic Information</h3>
@@ -818,6 +857,126 @@ export function EditProviderDialog({
                   )}
                 />
               </div>
+
+              {/* Course Pricing */}
+              {form.watch("courses").length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium">Course Pricing</h3>
+                  <p className="text-sm text-gray-600">
+                    Set pricing for each selected course. These will be used as templates when creating trainings.
+                  </p>
+                  
+                  {form.watch("courses").map((courseId) => {
+                    const course = courses?.find(c => c.id === courseId);
+                    if (!course) return null;
+                    
+                    return (
+                      <div key={courseId} className="border rounded-lg p-4 space-y-4">
+                        <h4 className="font-medium">{course.title}</h4>
+                        
+                        {/* Cost Breakdown */}
+                        <div className="space-y-3">
+                          <FormLabel>Cost Breakdown Components</FormLabel>
+                          
+                          {/* Existing components */}
+                          <FormField
+                            control={form.control}
+                            name={`course_pricing.${courseId}.cost_breakdown` as any}
+                            render={({ field }) => (
+                              <div className="space-y-2">
+                                {field.value && field.value.length > 0 && field.value.map((component: any, index: number) => (
+                                  <div key={index} className="grid grid-cols-3 gap-2 p-3 border rounded bg-gray-50">
+                                    <Input
+                                      placeholder="Component name"
+                                      value={component.name || ""}
+                                      onChange={(e) => {
+                                        const newComponents = [...field.value];
+                                        newComponents[index] = { ...newComponents[index], name: e.target.value };
+                                        field.onChange(newComponents);
+                                      }}
+                                    />
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      step="0.01"
+                                      placeholder="Amount"
+                                      value={component.amount || ""}
+                                      onChange={(e) => {
+                                        const value = e.target.value;
+                                        const newComponents = [...field.value];
+                                        // Only allow numbers and decimal points
+                                        if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                                          newComponents[index] = { ...newComponents[index], amount: value ? parseFloat(value) : 0 };
+                                          field.onChange(newComponents);
+                                        }
+                                      }}
+                                    />
+                                    <div className="flex gap-1">
+                                      <Input
+                                        placeholder="Description (optional)"
+                                        value={component.description || ""}
+                                        onChange={(e) => {
+                                          const newComponents = [...field.value];
+                                          newComponents[index] = { ...newComponents[index], description: e.target.value };
+                                          field.onChange(newComponents);
+                                        }}
+                                      />
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          const newComponents = field.value.filter((_: any, i: number) => i !== index);
+                                          field.onChange(newComponents);
+                                        }}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))}
+                                
+                                {/* Add component button */}
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const currentComponents = field.value || [];
+                                    field.onChange([...currentComponents, { name: "", amount: 0, description: "" }]);
+                                  }}
+                                  className="w-full"
+                                >
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  Add Cost Component
+                                </Button>
+                              </div>
+                            )}
+                          />
+                          
+                          {/* Total calculation */}
+                          {(() => {
+                            const pricing = form.watch(`course_pricing.${courseId}`);
+                            const total = pricing?.cost_breakdown?.reduce((sum: number, comp: any) => sum + (comp.amount || 0), 0) || 0;
+                            
+                            if (total > 0) {
+                              return (
+                                <div className="pt-3 border-t border-gray-200">
+                                  <div className="flex justify-between items-center text-lg font-semibold text-gray-900">
+                                    <span>Total Course Price:</span>
+                                    <span>€{total.toFixed(2)}</span>
+                                  </div>
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Form Actions */}
               <div className="flex justify-end gap-3 pt-4">

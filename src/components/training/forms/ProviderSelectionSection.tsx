@@ -16,6 +16,8 @@ interface CourseProvider {
   phone: string | null;
   city: string | null;
   active: boolean;
+  additional_locations?: any;
+  instructors?: any;
 }
 
 interface ProviderSelectionSectionProps {

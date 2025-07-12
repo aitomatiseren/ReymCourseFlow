@@ -232,12 +232,6 @@ export function EditCourseDialog({ open, onOpenChange, course }: EditCourseDialo
             </div>
           )}
 
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <p className="text-sm text-yellow-800">
-              <strong>Note:</strong> Course pricing is now configured per training provider. 
-              You can set different prices for this course with each provider in the provider management section.
-            </p>
-          </div>
           
           <div className="flex justify-end space-x-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
