@@ -9,9 +9,8 @@ import { Settings as SettingsIcon, Users, Shield, Database } from 'lucide-react'
 export default function Settings() {
     return (
         <Layout>
-            <div className="space-y-6 p-6">
-                <div className="flex items-center gap-2">
-                    <SettingsIcon className="h-8 w-8" />
+            <div className="space-y-6">
+                <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-bold text-gray-900">System Settings</h1>
                         <p className="text-gray-600 mt-1">Configure system settings and manage user permissions.</p>

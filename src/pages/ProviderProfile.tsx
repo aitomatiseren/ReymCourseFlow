@@ -22,8 +22,13 @@ export default function ProviderProfile() {
   return (
     <Layout>
       <div className="space-y-6">
-        <div className="flex items-center">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Provider Profile</h1>
+            <p className="text-gray-600 mt-1">View and manage training provider information and offerings.</p>
+          </div>
           <Button
+            variant="outline"
             onClick={() => navigate('/providers')}
             className="flex items-center gap-2"
           >

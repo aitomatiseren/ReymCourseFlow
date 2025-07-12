@@ -10,8 +10,8 @@ export function TrainingSchedulerHeader({ onCreateTraining }: TrainingSchedulerH
   return (
     <div className="flex items-center justify-between">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">Training Scheduler</h2>
-        <p className="text-gray-600">Organize and manage training sessions</p>
+        <h1 className="text-3xl font-bold text-gray-900">Training Scheduler</h1>
+        <p className="text-gray-600 mt-1">Organize and manage training sessions</p>
       </div>
       <Button onClick={onCreateTraining}>
         <Plus className="h-4 w-4 mr-2" />
