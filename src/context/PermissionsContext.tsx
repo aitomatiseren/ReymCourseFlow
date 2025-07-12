@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { UserPermissions, PermissionName, PermissionCategory, UserRole, UserProfile } from '@/types/permissions';
+import { wasExplicitlyLoggedOut, clearLogoutFlag } from '@/utils/sessionUtils';
 
 interface PermissionsContextType {
     permissions: UserPermissions | null;
@@ -140,7 +141,18 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
         }
     };
 
-    const fetchUserPermissions = async (user: any = null, retryCount = 0) => {
+    const fetchUserPermissions = async (user: any = null) => {
+        // Check if user explicitly logged out - if so, don't fetch permissions
+        if (wasExplicitlyLoggedOut()) {
+            console.log('User explicitly logged out, skipping permission fetch');
+            setPermissions(null);
+            setUserProfile(null);
+            setLoading(false);
+            setInitialized(true);
+            setFetchingPermissions(false);
+            return;
+        }
+
         // Prevent concurrent calls
         if (fetchingPermissions) {
             console.log('Already fetching permissions, skipping...');
@@ -148,36 +160,17 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
         }
 
         setFetchingPermissions(true);
+        setError(null);
 
         try {
-            setError(null);
-            console.log('Fetching user permissions, attempt:', retryCount + 1);
+            console.log('Fetching user permissions...');
 
             // Use provided user or get current user
             let currentUser = user;
             if (!currentUser) {
                 console.log('Getting current user...');
-
-                // Add timeout to the getUser call
-                const timeoutPromise = new Promise((_, reject) => {
-                    setTimeout(() => reject(new Error('getUser timeout after 5 seconds')), 5000);
-                });
-
-                const getUserPromise = supabase.auth.getUser();
-                console.log('Created getUserPromise');
-
-                let result;
-                try {
-                    result = await Promise.race([getUserPromise, timeoutPromise]);
-                    console.log('getUserPromise resolved:', result);
-                } catch (timeoutError) {
-                    console.error('getUser timed out:', timeoutError);
-                    throw timeoutError;
-                }
-
-                const { data: { user: fetchedUser }, error: userError } = result as any;
-                console.log('User data extracted:', { user: fetchedUser?.id, userError });
-
+                const { data: { user: fetchedUser }, error: userError } = await supabase.auth.getUser();
+                
                 if (userError) {
                     console.error('Error getting user:', userError);
                     throw userError;
@@ -187,15 +180,6 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
             }
 
             if (!currentUser) {
-                console.log('No user found');
-                // If no user and this is the first attempt, wait a bit for session restoration
-                if (retryCount === 0 && !initialized) {
-                    console.log('No user found, waiting for session restoration...');
-                    setFetchingPermissions(false);
-                    setTimeout(() => fetchUserPermissions(null, 1), 1000);
-                    return;
-                }
-
                 // User not authenticated - set default permissions
                 console.log('User not authenticated, setting default permissions');
                 setPermissions(createUserPermissions([]));
@@ -398,17 +382,25 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
         } catch (err) {
             console.error('Error fetching user permissions:', err);
             setError(err instanceof Error ? err.message : 'Failed to load permissions');
-            // Set default permissions on error and clear userProfile
-            setPermissions(createUserPermissions([]));
+            // Set null permissions on error
+            setPermissions(null);
             setUserProfile(null);
             setLoading(false);
             setInitialized(true);
-            setFetchingPermissions(false);
             clearInitializationTimeout();
+        } finally {
+            // Always reset fetchingPermissions to prevent getting stuck
+            setFetchingPermissions(false);
         }
     };
 
     const refreshPermissions = async () => {
+        // Don't refresh if explicitly logged out
+        if (wasExplicitlyLoggedOut()) {
+            console.log('Cannot refresh permissions - user explicitly logged out');
+            return;
+        }
+        
         setLoading(true);
         setInitialized(false);
         await fetchUserPermissions();
@@ -440,22 +432,17 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
 
         // Set a maximum loading time to prevent infinite spinners
         initializationTimeoutRef.current = setTimeout(() => {
-            console.warn('Authentication check timed out, checking current state...');
-            console.log('Current state at timeout:', { loading, initialized, fetchingPermissions });
-
-            // Only set default permissions if we're still loading and not initialized
-            if (loading && !initialized) {
-                console.warn('Setting default permissions due to timeout');
-                setPermissions(createUserPermissions([]));
+            console.warn('Authentication check timed out after 10 seconds');
+            // Set unauthenticated state on timeout
+            if (!initialized) {
+                setPermissions(null);
                 setUserProfile(null);
                 setLoading(false);
                 setInitialized(true);
                 setFetchingPermissions(false);
-                clearInitializationTimeout();
-            } else {
-                console.log('Timeout ignored - already initialized or not loading');
+                setError('Authentication timeout - please refresh the page');
             }
-        }, 15000); // 15 second timeout (increased from 10)
+        }, 10000); // 10 second timeout
 
         // Listen for auth changes first, then check initial session
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -463,47 +450,45 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
             console.log('Current state:', { loading, initialized, fetchingPermissions });
 
             if (event === 'INITIAL_SESSION') {
-                console.log('Initial session restored, processing user...');
-                if (session?.user) {
-                    console.log('User found in initial session, fetching permissions...');
-                    setLoading(true);
-                    setInitialized(false);
-                    await fetchUserPermissions(session.user);
-                } else {
-                    console.log('No user in initial session, setting unauthenticated state');
-                    setPermissions(createUserPermissions([]));
+                console.log('Initial session event');
+                // Check if we were explicitly logged out
+                if (wasExplicitlyLoggedOut()) {
+                    console.log('User explicitly logged out, ignoring session');
+                    setPermissions(null);
                     setUserProfile(null);
                     setLoading(false);
                     setInitialized(true);
-                    setFetchingPermissions(false);
+                    clearInitializationTimeout();
+                    return;
+                }
+                
+                if (session?.user) {
+                    console.log('User found in initial session');
+                    setLoading(true);
+                    await fetchUserPermissions(session.user);
+                } else {
+                    console.log('No user in initial session');
+                    setPermissions(null);
+                    setUserProfile(null);
+                    setLoading(false);
+                    setInitialized(true);
                     clearInitializationTimeout();
                 }
             } else if (event === 'SIGNED_IN' && session?.user) {
-                console.log('User signed in, fetching permissions...');
+                console.log('User signed in');
+                clearLogoutFlag(); // Clear flag on successful sign in
                 setLoading(true);
                 setInitialized(false);
                 await fetchUserPermissions(session.user);
-            } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-                console.log('Token refreshed, checking if we need to refresh permissions...');
-                // Only refresh if we don't already have permissions and not currently fetching
-                // AND we haven't already tried to fetch permissions for this user
-                if (!fetchingPermissions && !permissions && !initialized) {
-                    console.log('Refreshing permissions after token refresh...');
-                    setLoading(true);
-                    setInitialized(false);
-                    await fetchUserPermissions(session.user);
-                } else {
-                    console.log('Skipping token refresh - already initialized or fetching');
-                }
             } else if (event === 'SIGNED_OUT') {
-                console.log('User signed out, clearing permissions');
-                setPermissions(createUserPermissions([]));
+                console.log('User signed out');
+                setPermissions(null);
                 setUserProfile(null);
                 setLoading(false);
                 setInitialized(true);
-                setFetchingPermissions(false);
                 clearInitializationTimeout();
             }
+            // Remove TOKEN_REFRESHED handler to prevent auto-login issues
         });
 
         return () => {

@@ -34,17 +34,21 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/courses" element={<Courses />} />
-              <Route path="/participants" element={<Participants />} />
-              <Route path="/participants/:id" element={<UserProfile />} />
-              <Route path="/certifications" element={<Certifications />} />
-              <Route path="/scheduling" element={<TrainingSchedulerPage />} />
-              <Route path="/employee-dashboard" element={<EmployeeDashboard />} />
-              <Route path="/providers" element={<Dashboard />} />
-              <Route path="/communications" element={<Notifications />} />
-              <Route path="/reports" element={<Dashboard />} />
-              <Route path="/settings" element={<Dashboard />} />
+              {/* Protected Routes */}
+              <Route path="/" element={<AuthGuard><Dashboard /></AuthGuard>} />
+              <Route path="/courses" element={<AuthGuard><Courses /></AuthGuard>} />
+              <Route path="/participants" element={<AuthGuard><Participants /></AuthGuard>} />
+              <Route path="/participants/:id" element={<AuthGuard><UserProfile /></AuthGuard>} />
+              <Route path="/certifications" element={<AuthGuard><Certifications /></AuthGuard>} />
+              <Route path="/scheduling" element={<AuthGuard><TrainingSchedulerPage /></AuthGuard>} />
+              <Route path="/employee-dashboard" element={<AuthGuard><EmployeeDashboard /></AuthGuard>} />
+              <Route path="/providers" element={<AuthGuard><Dashboard /></AuthGuard>} />
+              <Route path="/communications" element={<AuthGuard><Notifications /></AuthGuard>} />
+              <Route path="/reports" element={<AuthGuard><Dashboard /></AuthGuard>} />
+              <Route path="/settings" element={<AuthGuard><Dashboard /></AuthGuard>} />
+              
+              {/* Public Routes */}
+              <Route path="/login" element={<Login />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
