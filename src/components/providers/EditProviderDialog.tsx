@@ -60,8 +60,8 @@ const providerSchema = z.object({
   courses: z.array(z.string()).default([]),
   course_pricing: z.record(z.object({
     cost_breakdown: z.array(z.object({
-      name: z.string().min(1, "Component name is required"),
-      amount: z.number().min(0, "Amount must be positive"),
+      name: z.string().optional(),
+      amount: z.number().optional(),
       description: z.string().optional(),
     })).default([]),
   })).default({}),
@@ -222,7 +222,7 @@ export function EditProviderDialog({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("courses")
-        .select("id, title, category, price")
+        .select("id, title, price")
         .order("title");
       if (error) throw error;
       return data;
@@ -398,6 +398,9 @@ export function EditProviderDialog({
   };
 
   const onSubmit = async (data: ProviderFormData) => {
+    console.log("Form submitted with data:", data);
+    console.log("Form validation state:", form.formState.errors);
+    
     setIsSubmitting(true);
     try {
       // Process website URL to ensure it has a protocol
@@ -406,7 +409,27 @@ export function EditProviderDialog({
         processedData.website = `https://${processedData.website}`;
       }
       
+      // Clean up cost breakdown components - remove empty ones
+      if (processedData.course_pricing) {
+        Object.keys(processedData.course_pricing).forEach(courseId => {
+          const pricing = processedData.course_pricing[courseId];
+          if (pricing && pricing.cost_breakdown) {
+            // Filter out components with empty names or invalid amounts
+            pricing.cost_breakdown = pricing.cost_breakdown.filter((comp: any) => 
+              comp.name && comp.name.trim().length > 0 && 
+              typeof comp.amount === 'number' && 
+              comp.amount >= 0
+            );
+          }
+        });
+      }
+      
+      console.log("Processed data for mutation:", processedData);
       await updateProviderMutation.mutateAsync(processedData);
+    } catch (error) {
+      console.error("Error in onSubmit:", error);
+      setIsSubmitting(false);
+      throw error;
     } finally {
       setIsSubmitting(false);
     }
@@ -837,11 +860,6 @@ export function EditProviderDialog({
                                   </FormControl>
                                   <FormLabel className="text-sm font-normal cursor-pointer">
                                     {course.title}
-                                    {course.category && (
-                                      <span className="text-xs text-gray-500 ml-1">
-                                        ({course.category})
-                                      </span>
-                                    )}
                                   </FormLabel>
                                 </FormItem>
                               );
@@ -988,7 +1006,7 @@ export function EditProviderDialog({
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isSubmitting}>
+                <Button type="submit" variant="default" disabled={isSubmitting}>
                   {isSubmitting && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}

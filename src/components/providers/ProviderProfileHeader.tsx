@@ -211,7 +211,7 @@ export function ProviderProfileHeader({ providerId }: ProviderProfileHeaderProps
 
             <div className="flex items-center space-x-2">
               <Button
-                variant="outline"
+                variant="default"
                 size="sm"
                 onClick={() => setShowEditDialog(true)}
                 className="flex items-center space-x-2"
