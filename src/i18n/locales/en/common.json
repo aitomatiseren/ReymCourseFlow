@@ -7,6 +7,7 @@
         "trainingScheduler": "Training Scheduler",
         "employeePortal": "Employee Portal",
         "providers": "Providers",
+        "trainingSetup": "Training Setup",
         "notifications": "Notifications",
         "reports": "Reports",
         "settings": "Settings"
@@ -257,6 +258,9 @@
         "total": "Total",
         "courseChecklist": "Course Checklist",
         "checklistAvailable": "Checklist items available"
+    },
+    "trainingSetup": {
+        "subtitle": "Configure courses and training providers for scheduling"
     },
     "search": {
         "title": "Search",

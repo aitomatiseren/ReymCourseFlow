@@ -11,7 +11,8 @@ import {
   Calendar,
   FileText,
   Bell,
-  User
+  User,
+  Wrench
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { usePermissions } from "@/context/PermissionsContext";
@@ -31,12 +32,11 @@ import {
 
 const getMenuItems = (t: any) => [
   { titleKey: "navigation.dashboard", url: "/", icon: Home, permissions: [] },
-  { titleKey: "navigation.courses", url: "/courses", icon: BookOpen, permissions: ["view_courses"] },
+  { titleKey: "navigation.trainingSetup", url: "/training-setup", icon: Wrench, permissions: ["view_courses"] },
   { titleKey: "navigation.participants", url: "/participants", icon: Users, permissions: ["view_employees"] },
   { titleKey: "navigation.certifications", url: "/certifications", icon: Award, permissions: ["view_own_certificates"] },
   { titleKey: "navigation.trainingScheduler", url: "/scheduling", icon: Calendar, permissions: ["view_schedules"] },
   { titleKey: "navigation.employeePortal", url: "/employee-dashboard", icon: User, permissions: ["view_own_profile"] },
-  { titleKey: "navigation.providers", url: "/providers", icon: Building2, permissions: ["view_courses"] },
   { titleKey: "navigation.notifications", url: "/communications", icon: Bell, permissions: [] },
   { titleKey: "navigation.reports", url: "/reports", icon: FileText, permissions: ["view_basic_reports"] },
   { titleKey: "navigation.settings", url: "/settings", icon: Settings, permissions: ["manage_system_settings"] },

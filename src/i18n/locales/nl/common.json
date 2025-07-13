@@ -7,6 +7,7 @@
         "trainingScheduler": "Training Planner",
         "employeePortal": "Werknemers Portaal",
         "providers": "Aanbieders",
+        "trainingSetup": "Training Setup",
         "notifications": "Notificaties",
         "reports": "Rapporten",
         "settings": "Instellingen"
@@ -254,6 +255,9 @@
         "total": "Totaal",
         "courseChecklist": "Cursus Checklist",
         "checklistAvailable": "Checklist items beschikbaar"
+    },
+    "trainingSetup": {
+        "subtitle": "Configureer cursussen en training aanbieders voor planning"
     },
     "search": {
         "title": "Zoeken",

@@ -54,10 +54,45 @@ This document outlines the comprehensive development plan for REYM's Course Mana
   - Replacement tracking (e.g., HDO → HDO-M)
   - Historical record preservation
 
+- 🔄 **Certificate Level Hierarchy System**
+  - Certificate level management (Level 1, Level 2, etc.)
+  - Renewal logic: higher levels can renew without redoing lower levels
+  - Prerequisite tracking and validation
+  - Level-based expiry and renewal workflows
+
+- 🔄 **Certificate Exemption Management ("Don't Repeat")**
+  - Management approval to exempt employees from specific trainings
+  - "Don't repeat" checkbox to prevent future planning inclusion
+  - Permanent exemption tracking with approval audit trail
+  - Override capabilities with proper authorization
+
 - 🔄 **External Partner Access**
   - Portal for uitzendbureaus (temp agencies) and partners
   - Controlled certificate upload/update permissions
   - Approval workflows for external updates
+
+### 1.2 Poortinstructies Management (Gate Instructions)
+
+#### 1.2.1 Gate Instructions System
+- 🔄 **Dedicated Gate Instructions Module**
+  - Matrix-based instruction management system
+  - Instruction categorization (TATA pass, drilling platform access, etc.)
+  - Link management to external instruction resources
+  - Version control for instruction updates
+
+#### 1.2.2 Instruction Distribution
+- 🔄 **Employee Instruction Assignment**
+  - Direct link distribution to specific employees
+  - Completion tracking and confirmation
+  - Deadline management for instruction completion
+  - Automatic reminders for pending instructions
+
+#### 1.2.3 Instruction Requirements Integration
+- 🔄 **Training-Instruction Linking**
+  - Automatic instruction assignment based on training enrollment
+  - Prerequisite instruction validation
+  - Certificate-instruction dependency tracking
+  - Compliance verification before training participation
 
 ---
 
@@ -65,13 +100,27 @@ This document outlines the comprehensive development plan for REYM's Course Mana
 
 ### 2.1 Opleidingen en keuringen plannen
 
-#### 2.1.1 Preliminary Planning (Potloodplanning)
+#### 2.1.1 Annual Planning System (Jaarplanning)
+- 🔄 **Semi-Annual Forward Planning**
+  - Automated certificate expiry analysis per employee
+  - 6-month advance planning capability for renewals
+  - Intelligent employee grouping for renewal trainings
+  - Excel-based planning export and import capabilities
+
+- 🔄 **One-Click Planning Execution**
+  - Convert annual planning to training schedules with single action
+  - Automatic training session creation from planning data
+  - Bulk participant enrollment based on planning groups
+  - Planning validation and conflict detection
+
+#### 2.1.2 Preliminary Planning (Potloodplanning)
 - 🔄 **Draft Planning System**
-  - Create preliminary schedules
+  - Create preliminary schedules on top of annual planning
   - National overview of all planned trainings/examinations
   - Version control for planning iterations
+  - Integration with annual planning baseline
 
-#### 2.1.2 Comprehensive Filtering System
+#### 2.1.3 Comprehensive Filtering System
 - 🔄 **Multi-Criteria Filters**
   - Opleidingen (Trainings)
   - Keuringen (Medical examinations)
@@ -108,12 +157,19 @@ This document outlines the comprehensive development plan for REYM's Course Mana
   - Equipment availability tracking
   - Requirement validation
 
-#### 2.1.7 Digital Attendance Management
+#### 2.1.7 Comprehensive Attendance Management
 - 🔄 **Digital Signature System**
   - Electronic attendance lists (presentielijst)
   - Digital signature capture
   - Real-time attendance updates
   - Legal compliance for digital records
+
+- 🔄 **PDF Attendance List Generation**
+  - Professional PDF presentielijst for in-company trainings
+  - Includes employee names, date, instructor, course name
+  - Customizable templates for different training types
+  - Automatic generation and distribution
+  - Integration with digital signature system
 
 #### 2.1.8 Training Format Support
 - 🔄 **Multiple Learning Formats**
@@ -154,12 +210,16 @@ This document outlines the comprehensive development plan for REYM's Course Mana
   - Instructor change alerts
   - Cancellation notifications
 
-#### 3.1.3 Employee Self-Service Portal
-- 🔄 **Personal Dashboard Access**
-  - Stamkaart (employee card) consultation
-  - Training history viewing
-  - Current and future planning overview
-  - Personal certificate status
+#### 3.1.3 Enhanced Employee Self-Service Portal
+- 🔄 **Comprehensive Personal Dashboard**
+  - Complete stamkaart (employee card) access and consultation
+  - Detailed training history viewing with completion status
+  - Current and future planning overview with timeline view
+  - Personal certificate status with expiry tracking
+  - Planned trainings visibility with full details
+  - Code 95 progress tracking and visualization
+  - Personal compliance status dashboard
+  - Training enrollment and cancellation capabilities
 
 #### 3.1.4 Communication Tracking
 - 🔄 **Complete Communication Audit**
@@ -182,26 +242,35 @@ This document outlines the comprehensive development plan for REYM's Course Mana
 
 ### 3.2 Verplaatsingen & afmeldingen (Transfers & Cancellations)
 
-#### 3.2.1 Transfer Management
+#### 3.2.1 Enhanced Transfer Management
 - 🔄 **Comprehensive Transfer System**
-  - Employee transfer between trainings
-  - Required reason field (verplicht veld)
-  - Cost tracking and reporting
-  - Transfer approval workflows
+  - Employee transfer between trainings with detailed workflow
+  - Required reason field (verplicht veld) with mandatory justification
+  - Late cancellation cost tracking ("te late afmelding = duur")
+  - Transfer approval workflows with multi-level authorization
+  - Complete audit logging of all transfer activities
+
+- 🔄 **Transfer Communication System**
+  - Automatic re-notification to employees after training changes
+  - Updated training details distribution
+  - Stakeholder notification (instructors, departments, logistics)
+  - Cost notification and approval for late changes
 
 #### 3.2.2 Cancellation Management
 - 🔄 **Detailed Cancellation Processing**
-  - Cancellation with reason (e.g., illness)
-  - Cost impact tracking
-  - Automatic rescheduling options
-  - Cancellation reporting
+  - Cancellation with reason (e.g., illness) documentation
+  - Cost impact tracking and billing
+  - Automatic rescheduling options with priority booking
+  - Cancellation reporting and trend analysis
 
-#### 3.2.3 Reserve List Management
-- 🔄 **Advanced Waiting List System**
-  - Automatic enrollment from reserve list
-  - Priority assignment rules
+#### 3.2.3 Smart Reserve List Management
+- 🔄 **Intelligent Waiting List System**
+  - Automatic monitoring of required trainings per employee
+  - Smart matching when new trainings are created
+  - Automatic visibility and enrollment suggestions
+  - Priority assignment rules based on urgency and role requirements
   - Alert system for long reserve list stays
-  - Reserve list position tracking
+  - Reserve list position tracking and estimated wait times
 
 ### 3.3 Locatiewijzigingen (Location Changes)
 
@@ -240,9 +309,54 @@ This document outlines the comprehensive development plan for REYM's Course Mana
   - Early warning system
   - Renewal workflow management
 
-### 4.2 Signalen & meldingen (Signals & Notifications)
+### 4.2 Enhanced Notification & Alert System
 
-#### 4.2.1 Comprehensive Alert System
+#### 4.2.1 Stakeholder-Specific Notification Workflows
+- 🔄 **Internal Instructor Notifications**
+  - Automatic booking confirmations when assigned to trainings
+  - Training status change notifications (concept → definitive)
+  - Schedule change alerts with updated details
+  - Resource requirement notifications
+
+- 🔄 **Time Planning Department Workflow**
+  - Notifications when trainings are created with linked employees
+  - Per-employee acceptance/rejection capability with notes
+  - Approval workflow integration with planning systems
+  - Deadline-based approval reminders
+
+- 🔄 **Management Approval System**
+  - Training approval requirements per employee and course type
+  - Multi-level approval workflows
+  - Manager-specific notification preferences
+  - Approval status tracking and reporting
+
+- 🔄 **Course Planning Department Alerts**
+  - Status change notifications within 7 days of training date
+  - Late cancellation processing alerts
+  - Insufficient participant warnings
+  - Resource availability confirmations
+
+#### 4.2.2 Resource & Equipment Management Notifications
+- 🔄 **Equipment Reservation System**
+  - Automatic notifications to equipment managers (e.g., materiaalbeheer)
+  - Specific equipment reservation requests (hogedrukspuit X, etc.)
+  - Equipment availability confirmations
+  - Failure-to-deliver escalation to course planning
+
+- 🔄 **Resource Coordination Alerts**
+  - PBM (Personal Protective Equipment) preparation notifications
+  - Lunch arrangement confirmations
+  - Hotel booking requirement alerts
+  - Transportation coordination notices
+
+#### 4.2.3 Employee Communication Enhancements
+- 🔄 **Enhanced Employee Notifications**
+  - Training enrollment confirmations with complete details
+  - Location, requirements, and preparation information
+  - Multi-stage reminders (configurable: several days before, day before)
+  - Change notifications with clear impact description
+
+#### 4.2.4 Comprehensive Alert System
 - 🔄 **Multi-Category Alerts**
   - Certificate, examination, and pass expiry
   - Insufficient participants for internal trainings
@@ -250,14 +364,14 @@ This document outlines the comprehensive development plan for REYM's Course Mana
   - New employee onboarding alerts
   - Employee departure processing
 
-#### 4.2.2 Advanced Alert Configuration
+#### 4.2.5 Advanced Alert Configuration
 - 🔄 **Flexible Alert Settings**
   - Configurable start dates for signals
   - Multi-recipient alert distribution
   - Escalation chain management
   - Long-term sick leave handling
 
-#### 4.2.3 Dependency-Based Alerts
+#### 4.2.6 Dependency-Based Alerts
 - 🔄 **Intelligent Dependency Tracking**
   - Certificate X required for training Y alerts
   - Prerequisite validation
@@ -276,13 +390,24 @@ This document outlines the comprehensive development plan for REYM's Course Mana
   - Per periode (week, month, year)
   - Custom date range reporting
 
-#### 5.1.2 Performance Analytics
-- 🔄 **Detailed Performance Metrics**
-  - Pass/fail rates per course
-  - Employee performance tracking
-  - Reserve list statistics
-  - Transfer analysis with reasons
-  - Success rate percentages
+#### 5.1.2 Enhanced Performance Analytics
+- 🔄 **Comprehensive Performance Metrics**
+  - Detailed pass/fail status tracking and reporting
+  - Employee performance tracking across all trainings
+  - Reserve list statistics and analysis
+  - Transfer analysis with detailed reasons and cost impact
+  - Training attendance success rate percentages
+  - Late cancellation and no-show analytics
+
+- 🔄 **Specialized Reports**
+  - Geslaagd/gezakt (passed/failed) comprehensive reports
+  - Afgemeld (cancelled) training reports with reason analysis
+  - Reservelijst (reserve list) status and wait time reports
+  - Geplande trainingen (planned trainings) overview reports
+  - Trainingen met onvoldoende deelnemers (insufficient participants)
+  - Code 95 punten per medewerker (Code 95 points per employee)
+  - Alle certificaten (all certificates) comprehensive overview
+  - Training completion and compliance reports
 
 #### 5.1.3 Export & Integration
 - 🔄 **Advanced Export Capabilities**
@@ -299,11 +424,48 @@ This document outlines the comprehensive development plan for REYM's Course Mana
 
 ---
 
-## Phase 6: Extended Learning Management
+## Phase 6: Extended Event & Service Management
 
-### 6.1 Toolboxen (Toolbox Meetings)
+### 6.1 Extended Event Types Management
 
-#### 6.1.1 Toolbox Registration System
+#### 6.1.1 Medical Examinations (Keuringen)
+- 🔄 **Comprehensive Medical Examination System**
+  - Medical examination scheduling and tracking
+  - Health certificate management with expiry dates
+  - Medical provider integration and coordination
+  - Health compliance reporting
+  - Medical fitness tracking for specific roles
+
+#### 6.1.2 Vaccinations Management
+- 🔄 **Vaccination Tracking System**
+  - Vaccination schedule management
+  - Immunization record keeping
+  - Travel vaccination requirements
+  - Vaccination reminder system
+  - Health authority compliance reporting
+
+#### 6.1.3 Access Passes & Security Clearances
+- 🔄 **Access Pass Management System**
+  - Company access pass administration
+  - Security clearance tracking
+  - Site-specific access requirements
+  - Pass expiry and renewal management
+  - Background check coordination
+
+#### 6.1.4 Unified Event Management
+- 🔄 **Integrated Event System**
+  - Single interface for all event types (trainings, medical, vaccinations, passes)
+  - Cross-event dependency management
+  - Unified reporting across all event categories
+  - Integrated notification system for all events
+
+---
+
+## Phase 7: Extended Learning Management
+
+### 7.1 Toolboxen (Toolbox Meetings)
+
+#### 7.1.1 Toolbox Registration System
 - 🔄 **Complete Toolbox Management**
   - Toolbox meeting registration
   - Employee participation tracking
@@ -390,30 +552,41 @@ This document outlines the comprehensive development plan for REYM's Course Mana
 
 ### Critical Priority (Months 1-6)
 1. ✅ Core certificate management completion
-2. 🔄 Advanced expiry tracking and alerts
-3. 🔄 Preliminary planning system (Potloodplanning)
-4. 🔄 Comprehensive communication system
-5. 🔄 Digital attendance and signatures
+2. 🔄 Certificate level hierarchy system
+3. 🔄 Certificate exemption management ("Don't repeat")
+4. 🔄 Annual planning system (Jaarplanning)
+5. 🔄 Gate instructions management (Poortinstructies)
+6. 🔄 Advanced expiry tracking and alerts
+7. 🔄 Enhanced employee self-service portal
 
 ### High Priority (Months 7-12)
-1. 🔄 Transfer and cancellation management
-2. 🔄 Code 95 full integration
-3. 🔄 Location change management
-4. 🔄 Employee self-service portal
-5. 🔄 Advanced reporting system
+1. 🔄 Enhanced transfer and cancellation management with cost tracking
+2. 🔄 Smart reserve list management with automatic matching
+3. 🔄 Comprehensive notification system (instructors, departments, managers)
+4. 🔄 PDF attendance list generation (Presentielijst)
+5. 🔄 Enhanced reporting system (pass/fail, reserve lists, compliance)
+6. 🔄 Equipment reservation and resource management notifications
 
 ### Medium Priority (Months 13-18)
-1. 🔄 External partner portal
-2. 🔄 Power BI integration
-3. 🔄 Advanced analytics
-4. 🔄 E-learning platform
-5. 🔄 Toolbox management
+1. 🔄 Extended event management (medical examinations, vaccinations, access passes)
+2. 🔄 Code 95 full integration and CBR TOP integration
+3. 🔄 Location change management with stakeholder notifications
+4. 🔄 Advanced analytics and specialized reports
+5. 🔄 External partner portal
+6. 🔄 Digital attendance and signatures
 
-### Future Priority (Months 19+)
+### Lower Priority (Months 19-24)
+1. 🔄 E-learning platform integration
+2. 🔄 Toolbox management system
+3. 🔄 Power BI integration
+4. 🔄 Advanced workflow automation
+5. 🔄 Training provider API integration
+
+### Future Priority (Months 25+)
 1. 🔮 External API integrations (AFAS, SIR, VCA)
 2. 🔮 Advanced function profile management
 3. 🔮 Complete business intelligence platform
-4. 🔮 Advanced workflow automation
+4. 🔮 Advanced AI-driven planning optimization
 
 ---
 

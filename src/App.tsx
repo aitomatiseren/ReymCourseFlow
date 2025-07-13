@@ -23,6 +23,9 @@ import Settings from "./pages/Settings";
 import Reports from "./pages/Reports";
 import Providers from "./pages/Providers";
 import ProviderProfile from "./pages/ProviderProfile";
+import TrainingSetup from "./pages/TrainingSetup";
+import { CoursesRedirect } from "./components/redirects/CoursesRedirect";
+import { ProvidersRedirect } from "./components/redirects/ProvidersRedirect";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import CertificateExpiry from "./pages/CertificateExpiry";
@@ -41,16 +44,22 @@ const App = () => (
               <Routes>
                 {/* Protected Routes */}
                 <Route path="/" element={<AuthGuard><Dashboard /></AuthGuard>} />
-                <Route path="/courses" element={<AuthGuard><Courses /></AuthGuard>} />
+                <Route path="/training-setup" element={<AuthGuard><TrainingSetup /></AuthGuard>} />
+                
+                {/* Backward compatibility redirects */}
+                <Route path="/courses" element={<AuthGuard><CoursesRedirect /></AuthGuard>} />
+                <Route path="/providers" element={<AuthGuard><ProvidersRedirect /></AuthGuard>} />
+                
+                {/* Keep detail pages for deep linking */}
                 <Route path="/courses/:id" element={<AuthGuard><CourseDetail /></AuthGuard>} />
+                <Route path="/providers/:id" element={<AuthGuard><ProviderProfile /></AuthGuard>} />
+                
                 <Route path="/participants" element={<AuthGuard><Participants /></AuthGuard>} />
                 <Route path="/participants/:id" element={<AuthGuard><UserProfile /></AuthGuard>} />
                 <Route path="/certifications" element={<AuthGuard><Certifications /></AuthGuard>} />
                 <Route path="/scheduling" element={<AuthGuard><TrainingSchedulerPage /></AuthGuard>} />
                 <Route path="/scheduling/:id" element={<AuthGuard><TrainingDetail /></AuthGuard>} />
                 <Route path="/employee-dashboard" element={<AuthGuard><EmployeeDashboard /></AuthGuard>} />
-                <Route path="/providers" element={<AuthGuard><Providers /></AuthGuard>} />
-                <Route path="/providers/:id" element={<AuthGuard><ProviderProfile /></AuthGuard>} />
                 <Route path="/communications" element={<AuthGuard><Notifications /></AuthGuard>} />
                 <Route path="/reports" element={<AuthGuard><Reports /></AuthGuard>} />
                 <Route path="/settings" element={<AuthGuard><Settings /></AuthGuard>} />
