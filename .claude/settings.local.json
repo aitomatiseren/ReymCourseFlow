@@ -13,7 +13,10 @@
       "Bash(npm run build:*)",
       "Bash(npm run lint:*)",
       "mcp__supabase__list_projects",
-      "mcp__desktop-commander__read_file"
+      "mcp__desktop-commander__read_file",
+      "Bash(pkill:*)",
+      "Bash(true)",
+      "Bash(npm run dev:*)"
     ],
     "deny": []
   }

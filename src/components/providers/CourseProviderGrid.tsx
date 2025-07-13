@@ -180,9 +180,9 @@ export function CourseProviderGrid() {
                       href={provider.website} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
+                      className="text-blue-600 hover:underline truncate block"
                     >
-                      Website
+                      {provider.website}
                     </a>
                   </div>
                 )}

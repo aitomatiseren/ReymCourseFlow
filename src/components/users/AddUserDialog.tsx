@@ -382,7 +382,7 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
 
             <div className="flex justify-end space-x-2 pt-4 border-t">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                {t('common:cancel')}
+                {t('common.actions.cancel')}
               </Button>
               <Button type="submit">{t('employees:addDialog.addEmployee')}</Button>
             </div>

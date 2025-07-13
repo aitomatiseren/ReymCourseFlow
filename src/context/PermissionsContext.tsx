@@ -41,6 +41,12 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
     const initializationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const lastAuthEventRef = useRef<{ event: string; timestamp: number; userId?: string } | null>(null);
     const isAuthenticatedRef = useRef<boolean>(false);
+    
+    // Refs to avoid stale closures in auth handler
+    const loadingRef = useRef(true);
+    const initializedRef = useRef(false);
+    const permissionsRef = useRef<UserPermissions | null>(null);
+    const userProfileRef = useRef<UserProfile | null>(null);
 
     // Helper to clear timeout when initialization is complete
     const clearInitializationTimeout = () => {
@@ -519,6 +525,15 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
             console.log('Auth state changed:', event, session?.user?.id);
             console.log('Current state:', { loading, initialized, fetchingPermissions });
 
+            // Handle TOKEN_REFRESHED event - this fires when window regains focus
+            if (event === 'TOKEN_REFRESHED') {
+                // If user is already authenticated, just ignore this event completely
+                if (isAuthenticatedRef.current && initializedRef.current && userProfileRef.current && permissionsRef.current && session?.user?.id === userProfileRef.current.id) {
+                    console.log('Token refreshed but user already authenticated, ignoring event');
+                    return;
+                }
+            }
+
             if (event === 'INITIAL_SESSION') {
                 console.log('=== INITIAL_SESSION event ===');
                 console.log('Session user:', session?.user?.id, session?.user?.email);
@@ -531,6 +546,13 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                     setUserProfile(null);
                     setLoading(false);
                     setInitialized(true);
+                    clearInitializationTimeout();
+                    return;
+                }
+                
+                // If user is already authenticated with the same user ID, skip re-fetching
+                if (session?.user && isAuthenticatedRef.current && initializedRef.current && userProfileRef.current?.id === session.user.id && permissionsRef.current) {
+                    console.log('User already authenticated in INITIAL_SESSION, skipping permission fetch');
                     clearInitializationTimeout();
                     return;
                 }
@@ -558,7 +580,7 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                 
                 // If user is already authenticated with permissions, COMPLETELY IGNORE this event
                 // This prevents the ridiculous re-authentication on minimize/maximize
-                if (isAuthenticatedRef.current && initialized && userProfile && permissions) {
+                if (isAuthenticatedRef.current && initializedRef.current && userProfileRef.current && permissionsRef.current) {
                     console.log('User already authenticated with permissions, COMPLETELY IGNORING SIGNED_IN event');
                     return;
                 }
@@ -578,25 +600,9 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                 
                 clearLogoutFlag(); // Clear flag on successful sign in
                 
-                // Set loading state but don't fetch immediately - let INITIAL_SESSION handle it
-                // This avoids the race condition where SIGNED_IN times out but INITIAL_SESSION succeeds
-                setLoading(true);
-                setInitialized(false);
-                
-                console.log('SIGNED_IN: Setting loading state, waiting for INITIAL_SESSION to handle permission fetch');
-                
-                // Set a short timeout to fetch permissions if INITIAL_SESSION doesn't fire
-                setTimeout(async () => {
-                    if (!initialized && loading) {
-                        console.log('INITIAL_SESSION did not fire, fetching permissions from SIGNED_IN');
-                        try {
-                            await fetchUserPermissions(session.user);
-                            console.log('=== SIGNED_IN permission fetch completed ===');
-                        } catch (error) {
-                            console.error('=== SIGNED_IN permission fetch failed ===', error);
-                        }
-                    }
-                }, 2000); // Wait 2 seconds for INITIAL_SESSION
+                // Don't reset initialized state - this was breaking INITIAL_SESSION checks
+                // Just wait for INITIAL_SESSION to handle the authentication properly
+                console.log('SIGNED_IN: Ignoring event, letting INITIAL_SESSION handle authentication');
             } else if (event === 'SIGNED_OUT') {
                 console.log('User signed out');
                 setPermissions(null);
@@ -606,7 +612,6 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                 isAuthenticatedRef.current = false; // Reset authentication flag
                 clearInitializationTimeout();
             }
-            // Remove TOKEN_REFRESHED handler to prevent auto-login issues
         });
 
         return () => {
@@ -616,6 +621,23 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
             subscription.unsubscribe();
         };
     }, []); // Empty dependency array to prevent re-running
+
+    // Sync state with refs to avoid stale closures
+    useEffect(() => {
+        loadingRef.current = loading;
+    }, [loading]);
+
+    useEffect(() => {
+        initializedRef.current = initialized;
+    }, [initialized]);
+
+    useEffect(() => {
+        permissionsRef.current = permissions;
+    }, [permissions]);
+
+    useEffect(() => {
+        userProfileRef.current = userProfile;
+    }, [userProfile]);
 
     // Real-time subscriptions for user permissions and roles
     useEffect(() => {
