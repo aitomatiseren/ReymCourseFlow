@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useCallback, forwardRef } from "react";
+import { useState, useEffect, useCallback, forwardRef, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogDescription, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from "@/components/ui/dialog";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
@@ -58,6 +57,7 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
   const { t } = useTranslation(['training', 'common']);
   const [selectedCourseId, setSelectedCourseId] = useState("");
   const [selectedProviderId, setSelectedProviderId] = useState("");
+  const [selectedProvider, setSelectedProvider] = useState<any>(null);
   const [title, setTitle] = useState("");
   const [instructor, setInstructor] = useState("");
   const [location, setLocation] = useState("");
@@ -78,6 +78,7 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
   const { data: courses = [] } = useCourses();
   const createTraining = useCreateTraining();
   const { toast } = useToast();
+  const prevProviderId = useRef<string | null>(null);
 
   const selectedCourse = courses.find(course => course.id === selectedCourseId);
 
@@ -120,18 +121,14 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
     }
   };
 
-  // Handle provider details change (auto-fill location, instructor)
+  // Handle provider details change (store provider data and clear selections)
   const handleProviderDetailsChange = (provider: any) => {
-    if (provider) {
-      // Auto-fill location from provider default location
-      if (provider.default_location && !location) {
-        setLocation(provider.default_location);
-      }
-
-      // Auto-fill instructor from provider contact person if available
-      if (provider.contact_person && !instructor) {
-        setInstructor(provider.contact_person);
-      }
+    setSelectedProvider(provider);
+    // Only reset instructor/location if provider actually changed
+    if (provider?.id !== prevProviderId.current) {
+      setLocation("");
+      setInstructor("");
+      prevProviderId.current = provider?.id || null;
     }
   };
 
@@ -201,6 +198,17 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
       if (course.has_checklist && course.checklist_items) {
         const items = Array.isArray(course.checklist_items) ? course.checklist_items : [];
         setCourseChecklistItems(new Array(items.length).fill(false));
+        
+        // Sync Training Checklist with Course Checklist
+        const trainingChecklistItems = items.map((item: any) => ({
+          id: Date.now().toString() + Math.random(),
+          text: typeof item === 'string' ? item : (item.text || item.name || ''),
+          completed: false
+        }));
+        setChecklist(trainingChecklistItems);
+      } else {
+        // Clear training checklist if course has no checklist
+        setChecklist([]);
       }
     }
   };
@@ -353,6 +361,7 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
   const resetForm = () => {
     setSelectedCourseId("");
     setSelectedProviderId("");
+    setSelectedProvider(null);
     setTitle("");
     setInstructor("");
     setLocation("");
@@ -463,7 +472,6 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
             onProviderChange={handleProviderChange}
             onProviderDetailsChange={handleProviderDetailsChange}
           />
-
           {selectedCourse && (
             <>
               <CourseInfoSection selectedCourse={selectedCourse} />
@@ -482,8 +490,7 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
           {selectedProviderId && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <Label className="text-base font-medium flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
+                <Label className="text-base font-medium">
                   {t('training:createDialog.pricingCostBreakdown')}
                 </Label>
                 <Button type="button" variant="outline" size="sm" onClick={addCostComponent}>
@@ -536,10 +543,9 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
                       </div>
                     </div>
                   ))}
-
-                  <div className="flex justify-between items-center pt-2 border-t bg-blue-50 px-3 py-2 rounded">
+                  <div className="flex justify-between items-center pt-2 border-t px-3 py-2 rounded">
                     <span className="font-medium">{t('training:createDialog.totalPricePerParticipant')}</span>
-                    <span className="font-bold text-lg text-blue-600">
+                    <span className="font-bold text-lg text-gray-900">
                       €{costBreakdown.reduce((sum, item) => sum + item.amount, 0).toFixed(2)}
                     </span>
                   </div>
@@ -580,24 +586,59 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="instructor">{t('training:createDialog.instructorLabel')}</Label>
-              <Input
-                id="instructor"
-                value={instructor}
-                onChange={(e) => setInstructor(e.target.value)}
-                placeholder={t('training:createDialog.instructorPlaceholder')}
-                required
-              />
+              {selectedProvider && selectedProvider.instructors && Array.isArray(selectedProvider.instructors) && selectedProvider.instructors.length > 0 ? (
+                <Select value={instructor} onValueChange={setInstructor} required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select an instructor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selectedProvider.instructors.map((inst: string, index: number) => (
+                      <SelectItem key={index} value={inst}>
+                        {inst}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  id="instructor"
+                  value={instructor}
+                  onChange={(e) => setInstructor(e.target.value)}
+                  placeholder={selectedProvider ? {t('training:createDialog.instructorPlaceholder')} : "Instructor name"}
+                  required
+                />
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="location">{t('training:createDialog.locationLabel')}</Label>
-              <Input
-                id="location"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder={t('training:createDialog.locationPlaceholder')}
-                required
-              />
+              {selectedProvider && selectedProvider.additional_locations && Array.isArray(selectedProvider.additional_locations) && selectedProvider.additional_locations.length > 0 ? (
+                <Select value={location} onValueChange={setLocation} required>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('training:createDialog.locationPlaceholder')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selectedProvider.additional_locations.map((loc: any, index: number) => {
+                      const locationName = typeof loc === 'string' ? loc : (loc.name || loc.city || 'Unnamed Location');
+                      const locationAddress = typeof loc === 'object' && loc.address ? ` - ${loc.address}` : '';
+                      const displayName = `${locationName}${locationAddress}`;
+                      return (
+                        <SelectItem key={index} value={locationName}>
+                          {displayName}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  id="location"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder={selectedProvider ? "No locations available - enter manually" : "Training location"}
+                  required
+                />
+              )}
             </div>
           </div>
 

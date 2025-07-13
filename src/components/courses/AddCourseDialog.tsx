@@ -191,14 +191,6 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
                       onChange={(e) => updateChecklistItem(item.id, 'text', e.target.value)}
                       className="flex-1"
                     />
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`required-${item.id}`}
-                        checked={item.required}
-                        onCheckedChange={(checked) => updateChecklistItem(item.id, 'required', !!checked)}
-                      />
-                      <Label htmlFor={`required-${item.id}`} className="text-sm">Required</Label>
-                    </div>
                     <Button
                       type="button"
                       variant="ghost"
@@ -214,12 +206,6 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
             </div>
           )}
 
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <p className="text-sm text-yellow-800">
-              <strong>Note:</strong> Course pricing will be configured per training provider. 
-              You can set different prices for this course with each provider in the provider management section.
-            </p>
-          </div>
           
           <div className="flex justify-end space-x-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

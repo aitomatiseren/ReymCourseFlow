@@ -29,12 +29,13 @@ export function ProviderProfileTabs({ providerId }: ProviderProfileTabsProps) {
           *,
           course_provider_courses (
             course_id,
+            price,
+            cost_breakdown,
             courses (
               id,
               title,
               category,
-              duration_hours,
-              price
+              duration_hours
             )
           )
         `)
@@ -61,6 +62,7 @@ export function ProviderProfileTabs({ providerId }: ProviderProfileTabsProps) {
           location,
           instructor,
           max_participants,
+          cost_breakdown,
           courses (
             title,
             category
@@ -124,16 +126,41 @@ export function ProviderProfileTabs({ providerId }: ProviderProfileTabsProps) {
                           </Badge>
                         )}
                       </div>
-                      {(cpc.courses.duration_hours || cpc.courses.price) && (
-                        <div className="flex items-center space-x-4 text-sm text-gray-600">
-                          {cpc.courses.duration_hours && (
+                      <div className="space-y-3">
+                        {/* Course details */}
+                        {cpc.courses.duration_hours && (
+                          <div className="text-sm text-gray-600">
                             <span>{cpc.courses.duration_hours} hours</span>
-                          )}
-                          {cpc.courses.price && (
-                            <span>€{cpc.courses.price}</span>
-                          )}
-                        </div>
-                      )}
+                          </div>
+                        )}
+                        
+                        {/* Provider pricing */}
+                        {cpc.price && (
+                          <div className="text-lg font-semibold text-gray-900">
+                            Total Price: €{cpc.price}
+                          </div>
+                        )}
+                        
+                        {/* Cost breakdown */}
+                        {cpc.cost_breakdown && Array.isArray(cpc.cost_breakdown) && cpc.cost_breakdown.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-gray-100">
+                            <h5 className="text-sm font-medium text-gray-900 mb-2">Cost Breakdown</h5>
+                            <div className="space-y-1">
+                              {cpc.cost_breakdown.map((component: any, idx: number) => (
+                                <div key={idx} className="flex justify-between items-center text-sm">
+                                  <span className="text-gray-600">
+                                    {component.name}
+                                    {component.description && (
+                                      <span className="text-gray-500 ml-1">({component.description})</span>
+                                    )}
+                                  </span>
+                                  <span className="font-medium">€{component.amount?.toFixed(2) || '0.00'}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -176,6 +203,30 @@ export function ProviderProfileTabs({ providerId }: ProviderProfileTabsProps) {
                         <div>Location: {training.location || 'TBD'}</div>
                         <div>Instructor: {training.instructor || 'TBD'}</div>
                       </div>
+                      
+                      {/* Cost Breakdown Section */}
+                      {training.cost_breakdown && Array.isArray(training.cost_breakdown) && training.cost_breakdown.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-gray-200">
+                          <h5 className="font-medium text-sm text-gray-900 mb-2">Cost Breakdown</h5>
+                          <div className="space-y-2">
+                            {training.cost_breakdown.map((component: any, idx: number) => (
+                              <div key={idx} className="flex justify-between items-center text-sm">
+                                <span className="text-gray-600">
+                                  {component.name}
+                                  {component.description && (
+                                    <span className="text-gray-500 ml-1">({component.description})</span>
+                                  )}
+                                </span>
+                                <span className="font-medium">€{component.amount?.toFixed(2) || '0.00'}</span>
+                              </div>
+                            ))}
+                            <div className="flex justify-between items-center text-sm font-semibold pt-2 border-t border-gray-100">
+                              <span>Total Cost</span>
+                              <span>€{training.cost_breakdown.reduce((sum: number, comp: any) => sum + (comp.amount || 0), 0).toFixed(2)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

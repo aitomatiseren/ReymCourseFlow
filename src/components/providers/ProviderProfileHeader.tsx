@@ -43,6 +43,8 @@ export function ProviderProfileHeader({ providerId }: ProviderProfileHeaderProps
           *,
           course_provider_courses (
             course_id,
+            price,
+            cost_breakdown,
             courses (
               id,
               title,
