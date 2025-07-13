@@ -198,7 +198,7 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
       if (course.has_checklist && course.checklist_items) {
         const items = Array.isArray(course.checklist_items) ? course.checklist_items : [];
         setCourseChecklistItems(new Array(items.length).fill(false));
-        
+
         // Sync Training Checklist with Course Checklist
         const trainingChecklistItems = items.map((item: any) => ({
           id: Date.now().toString() + Math.random(),
@@ -604,7 +604,7 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
                   id="instructor"
                   value={instructor}
                   onChange={(e) => setInstructor(e.target.value)}
-                  placeholder={selectedProvider ? {t('training:createDialog.instructorPlaceholder')} : "Instructor name"}
+                  placeholder={selectedProvider ? t('training:createDialog.instructorPlaceholder') : "Instructor name"}
                   required
                 />
               )}
