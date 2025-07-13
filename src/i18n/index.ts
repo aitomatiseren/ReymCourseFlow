@@ -11,6 +11,7 @@ import enEmployees from './locales/en/employees.json';
 import enCertificates from './locales/en/certificates.json';
 import enProviders from './locales/en/providers.json';
 import enReports from './locales/en/reports.json';
+import enCourses from './locales/en/courses.json';
 import enAi from './locales/en/ai.json';
 
 import nlCommon from './locales/nl/common.json';
@@ -20,6 +21,7 @@ import nlEmployees from './locales/nl/employees.json';
 import nlCertificates from './locales/nl/certificates.json';
 import nlProviders from './locales/nl/providers.json';
 import nlReports from './locales/nl/reports.json';
+import nlCourses from './locales/nl/courses.json';
 import nlAi from './locales/nl/ai.json';
 
 const resources = {
@@ -31,6 +33,7 @@ const resources = {
         certificates: enCertificates,
         providers: enProviders,
         reports: enReports,
+        courses: enCourses,
         ai: enAi,
     },
     nl: {
@@ -41,6 +44,7 @@ const resources = {
         certificates: nlCertificates,
         providers: nlProviders,
         reports: nlReports,
+        courses: nlCourses,
         ai: nlAi,
     },
 };
@@ -55,7 +59,7 @@ i18n
         fallbackLng: 'en',
 
         // Namespace configuration
-        ns: ['common', 'auth', 'training', 'employees', 'certificates', 'providers', 'reports', 'ai'],
+        ns: ['common', 'auth', 'training', 'employees', 'certificates', 'providers', 'reports', 'courses', 'ai'],
         defaultNS: 'common',
 
         debug: process.env.NODE_ENV === 'development',

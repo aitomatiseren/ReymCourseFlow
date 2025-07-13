@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ interface ChecklistItem {
 }
 
 export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
+  const { t } = useTranslation(['courses', 'common']);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -54,7 +56,7 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       await createCourse.mutateAsync({
         title: formData.title,
@@ -65,12 +67,12 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
         has_checklist: checklistItems.length > 0,
         checklist_items: checklistItems.filter(item => item.text.trim())
       });
-      
+
       toast({
-        title: "Success",
-        description: "Course created successfully"
+        title: t('courses:addDialog.success'),
+        description: t('courses:addDialog.courseCreated')
       });
-      
+
       setFormData({
         title: "",
         description: "",
@@ -79,12 +81,12 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
         is_code95: false
       });
       setChecklistItems([]);
-      
+
       onOpenChange(false);
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to create course",
+        title: t('courses:addDialog.error'),
+        description: t('courses:addDialog.createFailed'),
         variant: "destructive"
       });
     }
@@ -94,12 +96,12 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Course</DialogTitle>
+          <DialogTitle>{t('courses:addDialog.title')}</DialogTitle>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="title">Course Title *</Label>
+            <Label htmlFor="title">{t('courses:addDialog.courseTitle')} *</Label>
             <Input
               id="title"
               value={formData.title}
@@ -107,9 +109,9 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
               required
             />
           </div>
-          
+
           <div>
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">{t('courses:addDialog.description')}</Label>
             <Textarea
               id="description"
               value={formData.description}
@@ -117,10 +119,10 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
               rows={3}
             />
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="max_participants">Max Participants</Label>
+              <Label htmlFor="max_participants">{t('courses:addDialog.maxParticipants')}</Label>
               <Input
                 id="max_participants"
                 type="number"
@@ -130,7 +132,7 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
             </div>
 
             <div>
-              <Label htmlFor="sessions_required">Number of Sessions Required</Label>
+              <Label htmlFor="sessions_required">{t('courses:addDialog.sessionsRequired')}</Label>
               <Input
                 id="sessions_required"
                 type="number"
@@ -138,10 +140,10 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
                 value={formData.sessions_required}
                 onChange={(e) => setFormData({ ...formData, sessions_required: e.target.value })}
               />
-              <p className="text-xs text-gray-500 mt-1">How many sessions this course requires</p>
+              <p className="text-xs text-gray-500 mt-1">{t('courses:addDialog.sessionsRequiredHelp')}</p>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -149,9 +151,9 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
                 checked={formData.is_code95}
                 onCheckedChange={(checked) => setFormData({ ...formData, is_code95: !!checked })}
               />
-              <Label htmlFor="is_code95">Code 95 Course (7 points)</Label>
+              <Label htmlFor="is_code95">{t('courses:addDialog.code95Course')}</Label>
             </div>
-            
+
             {checklistItems.length === 0 && (
               <div className="flex items-center">
                 <Button
@@ -161,7 +163,7 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
                   onClick={addChecklistItem}
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  Add Checklist Items
+                  {t('courses:addDialog.addChecklistItems')}
                 </Button>
               </div>
             )}
@@ -171,7 +173,7 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
             <div className="space-y-4">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <Label>Checklist Items</Label>
+                  <Label>{t('courses:addDialog.checklistItems')}</Label>
                   <Button
                     type="button"
                     variant="outline"
@@ -179,14 +181,14 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
                     onClick={addChecklistItem}
                   >
                     <Plus className="h-4 w-4 mr-1" />
-                    Add Item
+                    {t('courses:addDialog.addItem')}
                   </Button>
                 </div>
-                
+
                 {checklistItems.map((item) => (
                   <div key={item.id} className="flex items-center space-x-2 p-3 border rounded-lg">
                     <Input
-                      placeholder="Checklist item..."
+                      placeholder={t('courses:addDialog.checklistItemPlaceholder')}
                       value={item.text}
                       onChange={(e) => updateChecklistItem(item.id, 'text', e.target.value)}
                       className="flex-1"
@@ -206,13 +208,13 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
             </div>
           )}
 
-          
+
           <div className="flex justify-end space-x-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+              {t('courses:addDialog.cancel')}
             </Button>
             <Button type="submit" disabled={createCourse.isPending}>
-              {createCourse.isPending ? "Creating..." : "Create Course"}
+              {createCourse.isPending ? t('courses:addDialog.creating') : t('courses:addDialog.createCourse')}
             </Button>
           </div>
         </form>

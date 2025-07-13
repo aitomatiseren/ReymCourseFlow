@@ -14,6 +14,7 @@ export interface Course {
   sessions_required?: number;
   has_checklist?: boolean;
   checklist_items?: any[];
+  cost_breakdown?: any[];
   created_at: string;
 }
 
@@ -60,17 +61,17 @@ export function useCourses(enableRealTime = true) {
     queryKey: ['courses'],
     queryFn: async () => {
       console.log('Fetching courses from database...');
-      
+
       const { data, error } = await supabase
         .from('courses')
         .select('*')
         .order('title');
-      
+
       if (error) {
         console.error('Error fetching courses:', error);
         throw error;
       }
-      
+
       console.log('Fetched courses:', data);
       return data as Course[];
     }
@@ -79,22 +80,22 @@ export function useCourses(enableRealTime = true) {
 
 export function useCreateCourse() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (courseData: Omit<Course, 'id' | 'created_at'>) => {
       console.log('Creating course:', courseData);
-      
+
       const { data, error } = await supabase
         .from('courses')
         .insert([courseData])
         .select()
         .single();
-      
+
       if (error) {
         console.error('Error creating course:', error);
         throw error;
       }
-      
+
       return data;
     },
     onSuccess: () => {
@@ -105,23 +106,23 @@ export function useCreateCourse() {
 
 export function useUpdateCourse() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ id, ...courseData }: Partial<Course> & { id: string }) => {
       console.log('Updating course:', id, courseData);
-      
+
       const { data, error } = await supabase
         .from('courses')
         .update(courseData)
         .eq('id', id)
         .select()
         .single();
-      
+
       if (error) {
         console.error('Error updating course:', error);
         throw error;
       }
-      
+
       return data;
     },
     onSuccess: () => {
@@ -132,16 +133,16 @@ export function useUpdateCourse() {
 
 export function useDeleteCourse() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (courseId: string) => {
       console.log('Deleting course:', courseId);
-      
+
       const { error } = await supabase
         .from('courses')
         .delete()
         .eq('id', courseId);
-      
+
       if (error) {
         console.error('Error deleting course:', error);
         throw error;

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -22,14 +23,15 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 
-const userSchema = z.object({
-  firstName: z.string().min(1, "First names are required"),
-  lastName: z.string().min(1, "Last name is required"),
+// Schema will be created inside the component to access translations
+const createUserSchema = (t: any) => z.object({
+  firstName: z.string().min(1, t('employees:addDialog.firstNamesRequired')),
+  lastName: z.string().min(1, t('employees:addDialog.lastNameRequired')),
   tussenvoegsel: z.string().optional(),
-  roepnaam: z.string().min(1, "Calling name is required"),
-  email: z.string().email("Invalid email address"),
-  employeeNumber: z.string().min(1, "Employee number is required"),
-  department: z.string().min(1, "Department is required"),
+  roepnaam: z.string().min(1, t('employees:addDialog.roepnaamRequired')),
+  email: z.string().email(t('employees:addDialog.invalidEmail')),
+  employeeNumber: z.string().min(1, t('employees:addDialog.employeeNumberRequired')),
+  department: z.string().min(1, t('employees:addDialog.departmentRequired')),
   jobTitle: z.string().optional(),
   phone: z.string().optional(),
   dateOfBirth: z.string().optional(),
@@ -42,7 +44,7 @@ const userSchema = z.object({
   workLocation: z.string().optional(),
 });
 
-type UserFormData = z.infer<typeof userSchema>;
+type UserFormData = z.infer<ReturnType<typeof createUserSchema>>;
 
 interface AddUserDialogProps {
   open: boolean;
@@ -50,6 +52,11 @@ interface AddUserDialogProps {
 }
 
 export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
+  const { t } = useTranslation(['employees', 'common']);
+
+  // Create schema with translations
+  const userSchema = createUserSchema(t);
+
   // Function to generate full name from Dutch components (using roepnaam)
   const generateFullName = (roepnaam: string, lastName: string, tussenvoegsel?: string) => {
     const parts = [roepnaam];
@@ -84,11 +91,11 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
   const onSubmit = (data: UserFormData) => {
     // Auto-generate full name from Dutch components (using roepnaam)
     const fullName = generateFullName(data.roepnaam, data.lastName, data.tussenvoegsel);
-    
+
     console.log("Adding new user:", { ...data, name: fullName });
     toast({
-      title: "Employee Added",
-      description: `${fullName} has been added successfully.`,
+      title: t('employees:addDialog.employeeAdded'),
+      description: t('employees:addDialog.employeeAddedDescription', { name: fullName }),
     });
     form.reset();
     onOpenChange(false);
@@ -98,23 +105,23 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Employee</DialogTitle>
+          <DialogTitle>{t('employees:addDialog.title')}</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <Tabs defaultValue="basic" className="w-full">
               <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="basic">Basic Info</TabsTrigger>
-                <TabsTrigger value="employment">Employment</TabsTrigger>
-                <TabsTrigger value="personal">Personal</TabsTrigger>
+                <TabsTrigger value="basic">{t('employees:addDialog.basicInfoTab')}</TabsTrigger>
+                <TabsTrigger value="employment">{t('employees:addDialog.employmentTab')}</TabsTrigger>
+                <TabsTrigger value="personal">{t('employees:addDialog.personalTab')}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="basic" className="space-y-4">
                 {/* Employee name display */}
                 <div className="text-center py-4 border-b">
                   <h2 className="text-2xl font-bold text-gray-900">
-                    {roepnaam && lastName ? generateFullName(roepnaam, lastName, tussenvoegsel) : 'New Employee'}
+                    {roepnaam && lastName ? generateFullName(roepnaam, lastName, tussenvoegsel) : t('employees:addDialog.newEmployee')}
                   </h2>
                 </div>
 
@@ -124,9 +131,9 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
                     name="firstName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Voornamen (First names) *</FormLabel>
+                        <FormLabel>{t('employees:addDialog.firstNames')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="e.g., Ahmed Mohamed" />
+                          <Input {...field} placeholder={t('employees:addDialog.firstNamesPlaceholder')} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -138,9 +145,9 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
                     name="tussenvoegsel"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Tussenvoegsel</FormLabel>
+                        <FormLabel>{t('employees:addDialog.tussenvoegsel')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="e.g., van, de, van der" />
+                          <Input {...field} placeholder={t('employees:addDialog.tussenvoegselholder')} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -152,9 +159,9 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
                     name="lastName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Achternaam (Last name) *</FormLabel>
+                        <FormLabel>{t('employees:addDialog.lastName')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="e.g., Hassan" />
+                          <Input {...field} placeholder={t('employees:addDialog.lastNamePlaceholder')} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -168,9 +175,9 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
                     name="roepnaam"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Roepnaam (Calling name) *</FormLabel>
+                        <FormLabel>{t('employees:addDialog.roepnaam')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="e.g., Ahmed" />
+                          <Input {...field} placeholder={t('employees:addDialog.roepnaamPlaceholder')} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -182,9 +189,9 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email Address *</FormLabel>
+                        <FormLabel>{t('employees:addDialog.email')}</FormLabel>
                         <FormControl>
-                          <Input type="email" {...field} />
+                          <Input type="email" {...field} placeholder={t('employees:addDialog.emailPlaceholder')} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -198,9 +205,9 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
                     name="employeeNumber"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Employee Number *</FormLabel>
+                        <FormLabel>{t('employees:addDialog.employeeNumber')}</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} placeholder={t('employees:addDialog.employeeNumberPlaceholder')} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -211,9 +218,9 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
                     name="phone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Phone Number</FormLabel>
+                        <FormLabel>{t('employees:addDialog.phone')}</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} placeholder={t('employees:addDialog.phonePlaceholder')} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -229,9 +236,9 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
                     name="department"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Department *</FormLabel>
+                        <FormLabel>{t('employees:addDialog.department')}</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} placeholder={t('employees:addDialog.departmentPlaceholder')} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -242,9 +249,9 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
                     name="jobTitle"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Job Title</FormLabel>
+                        <FormLabel>{t('employees:addDialog.jobTitle')}</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} placeholder={t('employees:addDialog.jobTitlePlaceholder')} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -258,7 +265,7 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
                     name="hireDate"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Hire Date</FormLabel>
+                        <FormLabel>{t('employees:addDialog.hireDate')}</FormLabel>
                         <FormControl>
                           <Input type="date" {...field} />
                         </FormControl>
@@ -271,12 +278,12 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
                     name="contractType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Contract Type</FormLabel>
+                        <FormLabel>{t('employees:addDialog.contractType')}</FormLabel>
                         <FormControl>
                           <select className="w-full px-3 py-2 border border-gray-300 rounded-md" {...field}>
-                            <option value="permanent">Permanent</option>
-                            <option value="temporary">Temporary</option>
-                            <option value="freelance">Freelance</option>
+                            <option value="permanent">{t('employees:addDialog.contractTypePermanent')}</option>
+                            <option value="temporary">{t('employees:addDialog.contractTypeTemporary')}</option>
+                            <option value="freelance">{t('employees:addDialog.contractTypeFreelance')}</option>
                           </select>
                         </FormControl>
                         <FormMessage />
@@ -290,9 +297,9 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
                   name="workLocation"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Work Location</FormLabel>
+                      <FormLabel>{t('employees:addDialog.workLocation')}</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input {...field} placeholder={t('employees:addDialog.workLocationPlaceholder')} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -306,7 +313,7 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
                   name="dateOfBirth"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Date of Birth</FormLabel>
+                      <FormLabel>{t('employees:addDialog.dateOfBirth')}</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -320,9 +327,9 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
                   name="address"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Address</FormLabel>
+                      <FormLabel>{t('employees:addDialog.address')}</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input {...field} placeholder={t('employees:addDialog.addressPlaceholder')} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -335,9 +342,9 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
                     name="postcode"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Postcode</FormLabel>
+                        <FormLabel>{t('employees:addDialog.postcode')}</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} placeholder={t('employees:addDialog.postcodePlaceholder')} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -348,9 +355,9 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
                     name="city"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>City</FormLabel>
+                        <FormLabel>{t('employees:addDialog.city')}</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} placeholder={t('employees:addDialog.cityPlaceholder')} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -361,9 +368,9 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
                     name="country"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Country</FormLabel>
+                        <FormLabel>{t('employees:addDialog.country')}</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} placeholder={t('employees:addDialog.countryPlaceholder')} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -375,9 +382,9 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
 
             <div className="flex justify-end space-x-2 pt-4 border-t">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
+                {t('common:cancel')}
               </Button>
-              <Button type="submit">Add Employee</Button>
+              <Button type="submit">{t('employees:addDialog.addEmployee')}</Button>
             </div>
           </form>
         </Form>

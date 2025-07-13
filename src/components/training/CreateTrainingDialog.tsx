@@ -52,7 +52,6 @@ interface CreateTrainingDialogProps {
 }
 
 
-
 export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }: CreateTrainingDialogProps) {
   const { t } = useTranslation(['training', 'common']);
   const [selectedCourseId, setSelectedCourseId] = useState("");

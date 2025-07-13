@@ -5,7 +5,7 @@ import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Edit, Calendar, Clock, Users, CheckSquare, BookOpen } from "lucide-react";
+import { ArrowLeft, Edit, Calendar, Clock, Users, CheckSquare, BookOpen, DollarSign } from "lucide-react";
 import { useCourses } from "@/hooks/useCourses";
 import { EditCourseDialog } from "@/components/courses/EditCourseDialog";
 import { useToast } from "@/hooks/use-toast";
