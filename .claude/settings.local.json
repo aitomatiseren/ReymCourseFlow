@@ -16,7 +16,12 @@
       "mcp__desktop-commander__read_file",
       "Bash(pkill:*)",
       "Bash(true)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(npm install:*)",
+      "WebFetch(domain:cdr.ssvv.nl)",
+      "WebFetch(domain:www.sir-safe.nl)",
+      "WebFetch(domain:www.kiwaregister.com)",
+      "mcp__supabase__generate_typescript_types"
     ],
     "deny": []
   }

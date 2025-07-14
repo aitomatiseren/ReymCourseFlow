@@ -12,6 +12,7 @@
         "checklistItems": "Checklist Items",
         "addItem": "Add Item",
         "checklistItemPlaceholder": "Checklist item...",
+        "required": "Required",
         "remove": "Remove",
         "cancel": "Cancel",
         "createCourse": "Create Course",

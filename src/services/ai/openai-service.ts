@@ -563,6 +563,103 @@ ${dbContext.recentActivity.slice(0, 3).map(activity =>
     }
   }
 
+  async processTextRequest(prompt: string): Promise<{ content: string }> {
+    if (!AI_CONFIG.openai.apiKey) {
+      throw new Error('OpenAI API key not configured');
+    }
+
+    try {
+      const response = await fetch(`${AI_CONFIG.openai.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${AI_CONFIG.openai.apiKey}`
+        },
+        body: JSON.stringify({
+          model: AI_CONFIG.openai.model,
+          messages: [
+            { role: 'user', content: prompt }
+          ],
+          max_tokens: 2000,
+          temperature: 0.1 // Lower temperature for more consistent extraction
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`);
+      }
+
+      const data: OpenAIResponse = await response.json();
+      
+      if (!data.choices || data.choices.length === 0) {
+        throw new Error('No response from OpenAI');
+      }
+
+      return {
+        content: data.choices[0].message.content
+      };
+    } catch (error) {
+      console.error('OpenAI Text Processing Error:', error);
+      throw error;
+    }
+  }
+
+  async processVisionRequest(prompt: string, base64Image: string): Promise<{ content: string }> {
+    if (!AI_CONFIG.openai.apiKey) {
+      throw new Error('OpenAI API key not configured');
+    }
+
+    try {
+      const response = await fetch(`${AI_CONFIG.openai.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${AI_CONFIG.openai.apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o', // Use vision-enabled model
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: prompt
+                },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:image/jpeg;base64,${base64Image}`,
+                    detail: 'high'
+                  }
+                }
+              ]
+            }
+          ],
+          max_tokens: 2000,
+          temperature: 0.1
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenAI Vision API error: ${response.status}`);
+      }
+
+      const data: OpenAIResponse = await response.json();
+      
+      if (!data.choices || data.choices.length === 0) {
+        throw new Error('No response from OpenAI Vision');
+      }
+
+      return {
+        content: data.choices[0].message.content
+      };
+    } catch (error) {
+      console.error('OpenAI Vision Processing Error:', error);
+      throw error;
+    }
+  }
+
   private generateSuggestions(message: string): string[] {
     const lowerMessage = message.toLowerCase();
     

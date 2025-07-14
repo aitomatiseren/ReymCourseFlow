@@ -8,7 +8,7 @@ import { useCourses } from "@/hooks/useCourses";
 import { useTrainingParticipants } from "@/hooks/useTrainingParticipants";
 import { CreateTrainingDialog } from "./CreateTrainingDialog";
 import { AddParticipantDialog } from "./AddParticipantDialog";
-import { TrainingCalendar } from "./TrainingCalendar";
+import { EnhancedTrainingCalendar } from "./EnhancedTrainingCalendar";
 import { TrainingTimeline } from "./TrainingTimeline";
 import { TrainingListView } from "./TrainingListView";
 import { TrainingSchedulerHeader } from "./TrainingSchedulerHeader";
@@ -167,8 +167,9 @@ export function TrainingScheduler() {
       )}
 
       {displayMode === 'calendar' && (
-        <TrainingCalendar
+        <EnhancedTrainingCalendar
           onTrainingSelect={handleTrainingSelect}
+          onCreateTraining={() => setShowCreateForm(true)}
         />
       )}
 

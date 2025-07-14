@@ -193,6 +193,14 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
                       onChange={(e) => updateChecklistItem(item.id, 'text', e.target.value)}
                       className="flex-1"
                     />
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`required-${item.id}`}
+                        checked={item.required}
+                        onCheckedChange={(checked) => updateChecklistItem(item.id, 'required', !!checked)}
+                      />
+                      <Label htmlFor={`required-${item.id}`} className="text-sm">{t('courses:addDialog.required')}</Label>
+                    </div>
                     <Button
                       type="button"
                       variant="ghost"

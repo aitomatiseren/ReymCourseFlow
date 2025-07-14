@@ -80,7 +80,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   };
 
   const handleCourseClick = (courseId: string) => {
-    navigate(`/courses?course=${courseId}`);
+    navigate(`/courses/${courseId}`);
     onOpenChange(false);
     setQuery("");
   };

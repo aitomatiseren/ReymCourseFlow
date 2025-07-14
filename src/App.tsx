@@ -16,6 +16,7 @@ import Certifications from "./pages/Certifications";
 import TrainingSchedulerPage from "./pages/TrainingScheduler";
 import TrainingDetail from "./pages/TrainingDetail";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
+import EmployeePortal from "./pages/EmployeePortal";
 import Notifications from "./pages/Notifications";
 import Participants from "./pages/Participants";
 import UserProfile from "./pages/UserProfile";
@@ -24,6 +25,7 @@ import Reports from "./pages/Reports";
 import Providers from "./pages/Providers";
 import ProviderProfile from "./pages/ProviderProfile";
 import TrainingSetup from "./pages/TrainingSetup";
+import CertificateDefinitions from "./pages/CertificateDefinitions";
 import { CoursesRedirect } from "./components/redirects/CoursesRedirect";
 import { ProvidersRedirect } from "./components/redirects/ProvidersRedirect";
 import Login from "./pages/Login";
@@ -57,9 +59,11 @@ const App = () => (
                 <Route path="/participants" element={<AuthGuard><Participants /></AuthGuard>} />
                 <Route path="/participants/:id" element={<AuthGuard><UserProfile /></AuthGuard>} />
                 <Route path="/certifications" element={<AuthGuard><Certifications /></AuthGuard>} />
+                <Route path="/certificate-definitions" element={<AuthGuard><CertificateDefinitions /></AuthGuard>} />
                 <Route path="/scheduling" element={<AuthGuard><TrainingSchedulerPage /></AuthGuard>} />
                 <Route path="/scheduling/:id" element={<AuthGuard><TrainingDetail /></AuthGuard>} />
                 <Route path="/employee-dashboard" element={<AuthGuard><EmployeeDashboard /></AuthGuard>} />
+                <Route path="/employee-portal" element={<AuthGuard><EmployeePortal /></AuthGuard>} />
                 <Route path="/communications" element={<AuthGuard><Notifications /></AuthGuard>} />
                 <Route path="/reports" element={<AuthGuard><Reports /></AuthGuard>} />
                 <Route path="/settings" element={<AuthGuard><Settings /></AuthGuard>} />

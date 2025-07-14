@@ -1,12 +1,15 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export function CoursesRedirect() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
-    navigate('/training-setup?tab=courses', { replace: true });
-  }, [navigate]);
+    // Preserve any query parameters when redirecting
+    const searchParams = location.search;
+    navigate(`/training-setup?tab=courses${searchParams ? '&' + searchParams.slice(1) : ''}`, { replace: true });
+  }, [navigate, location]);
 
   return null;
 }

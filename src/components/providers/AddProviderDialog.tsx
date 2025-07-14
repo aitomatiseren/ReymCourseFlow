@@ -58,6 +58,13 @@ const providerSchema = z.object({
   notes: z.string().optional(),
   active: z.boolean().default(true),
   courses: z.array(z.string()).default([]),
+  course_pricing: z.record(z.object({
+    cost_breakdown: z.array(z.object({
+      name: z.string().optional(),
+      amount: z.number().optional(),
+      description: z.string().optional(),
+    })).default([]),
+  })).default({}),
 });
 
 type ProviderFormData = z.infer<typeof providerSchema>;
@@ -112,6 +119,7 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
       notes: "",
       active: true,
       courses: [],
+      course_pricing: {},
     },
   });
 
@@ -153,13 +161,23 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
 
       if (providerError) throw providerError;
 
-      // Then, create the course associations
+      // Then, create the course associations with pricing
       if (data.courses.length > 0) {
-        const courseProviderData = data.courses.map((courseId) => ({
-          provider_id: provider.id,
-          course_id: courseId,
-          active: true,
-        }));
+        const courseProviderData = data.courses.map((courseId) => {
+          const pricing = data.course_pricing[courseId] || {};
+          const costBreakdown = pricing.cost_breakdown || [];
+          
+          // Calculate total price from cost breakdown components
+          const calculatedPrice = costBreakdown.reduce((sum: number, comp: any) => sum + (comp.amount || 0), 0);
+          
+          return {
+            provider_id: provider.id,
+            course_id: courseId,
+            active: true,
+            price: calculatedPrice > 0 ? calculatedPrice : null,
+            cost_breakdown: costBreakdown.length > 0 ? costBreakdown : null,
+          };
+        });
 
         const { error: coursesError } = await supabase
           .from("course_provider_courses")
@@ -270,6 +288,22 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
     form.setValue("instructors", currentInstructors.filter((_, i) => i !== index));
   };
 
+  // Cost breakdown management functions
+  const addCostComponent = (courseId: string) => {
+    const currentPricing = form.getValues(`course_pricing.${courseId}`) || { cost_breakdown: [] };
+    const newComponent = { name: "", amount: 0, description: "" };
+    const updatedBreakdown = [...(currentPricing.cost_breakdown || []), newComponent];
+    
+    form.setValue(`course_pricing.${courseId}.cost_breakdown`, updatedBreakdown);
+  };
+
+  const removeCostComponent = (courseId: string, index: number) => {
+    const currentPricing = form.getValues(`course_pricing.${courseId}`) || { cost_breakdown: [] };
+    const updatedBreakdown = (currentPricing.cost_breakdown || []).filter((_, i) => i !== index);
+    
+    form.setValue(`course_pricing.${courseId}.cost_breakdown`, updatedBreakdown);
+  };
+
   const onSubmit = async (data: ProviderFormData) => {
     setIsSubmitting(true);
     try {
@@ -277,6 +311,21 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
       const processedData = { ...data };
       if (processedData.website && !processedData.website.match(/^https?:\/\//)) {
         processedData.website = `https://${processedData.website}`;
+      }
+      
+      // Clean up cost breakdown components - remove empty ones
+      if (processedData.course_pricing) {
+        Object.keys(processedData.course_pricing).forEach(courseId => {
+          const pricing = processedData.course_pricing[courseId];
+          if (pricing && pricing.cost_breakdown) {
+            // Filter out components with empty names or invalid amounts
+            pricing.cost_breakdown = pricing.cost_breakdown.filter((comp: any) => 
+              comp.name && comp.name.trim().length > 0 && 
+              typeof comp.amount === 'number' && 
+              comp.amount >= 0
+            );
+          }
+        });
       }
       
       await createProviderMutation.mutateAsync(processedData);
@@ -707,13 +756,21 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
                                     <Checkbox
                                       checked={field.value?.includes(course.id)}
                                       onCheckedChange={(checked) => {
-                                        return checked
-                                          ? field.onChange([...field.value, course.id])
-                                          : field.onChange(
-                                              field.value?.filter(
-                                                (value) => value !== course.id
-                                              )
-                                            );
+                                        const newCourses = checked
+                                          ? [...field.value, course.id]
+                                          : field.value?.filter((value) => value !== course.id);
+                                        
+                                        field.onChange(newCourses);
+                                        
+                                        // Initialize pricing for new courses
+                                        if (checked) {
+                                          form.setValue(`course_pricing.${course.id}`, { cost_breakdown: [] });
+                                        } else {
+                                          // Remove pricing when unchecking
+                                          const currentPricing = form.getValues("course_pricing");
+                                          delete currentPricing[course.id];
+                                          form.setValue("course_pricing", currentPricing);
+                                        }
                                       }}
                                     />
                                   </FormControl>
@@ -739,6 +796,121 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
                   )}
                 />
               </div>
+
+              {/* Course Pricing */}
+              {form.watch("courses")?.length > 0 && (
+                <div className="space-y-6">
+                  <h3 className="text-sm font-medium">Course Pricing</h3>
+                  {form.watch("courses")?.map((courseId) => {
+                    const course = courses?.find(c => c.id === courseId);
+                    if (!course) return null;
+
+                    return (
+                      <div key={courseId} className="border rounded-lg p-4 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium text-gray-900">{course.title}</h4>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => addCostComponent(courseId)}
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add Cost Component
+                          </Button>
+                        </div>
+
+                        <div className="space-y-3">
+                          <FormLabel>Cost Breakdown Components</FormLabel>
+                          
+                          {/* Existing components */}
+                          <FormField
+                            control={form.control}
+                            name={`course_pricing.${courseId}.cost_breakdown` as any}
+                            render={({ field }) => (
+                              <div className="space-y-2">
+                                {field.value && field.value.length > 0 && field.value.map((component: any, index: number) => (
+                                  <div key={index} className="grid grid-cols-3 gap-2 p-3 border rounded bg-gray-50">
+                                    <Input
+                                      placeholder="Component name"
+                                      value={component.name || ""}
+                                      onChange={(e) => {
+                                        const updatedComponents = [...field.value];
+                                        updatedComponents[index] = { ...updatedComponents[index], name: e.target.value };
+                                        field.onChange(updatedComponents);
+                                      }}
+                                    />
+                                    <Input
+                                      type="number"
+                                      placeholder="Amount"
+                                      step="0.01"
+                                      min="0"
+                                      value={component.amount || ""}
+                                      onChange={(e) => {
+                                        const value = parseFloat(e.target.value) || 0;
+                                        const updatedComponents = [...field.value];
+                                        updatedComponents[index] = { ...updatedComponents[index], amount: value };
+                                        field.onChange(updatedComponents);
+                                      }}
+                                    />
+                                    <div className="flex gap-2">
+                                      <Input
+                                        placeholder="Description (optional)"
+                                        value={component.description || ""}
+                                        onChange={(e) => {
+                                          const updatedComponents = [...field.value];
+                                          updatedComponents[index] = { ...updatedComponents[index], description: e.target.value };
+                                          field.onChange(updatedComponents);
+                                        }}
+                                        className="flex-1"
+                                      />
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => removeCostComponent(courseId, index)}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))}
+                                {(!field.value || field.value.length === 0) && (
+                                  <div className="text-center py-6 text-gray-500 border-2 border-dashed rounded-lg">
+                                    <p className="text-sm">No cost components added yet</p>
+                                    <p className="text-xs mt-1">Click "Add Cost Component" to add pricing details</p>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          />
+                          
+                          {/* Total calculation */}
+                          {(() => {
+                            const pricing = form.watch(`course_pricing.${courseId}`);
+                            const total = pricing?.cost_breakdown?.reduce((sum: number, comp: any) => sum + (comp.amount || 0), 0) || 0;
+                            
+                            if (total > 0) {
+                              return (
+                                <div className="pt-3 border-t border-gray-200">
+                                  <div className="flex justify-between items-center text-lg font-semibold text-gray-900">
+                                    <span>Total Course Price:</span>
+                                    <span>€{total.toFixed(2)}</span>
+                                  </div>
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <FormDescription>
+                    Configure pricing breakdown for each selected course
+                  </FormDescription>
+                </div>
+              )}
 
               {/* Form Actions */}
               <div className="flex justify-end gap-3 pt-4">

@@ -12,6 +12,7 @@
         "checklistItems": "Checklist Items",
         "addItem": "Item Toevoegen",
         "checklistItemPlaceholder": "Checklist item...",
+        "required": "Verplicht",
         "remove": "Verwijderen",
         "cancel": "Annuleren",
         "createCourse": "Cursus Aanmaken",

@@ -11,6 +11,7 @@ interface ChecklistItem {
   id: string;
   text: string;
   completed: boolean;
+  required?: boolean;
 }
 
 interface ChecklistManagementSectionProps {
@@ -29,7 +30,8 @@ export function ChecklistManagementSection({
       const newItem: ChecklistItem = {
         id: Date.now().toString(),
         text: newItemText.trim(),
-        completed: false
+        completed: false,
+        required: false
       };
       onChecklistChange([...checklistItems, newItem]);
       setNewItemText("");
@@ -83,11 +85,18 @@ export function ChecklistManagementSection({
                 checked={item.completed}
                 onCheckedChange={() => toggleItem(item.id)}
               />
-              <Input
-                value={item.text}
-                onChange={(e) => updateItem(item.id, e.target.value)}
-                className="flex-1"
-              />
+              <div className="flex-1 flex items-center gap-2">
+                <Input
+                  value={item.text}
+                  onChange={(e) => updateItem(item.id, e.target.value)}
+                  className="flex-1"
+                />
+                {item.required && (
+                  <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">
+                    Required
+                  </span>
+                )}
+              </div>
               <Button
                 variant="outline"
                 size="sm"

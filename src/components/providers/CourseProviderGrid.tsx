@@ -132,9 +132,10 @@ export function CourseProviderGrid() {
       {/* Provider Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredProviders?.map((provider) => (
-          <Card key={provider.id} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-4">
+          <Card key={provider.id} className="hover:shadow-md transition-shadow h-full">
+            <CardContent className="p-6 h-full flex flex-col">
+              <div className="flex-1">
+                <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-3">
                   <Avatar className="h-12 w-12">
                     <AvatarFallback className="bg-blue-100 text-blue-600">
@@ -218,11 +219,12 @@ export function CourseProviderGrid() {
                   </div>
                 </div>
               )}
+              </div>
 
-              <div className="flex space-x-2">
+              <div className="flex space-x-2 mt-4">
                 <Button 
                   size="sm"
-                  className="flex-1 bg-slate-800 text-white hover:bg-slate-900"
+                  className="flex-1 flex items-center justify-center bg-slate-800 text-white hover:bg-slate-900"
                   onClick={() => handleView(provider)}
                 >
                   <Eye className="h-4 w-4 mr-1" />

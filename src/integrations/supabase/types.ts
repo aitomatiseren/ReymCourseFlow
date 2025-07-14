@@ -14,6 +14,137 @@ export type Database = {
   }
   public: {
     Tables: {
+      certificate_exemptions: {
+        Row: {
+          approval_date: string | null
+          approval_notes: string | null
+          approval_status: string
+          approved_by_id: string | null
+          approved_by_name: string | null
+          created_at: string | null
+          dont_repeat_flag: boolean
+          effective_date: string
+          employee_id: string
+          exemption_type: string
+          expiry_date: string | null
+          id: string
+          is_active: boolean
+          justification: string | null
+          license_id: string
+          reason: string
+          requested_by_id: string | null
+          requested_by_name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          approval_date?: string | null
+          approval_notes?: string | null
+          approval_status?: string
+          approved_by_id?: string | null
+          approved_by_name?: string | null
+          created_at?: string | null
+          dont_repeat_flag?: boolean
+          effective_date?: string
+          employee_id: string
+          exemption_type: string
+          expiry_date?: string | null
+          id?: string
+          is_active?: boolean
+          justification?: string | null
+          license_id: string
+          reason: string
+          requested_by_id?: string | null
+          requested_by_name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          approval_date?: string | null
+          approval_notes?: string | null
+          approval_status?: string
+          approved_by_id?: string | null
+          approved_by_name?: string | null
+          created_at?: string | null
+          dont_repeat_flag?: boolean
+          effective_date?: string
+          employee_id?: string
+          exemption_type?: string
+          expiry_date?: string | null
+          id?: string
+          is_active?: boolean
+          justification?: string | null
+          license_id?: string
+          reason?: string
+          requested_by_id?: string | null
+          requested_by_name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_exemptions_approved_by_id_fkey"
+            columns: ["approved_by_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificate_exemptions_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificate_exemptions_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "licenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificate_exemptions_requested_by_id_fkey"
+            columns: ["requested_by_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      certificate_prerequisites: {
+        Row: {
+          certificate_id: string
+          created_at: string | null
+          id: string
+          prerequisite_id: string
+        }
+        Insert: {
+          certificate_id: string
+          created_at?: string | null
+          id?: string
+          prerequisite_id: string
+        }
+        Update: {
+          certificate_id?: string
+          created_at?: string | null
+          id?: string
+          prerequisite_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_prerequisites_certificate_id_fkey"
+            columns: ["certificate_id"]
+            isOneToOne: false
+            referencedRelation: "licenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificate_prerequisites_prerequisite_id_fkey"
+            columns: ["prerequisite_id"]
+            isOneToOne: false
+            referencedRelation: "licenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_provider_courses: {
         Row: {
           active: boolean | null
@@ -189,6 +320,8 @@ export type Database = {
           duration_hours: number | null
           has_checklist: boolean | null
           id: string
+          level: number | null
+          level_description: string | null
           max_participants: number | null
           price: number | null
           sessions_required: number | null
@@ -204,6 +337,8 @@ export type Database = {
           duration_hours?: number | null
           has_checklist?: boolean | null
           id?: string
+          level?: number | null
+          level_description?: string | null
           max_participants?: number | null
           price?: number | null
           sessions_required?: number | null
@@ -219,6 +354,8 @@ export type Database = {
           duration_hours?: number | null
           has_checklist?: boolean | null
           id?: string
+          level?: number | null
+          level_description?: string | null
           max_participants?: number | null
           price?: number | null
           sessions_required?: number | null
@@ -228,32 +365,40 @@ export type Database = {
       }
       employee_licenses: {
         Row: {
+          can_renew_from_level: number | null
           certificate_number: string | null
           created_at: string
           employee_id: string | null
+          exemption_id: string | null
           expiry_date: string | null
           id: string
+          is_exempt: boolean | null
           issue_date: string | null
+          level_achieved: number | null
           license_id: string | null
           status: string | null
         }
         Insert: {
+          can_renew_from_level?: number | null
           certificate_number?: string | null
           created_at?: string
           employee_id?: string | null
           expiry_date?: string | null
           id?: string
           issue_date?: string | null
+          level_achieved?: number | null
           license_id?: string | null
           status?: string | null
         }
         Update: {
+          can_renew_from_level?: number | null
           certificate_number?: string | null
           created_at?: string
           employee_id?: string | null
           expiry_date?: string | null
           id?: string
           issue_date?: string | null
+          level_achieved?: number | null
           license_id?: string | null
           status?: string | null
         }
@@ -558,6 +703,8 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          level: number | null
+          level_description: string | null
           name: string
           validity_period_months: number | null
         }
@@ -566,6 +713,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          level?: number | null
+          level_description?: string | null
           name: string
           validity_period_months?: number | null
         }
@@ -574,6 +723,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          level?: number | null
+          level_description?: string | null
           name?: string
           validity_period_months?: number | null
         }
@@ -845,6 +996,7 @@ export type Database = {
           employee_id: string | null
           id: string
           is_active: boolean | null
+          language_preference: string | null
           last_login: string | null
           role_id: string | null
           updated_at: string
@@ -854,6 +1006,7 @@ export type Database = {
           employee_id?: string | null
           id: string
           is_active?: boolean | null
+          language_preference?: string | null
           last_login?: string | null
           role_id?: string | null
           updated_at?: string
@@ -863,6 +1016,7 @@ export type Database = {
           employee_id?: string | null
           id?: string
           is_active?: boolean | null
+          language_preference?: string | null
           last_login?: string | null
           role_id?: string | null
           updated_at?: string
@@ -966,7 +1120,7 @@ export type Database = {
         Args: { user_id: string; permission_name: string }
         Returns: boolean
       }
-      }
+    }
     Enums: {
       [_ in never]: never
     }

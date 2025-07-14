@@ -158,7 +158,7 @@ export function TrainingListView({
                   <TableCell className="text-right">
                     <Button
                       size="sm"
-                      className="bg-slate-800 text-white hover:bg-slate-900"
+                      className="flex items-center justify-center bg-slate-800 text-white hover:bg-slate-900"
                       onClick={(e) => {
                         e.stopPropagation();
                         navigate(`/scheduling/${training.id}`);

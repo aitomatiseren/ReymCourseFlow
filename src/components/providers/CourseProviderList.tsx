@@ -176,6 +176,7 @@ export function CourseProviderList() {
                   <TableCell className="text-right">
                     <Button
                       size="sm"
+                      className="flex items-center justify-center"
                       onClick={() => handleView(provider)}
                     >
                       <Eye className="h-4 w-4 mr-1" />

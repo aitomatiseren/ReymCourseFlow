@@ -391,6 +391,7 @@ export function UserListTable() {
                     <div className="flex justify-end space-x-2">
                       <Button 
                         size="sm"
+                        className="flex items-center justify-center"
                         onClick={() => handleViewProfile(employee.id)}
                       >
                         <Eye className="h-4 w-4 mr-1" />

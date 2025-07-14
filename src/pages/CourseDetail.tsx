@@ -5,7 +5,7 @@ import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Edit, Calendar, Clock, Users, CheckSquare, BookOpen, DollarSign } from "lucide-react";
+import { ArrowLeft, Edit, Calendar, Clock, Users, CheckSquare, BookOpen } from "lucide-react";
 import { useCourses } from "@/hooks/useCourses";
 import { EditCourseDialog } from "@/components/courses/EditCourseDialog";
 import { useToast } from "@/hooks/use-toast";
@@ -35,7 +35,7 @@ export default function CourseDetail() {
       <Layout>
         <div className="space-y-6">
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" onClick={() => navigate("/courses")}>
+            <Button variant="ghost" onClick={() => navigate("/training-setup?tab=courses")}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Courses
             </Button>
@@ -44,7 +44,7 @@ export default function CourseDetail() {
           <div className="text-center py-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('common:courseDetail.courseNotFound')}</h2>
             <p className="text-gray-600">{t('common:courseDetail.courseNotFoundDesc')}</p>
-            <Button className="mt-4" onClick={() => navigate("/courses")}>
+            <Button className="mt-4" onClick={() => navigate("/training-setup?tab=courses")}>
               {t('common:courseDetail.viewAllCourses')}
             </Button>
           </div>
@@ -65,7 +65,7 @@ export default function CourseDetail() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("/courses")}
+            onClick={() => navigate("/training-setup?tab=courses")}
             className="flex items-center space-x-2"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -101,11 +101,6 @@ export default function CourseDetail() {
                 <span>{course.max_participants || t('common:courseDetail.unlimited')}</span>
               </div>
               <div className="flex items-center space-x-2">
-                <DollarSign className="h-4 w-4 text-gray-500" />
-                <span className="font-medium">{t('common:courseDetail.price')}:</span>
-                <span>€{course.price || '0'}</span>
-              </div>
-              <div className="flex items-center space-x-2">
                 <Calendar className="h-4 w-4 text-gray-500" />
                 <span className="font-medium">{t('common:courseDetail.sessionsRequired')}:</span>
                 <span>{course.sessions_required || 1}</span>
@@ -120,31 +115,6 @@ export default function CourseDetail() {
           </CardContent>
         </Card>
 
-        {/* Cost Breakdown */}
-        {course.cost_breakdown && Array.isArray(course.cost_breakdown) && course.cost_breakdown.length > 0 && (
-          <Card>
-            <CardContent className="p-6">
-              <h2 className="text-lg font-semibold mb-4">{t('common:courseDetail.costBreakdown')}</h2>
-              <div className="space-y-3">
-                {course.cost_breakdown.map((cost: any, index: number) => (
-                  <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <div className="font-medium">{cost.name}</div>
-                      {cost.description && (
-                        <div className="text-sm text-gray-500">{cost.description}</div>
-                      )}
-                    </div>
-                    <span className="font-medium">€{cost.amount}</span>
-                  </div>
-                ))}
-                <div className="border-t pt-3 flex items-center justify-between font-semibold">
-                  <span>{t('common:courseDetail.total')}</span>
-                  <span>€{course.price}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Checklist */}
         {course.has_checklist && course.checklist_items && (

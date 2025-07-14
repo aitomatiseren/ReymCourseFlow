@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CertificateExpiryReport } from "@/components/reports/CertificateExpiryReport";
 import { Code95Dashboard } from "@/components/certificates/Code95Dashboard";
+import { CertificateLevelManager } from "@/components/certificates/CertificateLevelManager";
+import { ExemptionManagementDashboard } from "@/components/certificates/ExemptionManagementDashboard";
 import {
   Plus,
   Search,
@@ -22,7 +24,9 @@ import {
   Eye,
   Award,
   FileText,
-  Truck
+  Truck,
+  Settings,
+  Shield
 } from "lucide-react";
 import { useCertificates } from "@/hooks/useCertificates";
 import { format } from "date-fns";
@@ -81,7 +85,7 @@ export default function Certifications() {
         </div>
 
         <Tabs defaultValue="all" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="all" className="flex items-center gap-2">
               <Award className="h-4 w-4" />
               {t('certificates:page.allCertificates')}
@@ -93,6 +97,14 @@ export default function Certifications() {
             <TabsTrigger value="code95" className="flex items-center gap-2">
               <Truck className="h-4 w-4" />
               {t('certificates:page.code95')}
+            </TabsTrigger>
+            <TabsTrigger value="hierarchy" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Hierarchy
+            </TabsTrigger>
+            <TabsTrigger value="exemptions" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Exemptions
             </TabsTrigger>
             <TabsTrigger value="reports" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
@@ -227,6 +239,14 @@ export default function Certifications() {
 
           <TabsContent value="code95">
             <Code95Dashboard />
+          </TabsContent>
+
+          <TabsContent value="hierarchy">
+            <CertificateLevelManager />
+          </TabsContent>
+
+          <TabsContent value="exemptions">
+            <ExemptionManagementDashboard />
           </TabsContent>
 
           <TabsContent value="reports">

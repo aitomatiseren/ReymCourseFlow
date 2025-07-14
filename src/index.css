@@ -2,6 +2,245 @@
 @tailwind components;
 @tailwind utilities;
 
+/* FullCalendar Custom Styles */
+.fc-theme-standard .fc-scrollgrid {
+  border: 1px solid #e5e7eb;
+}
+
+.fc-theme-standard td, .fc-theme-standard th {
+  border-color: #e5e7eb;
+}
+
+.fc-event {
+  border-radius: 4px;
+  border: none !important;
+  font-size: 12px;
+  padding: 2px 4px;
+  margin: 1px 0;
+  opacity: 1 !important;
+  min-height: 20px;
+}
+
+.fc-event:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.fc-daygrid-event {
+  white-space: normal;
+  opacity: 1 !important;
+  min-height: 18px;
+}
+
+.fc-daygrid-event .fc-event-main {
+  opacity: 1 !important;
+  color: white !important;
+}
+
+.fc-event-main {
+  opacity: 1 !important;
+}
+
+/* Ensure event text is visible in month view */
+.fc-daygrid-event .fc-event-title-container {
+  opacity: 1 !important;
+}
+
+.fc-daygrid-event .fc-event-title {
+  color: white !important;
+  opacity: 1 !important;
+  font-weight: 500 !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+/* Make sure events have minimum height and are visible */
+.fc-daygrid-event-harness {
+  opacity: 1 !important;
+  min-height: 16px !important;
+}
+
+.fc-daygrid-event-harness .fc-event {
+  opacity: 1 !important;
+  min-height: 16px !important;
+  display: block !important;
+  visibility: visible !important;
+}
+
+/* Force event visibility in day grid */
+.fc-daygrid .fc-event {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Improve week and day view event layout */
+.fc-timegrid-event {
+  border-radius: 3px !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  margin: 1px !important;
+  overflow: hidden !important;
+}
+
+.fc-timegrid-event .fc-event-main {
+  padding: 1px 2px !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+/* Improve overlapping event handling */
+.fc-timegrid-col-events {
+  margin: 0 1px !important;
+}
+
+.fc-timegrid-event-harness {
+  margin-right: 2px !important;
+}
+
+/* Better spacing for overlapping events */
+.fc-timegrid .fc-event-title {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  line-height: 1.1 !important;
+  color: white !important;
+  text-overflow: ellipsis !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+}
+
+/* Week view specific improvements */
+.fc-timeGridWeek .fc-event {
+  font-size: 9px !important;
+  min-height: 14px !important;
+}
+
+.fc-timeGridWeek .fc-event-title {
+  font-size: 9px !important;
+}
+
+/* Day view specific improvements */
+.fc-timeGridDay .fc-event {
+  font-size: 11px !important;
+  min-height: 18px !important;
+}
+
+.fc-timeGridDay .fc-event-title {
+  font-size: 11px !important;
+}
+
+/* Reduce overlapping event width to prevent crowding */
+.fc-timegrid-event-harness-inset {
+  right: 1px !important;
+}
+
+/* Better event stacking */
+.fc-timegrid .fc-event {
+  z-index: 1 !important;
+}
+
+.fc-timegrid .fc-event:hover {
+  z-index: 999 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+.fc-event-title {
+  font-weight: 500;
+}
+
+.fc-toolbar-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.fc-button-primary {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+.fc-button-primary:hover {
+  background-color: #2563eb;
+  border-color: #2563eb;
+}
+
+.fc-button-primary:not(:disabled):active,
+.fc-button-primary:not(:disabled).fc-button-active {
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .fc-toolbar {
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 1rem;
+  }
+  
+  .fc-toolbar-chunk {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  
+  .fc-button-group .fc-button {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    min-width: 60px;
+  }
+  
+  .fc-toolbar-title {
+    font-size: 1.25rem;
+    text-align: center;
+    margin: 0.5rem 0;
+  }
+  
+  .fc-event {
+    font-size: 10px;
+    padding: 1px 2px;
+    margin: 0;
+  }
+  
+  .fc-event-title {
+    font-size: 10px;
+    line-height: 1.2;
+  }
+  
+  .fc-daygrid-event-harness {
+    margin-top: 1px;
+    margin-bottom: 1px;
+  }
+  
+  .fc-daygrid-day-number {
+    font-size: 0.875rem;
+  }
+  
+  .fc-col-header-cell {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .fc-toolbar-title {
+    font-size: 1rem;
+  }
+  
+  .fc-button-group .fc-button {
+    font-size: 0.625rem;
+    padding: 0.125rem 0.25rem;
+    min-width: 50px;
+  }
+  
+  .fc-event {
+    font-size: 9px;
+  }
+  
+  .fc-daygrid-day-number {
+    font-size: 0.75rem;
+  }
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */

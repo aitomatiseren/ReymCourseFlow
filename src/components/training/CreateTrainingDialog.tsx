@@ -9,16 +9,13 @@ import { useCourses } from "@/hooks/useCourses";
 import { useToast } from "@/hooks/use-toast";
 import { CourseSelectionSection } from "./forms/CourseSelectionSection";
 import { SmartMultiSessionSection } from "./forms/SmartMultiSessionSection";
-import { CourseInfoSection } from "./forms/CourseInfoSection";
-import { CourseChecklistSection } from "./forms/CourseChecklistSection";
 import { ChecklistManagementSection } from "./forms/ChecklistManagementSection";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Trash2, DollarSign } from "lucide-react";
-import { CostComponent } from "@/types";
+import { Plus, Trash2 } from "lucide-react";
 
 // Custom DialogContent that prevents outside click and has custom ESC handling
 const CustomDialogContent = forwardRef<
@@ -63,10 +60,7 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
   const [maxParticipants, setMaxParticipants] = useState("");
   const [status, setStatus] = useState<'scheduled' | 'confirmed' | 'cancelled' | 'completed'>('scheduled');
   const [requiresApproval, setRequiresApproval] = useState(false);
-  const [price, setPrice] = useState("");
-  const [costBreakdown, setCostBreakdown] = useState<CostComponent[]>([]);
   const [checklist, setChecklist] = useState<Array<{ id: string; text: string; completed: boolean }>>([]);
-  const [courseChecklistItems, setCourseChecklistItems] = useState<boolean[]>([]);
 
   // Multi-session state
   const [sessions, setSessions] = useState(1);
@@ -81,43 +75,8 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
 
   const selectedCourse = courses.find(course => course.id === selectedCourseId);
 
-  // Auto-populate pricing when provider is selected
-  const handleProviderChange = async (providerId: string) => {
+  const handleProviderChange = (providerId: string) => {
     setSelectedProviderId(providerId);
-
-    if (providerId && selectedCourseId) {
-      try {
-        const { data, error } = await supabase
-          .from('course_provider_courses')
-          .select('price, cost_breakdown')
-          .eq('course_id', selectedCourseId)
-          .eq('provider_id', providerId)
-          .single();
-
-        if (error) throw error;
-
-        if (data) {
-          // Auto-populate from provider-specific pricing
-          if (data.cost_breakdown && Array.isArray(data.cost_breakdown)) {
-            const components = data.cost_breakdown as unknown as CostComponent[];
-            setCostBreakdown(components);
-            const totalPrice = components.reduce((sum: number, item: CostComponent) => sum + (item.amount || 0), 0);
-            setPrice(totalPrice.toString());
-          } else if (data.price) {
-            // Fallback to simple price
-            setPrice(data.price.toString());
-            setCostBreakdown([{
-              name: "Course Fee",
-              amount: data.price,
-              description: "Base course price"
-            }]);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching provider pricing:', error);
-        // Don't show error to user, just keep existing pricing
-      }
-    }
   };
 
   // Handle provider details change (store provider data and clear selections)
@@ -141,11 +100,6 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
         setMaxParticipants(course.max_participants?.toString() || "");
         setSessions(course.sessions_required || 1);
 
-        // Initialize checklist from course
-        if (course.has_checklist && course.checklist_items) {
-          const items = Array.isArray(course.checklist_items) ? course.checklist_items : [];
-          setCourseChecklistItems(new Array(items.length).fill(false));
-        }
       }
     }
   }, [preSelectedCourseId, courses]);
@@ -183,8 +137,6 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
     setSelectedCourseId(courseId);
     // Reset provider when course changes
     setSelectedProviderId("");
-    setCostBreakdown([]);
-    setPrice("");
 
     const course = courses.find(c => c.id === courseId);
     if (course) {
@@ -192,17 +144,14 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
       setMaxParticipants(course.max_participants?.toString() || "");
       setSessions(course.sessions_required || 1);
 
-      // Reset and initialize checklist
-      setCourseChecklistItems([]);
+      // Initialize checklist from course
       if (course.has_checklist && course.checklist_items) {
         const items = Array.isArray(course.checklist_items) ? course.checklist_items : [];
-        setCourseChecklistItems(new Array(items.length).fill(false));
-
-        // Sync Training Checklist with Course Checklist
         const trainingChecklistItems = items.map((item: any) => ({
           id: Date.now().toString() + Math.random(),
           text: typeof item === 'string' ? item : (item.text || item.name || ''),
-          completed: false
+          completed: false,
+          required: typeof item === 'object' ? (item.required || false) : false
         }));
         setChecklist(trainingChecklistItems);
       } else {
@@ -212,35 +161,6 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
     }
   };
 
-  const handleCourseChecklistChange = (index: number, checked: boolean) => {
-    const newItems = [...courseChecklistItems];
-    newItems[index] = checked;
-    setCourseChecklistItems(newItems);
-  };
-
-  const addCostComponent = () => {
-    setCostBreakdown([...costBreakdown, {
-      name: "",
-      amount: 0,
-      description: ""
-    }]);
-  };
-
-  const removeCostComponent = (index: number) => {
-    if (costBreakdown.length > 1) {
-      setCostBreakdown(costBreakdown.filter((_, i) => i !== index));
-    }
-  };
-
-  const updateCostComponent = (index: number, field: keyof CostComponent, value: string | number) => {
-    const newComponents = [...costBreakdown];
-    newComponents[index] = { ...newComponents[index], [field]: value };
-    setCostBreakdown(newComponents);
-
-    // Update total price
-    const total = newComponents.reduce((sum, item) => sum + item.amount, 0);
-    setPrice(total.toString());
-  };
 
   const handleSessionDateChange = useCallback((index: number, date: string) => {
     setSessionDates(prev => {
@@ -367,10 +287,7 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
     setMaxParticipants("");
     setStatus('scheduled');
     setRequiresApproval(false);
-    setPrice("");
-    setCostBreakdown([]);
     setChecklist([]);
-    setCourseChecklistItems([]);
     setSessions(1);
     setSessionDates([]);
     setSessionTimes([]);
@@ -378,7 +295,25 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
   };
 
   const validateForm = () => {
-    if (!selectedCourseId || !selectedProviderId || !title || !instructor || !location || !maxParticipants) {
+    if (!selectedCourseId) {
+      toast({
+        title: t('training:createDialog.validationError'),
+        description: t('training:createDialog.selectCourse', 'Please select a course first'),
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (!selectedProviderId) {
+      toast({
+        title: t('training:createDialog.validationError'),
+        description: t('training:createDialog.selectProvider', 'Please select a training provider first'),
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (!title || !instructor || !location || !maxParticipants) {
       toast({
         title: t('training:createDialog.validationError'),
         description: t('training:createDialog.fillRequiredFields'),
@@ -421,12 +356,11 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
         max_participants: parseInt(maxParticipants),
         status,
         requires_approval: requiresApproval,
-        price: parseFloat(price) || null,
-        cost_breakdown: costBreakdown.length > 0 ? costBreakdown : null,
         sessions_count: sessions,
         session_dates: sessionDates.length > 0 ? sessionDates : null,
         session_times: sessionTimes.length > 0 ? sessionTimes : null,
-        session_end_times: sessionEndTimes.length > 0 ? sessionEndTimes : null
+        session_end_times: sessionEndTimes.length > 0 ? sessionEndTimes : null,
+        checklist: checklist.length > 0 ? checklist : null
       };
 
       await createTraining.mutateAsync(trainingData);
@@ -471,103 +405,7 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
             onProviderChange={handleProviderChange}
             onProviderDetailsChange={handleProviderDetailsChange}
           />
-          {selectedCourse && (
-            <>
-              <CourseInfoSection selectedCourse={selectedCourse} />
 
-              {selectedCourse.has_checklist && (
-                <CourseChecklistSection
-                  selectedCourse={selectedCourse}
-                  checkedItems={courseChecklistItems}
-                  onChecklistItemChange={handleCourseChecklistChange}
-                />
-              )}
-            </>
-          )}
-
-          {/* Cost Breakdown Section */}
-          {selectedProviderId && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label className="text-base font-medium">
-                  {t('training:createDialog.pricingCostBreakdown')}
-                </Label>
-                <Button type="button" variant="outline" size="sm" onClick={addCostComponent}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  {t('training:createDialog.addCostComponent')}
-                </Button>
-              </div>
-
-              {costBreakdown.length > 0 ? (
-                <div className="space-y-3 border rounded-lg p-4 bg-gray-50">
-                  {costBreakdown.map((component, index) => (
-                    <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-3 p-3 bg-white rounded border">
-                      <div>
-                        <Label className="text-sm">{t('training:createDialog.componentName')}</Label>
-                        <Input
-                          placeholder={t('training:createDialog.componentNamePlaceholder')}
-                          value={component.name}
-                          onChange={(e) => updateCostComponent(index, 'name', e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-sm">{t('training:createDialog.amount')}</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder={t('training:createDialog.amountPlaceholder')}
-                          value={component.amount || ''}
-                          onChange={(e) => updateCostComponent(index, 'amount', Number(e.target.value) || 0)}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-sm">{t('training:createDialog.description')}</Label>
-                        <Input
-                          placeholder={t('training:createDialog.descriptionPlaceholder')}
-                          value={component.description}
-                          onChange={(e) => updateCostComponent(index, 'description', e.target.value)}
-                        />
-                      </div>
-                      <div className="flex items-end">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeCostComponent(index)}
-                          disabled={costBreakdown.length <= 1}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                  <div className="flex justify-between items-center pt-2 border-t px-3 py-2 rounded">
-                    <span className="font-medium">{t('training:createDialog.totalPricePerParticipant')}</span>
-                    <span className="font-bold text-lg text-gray-900">
-                      €{costBreakdown.reduce((sum, item) => sum + item.amount, 0).toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <Label htmlFor="price">{t('training:createDialog.pricePerParticipant')}</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    placeholder={t('common:common.enterPrice')}
-                  />
-                  <p className="text-sm text-gray-500">
-                    {t('training:createDialog.priceHelp')}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
 
           <SmartMultiSessionSection
             selectedCourse={selectedCourse}
@@ -586,16 +424,18 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
             <div className="space-y-2">
               <Label htmlFor="instructor">{t('training:createDialog.instructorLabel')}</Label>
               {selectedProvider && selectedProvider.instructors && Array.isArray(selectedProvider.instructors) && selectedProvider.instructors.length > 0 ? (
-                <Select value={instructor} onValueChange={setInstructor} required>
+                <Select value={instructor} onValueChange={setInstructor} required disabled={!selectedProviderId}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select an instructor" />
                   </SelectTrigger>
                   <SelectContent>
-                    {selectedProvider.instructors.map((inst: string, index: number) => (
-                      <SelectItem key={index} value={inst}>
-                        {inst}
-                      </SelectItem>
-                    ))}
+                    {selectedProvider.instructors
+                      .filter((inst: string) => inst !== selectedProvider.contact_person)
+                      .map((inst: string, index: number) => (
+                        <SelectItem key={index} value={inst}>
+                          {inst}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               ) : (
@@ -603,7 +443,8 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
                   id="instructor"
                   value={instructor}
                   onChange={(e) => setInstructor(e.target.value)}
-                  placeholder={selectedProvider ? t('training:createDialog.instructorPlaceholder') : "Instructor name"}
+                  placeholder={!selectedProviderId ? "Select a provider first" : (selectedProvider ? t('training:createDialog.instructorPlaceholder') : "Instructor name")}
+                  disabled={!selectedProviderId}
                   required
                 />
               )}
@@ -612,21 +453,27 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
             <div className="space-y-2">
               <Label htmlFor="location">{t('training:createDialog.locationLabel')}</Label>
               {selectedProvider && selectedProvider.additional_locations && Array.isArray(selectedProvider.additional_locations) && selectedProvider.additional_locations.length > 0 ? (
-                <Select value={location} onValueChange={setLocation} required>
+                <Select value={location} onValueChange={setLocation} required disabled={!selectedProviderId}>
                   <SelectTrigger>
                     <SelectValue placeholder={t('training:createDialog.locationPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {selectedProvider.additional_locations.map((loc: any, index: number) => {
-                      const locationName = typeof loc === 'string' ? loc : (loc.name || loc.city || 'Unnamed Location');
-                      const locationAddress = typeof loc === 'object' && loc.address ? ` - ${loc.address}` : '';
-                      const displayName = `${locationName}${locationAddress}`;
-                      return (
-                        <SelectItem key={index} value={locationName}>
-                          {displayName}
-                        </SelectItem>
-                      );
-                    })}
+                    {selectedProvider.additional_locations
+                      .filter((loc: any) => {
+                        const locationName = typeof loc === 'string' ? loc : (loc.name || loc.city || 'Unnamed Location');
+                        // Exclude office location (default_location)
+                        return locationName !== selectedProvider.default_location;
+                      })
+                      .map((loc: any, index: number) => {
+                        const locationName = typeof loc === 'string' ? loc : (loc.name || loc.city || 'Unnamed Location');
+                        const locationAddress = typeof loc === 'object' && loc.address ? ` - ${loc.address}` : '';
+                        const displayName = `${locationName}${locationAddress}`;
+                        return (
+                          <SelectItem key={index} value={locationName}>
+                            {displayName}
+                          </SelectItem>
+                        );
+                      })}
                   </SelectContent>
                 </Select>
               ) : (
@@ -634,7 +481,8 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
                   id="location"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  placeholder={selectedProvider ? "No locations available - enter manually" : "Training location"}
+                  placeholder={!selectedProviderId ? "Select a provider first" : (selectedProvider ? "No locations available - enter manually" : "Training location")}
+                  disabled={!selectedProviderId}
                   required
                 />
               )}
@@ -688,7 +536,10 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t('training:createDialog.cancel')}
             </Button>
-            <Button type="submit" disabled={createTraining.isPending}>
+            <Button 
+              type="submit" 
+              disabled={createTraining.isPending || !selectedProviderId}
+            >
               {createTraining.isPending ? t('training:createDialog.creating') : t('training:createDialog.createTraining')}
             </Button>
           </div>

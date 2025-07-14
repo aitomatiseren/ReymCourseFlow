@@ -472,14 +472,105 @@ This document outlines the comprehensive development plan for REYM's Course Mana
   - Topic and content management
   - Certificate/training linkage
 
-### 6.2 E-learning Platform
+### 7.2 E-learning Platform
 
-#### 6.2.1 Integrated E-learning System
+#### 7.2.1 Integrated E-learning System
 - 🔄 **Complete E-learning Integration**
   - Content upload capability (videos, assessments)
   - Certificate generation upon completion
   - Progress tracking and reporting
   - Planning and reporting integration
+
+---
+
+## Phase 8: External Registry Integrations & Advanced Features
+
+### 8.1 External Registry Integrations (High Priority)
+
+#### 8.1.1 KIWA/CBR Code 95 Register Integration
+- 🔄 **Code 95 Registry Validation**
+  - Real-time employee Code 95 status verification
+  - Automated expiry checking and alerts
+  - Integration with existing Code 95 dashboard
+  - Registry data synchronization and caching
+
+#### 8.1.2 SIR Register (sir-safe.nl) Integration
+- 🔄 **Safety Certification Validation**
+  - Industrial cleaning safety certificate verification
+  - Automated safety qualification checking
+  - Integration with employee safety profiles
+  - Expiry tracking and renewal alerts
+
+#### 8.1.3 CDR (cdr.ssvv.nl) Integration
+- 🔄 **VCA Diploma Verification**
+  - Automated VCA diploma validation
+  - QR code verification system
+  - Bulk verification capabilities
+  - Integration with existing certificate management
+
+### 8.2 Comprehensive Audit Log System (High Priority)
+
+#### 8.2.1 Entity-Level Change Tracking
+- 🔄 **Universal Audit Trail**
+  - Complete change history for all entities (trainings, employees, courses, providers)
+  - Before/after value tracking with JSON diff
+  - User attribution and timestamp logging
+  - Filterable audit views per entity type
+
+#### 8.2.2 Audit Log Viewer Components
+- 🔄 **Audit Dashboard & Views**
+  - Per-entity audit tabs in all detail views
+  - Centralized audit dashboard for administrators
+  - Advanced search and filter capabilities
+  - Export functionality for compliance reporting
+
+### 8.3 Hotel Booking Integration (Medium Priority)
+
+#### 8.3.1 Multi-Day Course Accommodation
+- 🔄 **Hotel Partner Management**
+  - Hotel partner database with booking URLs
+  - Smart link generation with pre-filled employee data
+  - Training location to hotel mapping
+  - Employee accommodation preferences
+
+#### 8.3.2 Booking Assistance System
+- 🔄 **Streamlined Booking Process**
+  - Quick booking links for multi-day courses
+  - Availability checking via partner integration
+  - Automated booking confirmations
+  - Integration with training scheduling system
+
+### 8.4 Document Center System (Medium Priority)
+
+#### 8.4.1 Document Storage & Management
+- 🔄 **Central Document Repository**
+  - Document upload and versioning system
+  - Template library for common documents
+  - Role-based access control
+  - Document expiry tracking and alerts
+
+#### 8.4.2 Document Distribution System
+- 🔄 **Automated Document Delivery**
+  - Trigger-based document distribution
+  - Digital signature capture for acknowledgments
+  - Document read/acknowledgment tracking
+  - Integration with notification system
+
+### 8.5 Action/Todo/Waiting List System (High Priority)
+
+#### 8.5.1 Centralized Action Center
+- 🔄 **Universal Action Dashboard**
+  - All pending actions in one view
+  - Priority-based sorting and filtering
+  - SLA tracking and escalation
+  - Bulk action capabilities
+
+#### 8.5.2 Action Categories & Workflows
+- 🔄 **Comprehensive Action Management**
+  - Approval workflows (training, budget, transfers)
+  - Notification response tracking
+  - Expired item management
+  - Delegation and assignment capabilities
 
 ---
 
@@ -566,6 +657,9 @@ This document outlines the comprehensive development plan for REYM's Course Mana
 4. 🔄 PDF attendance list generation (Presentielijst)
 5. 🔄 Enhanced reporting system (pass/fail, reserve lists, compliance)
 6. 🔄 Equipment reservation and resource management notifications
+7. 🔄 **External Registry Integrations (KIWA/CBR, SIR, CDR)**
+8. 🔄 **Comprehensive Audit Log System**
+9. 🔄 **Action/Todo/Waiting List System**
 
 ### Medium Priority (Months 13-18)
 1. 🔄 Extended event management (medical examinations, vaccinations, access passes)
@@ -574,6 +668,8 @@ This document outlines the comprehensive development plan for REYM's Course Mana
 4. 🔄 Advanced analytics and specialized reports
 5. 🔄 External partner portal
 6. 🔄 Digital attendance and signatures
+7. 🔄 **Hotel Booking Integration for Multi-Day Courses**
+8. 🔄 **Document Center System**
 
 ### Lower Priority (Months 19-24)
 1. 🔄 E-learning platform integration

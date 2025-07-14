@@ -265,7 +265,7 @@ export default function TrainingSetup() {
                         {course.max_participants && (
                           <div className="flex items-center text-sm text-gray-600 mb-2">
                             <Users className="h-4 w-4 mr-2" />
-                            {t('common:courses.maxParticipantsShort', { count: course.max_participants })}
+                            Max {course.max_participants} deelnemers
                           </div>
                         )}
                         {course.code95_points && course.code95_points > 0 && (
@@ -275,9 +275,6 @@ export default function TrainingSetup() {
                             </Badge>
                           </div>
                         )}
-                        <div className="text-xs text-gray-500 italic">
-                          {t('common:courses.pricingPerProvider')}
-                        </div>
                       </div>
 
                       <div className="mt-auto">
