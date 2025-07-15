@@ -2,9 +2,26 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin, Users, User, CheckSquare, Eye, Clock, Truck, Euro } from "lucide-react";
+import { Calendar, MapPin, Users, User, CheckSquare, Eye, Clock, Truck, Euro, Award } from "lucide-react";
 import { Training } from "@/hooks/useTrainings";
+import { useCertificatesForCourse } from "@/hooks/useCertificates";
 import { useNavigate } from "react-router-dom";
+
+// Component to show certificate badge for a training in grid view
+function CertificateBadge({ courseId }: { courseId?: string }) {
+  const { data: courseCertificates = [] } = useCertificatesForCourse(courseId || '');
+  
+  if (!courseId || courseCertificates.length === 0) {
+    return null;
+  }
+
+  return (
+    <Badge variant="outline" className="bg-yellow-100 text-yellow-800 text-xs">
+      <Award className="h-3 w-3 mr-1" />
+      {courseCertificates.length} cert{courseCertificates.length > 1 ? 's' : ''}
+    </Badge>
+  );
+}
 
 interface TrainingGridViewProps {
   trainings: Training[];
@@ -130,14 +147,15 @@ export function TrainingGridView({
                   )}
 
                   {/* Features */}
-                  {training.code95_points && training.code95_points > 0 && (
-                    <div className="flex items-center">
+                  <div className="flex flex-wrap gap-2">
+                    {training.code95_points && training.code95_points > 0 && (
                       <Badge variant="outline" className="bg-blue-100 text-blue-800 text-xs">
                         <Truck className="h-3 w-3 mr-1" />
                         {training.code95_points} pts
                       </Badge>
-                    </div>
-                  )}
+                    )}
+                    <CertificateBadge courseId={training.course_id} />
+                  </div>
                 </div>
 
                 {/* Consistent Button at Bottom */}

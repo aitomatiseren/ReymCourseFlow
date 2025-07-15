@@ -15,7 +15,9 @@ import {
   FileText, 
   CheckSquare,
   DollarSign,
-  Euro
+  Euro,
+  Award,
+  Trophy
 } from "lucide-react";
 import { Training } from "@/hooks/useTrainings";
 import { EmployeeStatusBadge } from "@/components/employee/EmployeeStatusBadge";
@@ -25,6 +27,7 @@ import { EditTrainingDialog } from "./EditTrainingDialog";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTrainingParticipants } from "@/hooks/useTrainingParticipants";
+import { useCertificatesForCourse } from "@/hooks/useCertificates";
 import { requiresCode95 } from "@/utils/code95Utils";
 
 interface TrainingDetailsViewProps {
@@ -51,6 +54,7 @@ export function TrainingDetailsView({
   const [showEditDialog, setShowEditDialog] = useState(false);
   const { toast } = useToast();
   const { participants: hookParticipants, updateParticipantCode95Status } = useTrainingParticipants(training.id);
+  const { data: courseCertificates = [], isLoading: certificatesLoading } = useCertificatesForCourse(training.course_id || '');
   
   // Use participants from hook (which includes code95_eligible) or fallback to props
   const participants = hookParticipants.length > 0 ? hookParticipants : (propsParticipants || []);
@@ -192,6 +196,78 @@ export function TrainingDetailsView({
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Certificates Granted */}
+          <div className="bg-white rounded-lg p-6 mb-6">
+            <h2 className="text-lg font-semibold mb-4 flex items-center">
+              <Award className="h-5 w-5 mr-2" />
+              Certificates Granted upon Completion
+            </h2>
+            {certificatesLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+              </div>
+            ) : courseCertificates.length > 0 ? (
+              <div className="space-y-3">
+                {courseCertificates.map((cert) => (
+                  <div key={cert.id} className="border rounded-lg p-4 bg-gray-50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <Trophy className="h-5 w-5 text-yellow-600" />
+                        <div>
+                          <h3 className="font-medium text-gray-900">
+                            {cert.licenses?.name || 'Unknown Certificate'}
+                          </h3>
+                          <div className="flex items-center space-x-2 mt-1">
+                            {cert.licenses?.category && (
+                              <Badge variant="outline">
+                                {cert.licenses.category}
+                              </Badge>
+                            )}
+                            {cert.licenses?.description && (
+                              <span className="text-sm text-gray-600">
+                                {cert.licenses.description}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        {cert.grants_level && (
+                          <div className="text-sm font-medium text-gray-900">
+                            Grants Level {cert.grants_level}
+                          </div>
+                        )}
+                        <div className="flex space-x-2 mt-1">
+                          {cert.is_required && (
+                            <Badge variant="destructive" className="text-xs">
+                              Required
+                            </Badge>
+                          )}
+                          {cert.renewal_eligible && (
+                            <Badge variant="secondary" className="text-xs">
+                              Renewal Eligible
+                            </Badge>
+                          )}
+                        </div>
+                        {cert.licenses?.validity_period_months && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            Valid for {cert.licenses.validity_period_months} months
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-gray-500">
+                <Award className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+                <p>No certificates granted upon completion</p>
+                <p className="text-sm mt-1">This training doesn't grant any certificates.</p>
+              </div>
+            )}
           </div>
 
           {/* Cost Breakdown */}

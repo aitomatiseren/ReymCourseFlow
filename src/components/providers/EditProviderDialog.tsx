@@ -64,6 +64,10 @@ const providerSchema = z.object({
       amount: z.number().optional(),
       description: z.string().optional(),
     })).default([]),
+    duration_hours: z.number().min(0.5).max(40).optional(),
+    max_participants: z.number().min(1).max(50).optional(),
+    location: z.string().optional(),
+    notes: z.string().optional(),
   })).default({}),
 });
 
@@ -191,6 +195,10 @@ export function EditProviderDialog({
         provider.course_provider_courses.forEach((cpc: any) => {
           coursePricing[cpc.course_id] = {
             cost_breakdown: Array.isArray(cpc.cost_breakdown) ? cpc.cost_breakdown : [],
+            duration_hours: cpc.duration_hours || undefined,
+            max_participants: cpc.max_participants || undefined,
+            location: cpc.location || '',
+            notes: cpc.notes || '',
           };
         });
       }
@@ -277,6 +285,10 @@ export function EditProviderDialog({
             active: true,
             price: calculatedPrice > 0 ? calculatedPrice : null,
             cost_breakdown: costBreakdown.length > 0 ? costBreakdown : null,
+            duration_hours: pricing.duration_hours || null,
+            max_participants: pricing.max_participants || null,
+            location: pricing.location || null,
+            notes: pricing.notes || null,
           };
           
           console.log(`Course ${courseId} data:`, courseData);
@@ -890,7 +902,112 @@ export function EditProviderDialog({
                     
                     return (
                       <div key={courseId} className="border rounded-lg p-4 space-y-4">
-                        <h4 className="font-medium">{course.title}</h4>
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium">{course.title}</h4>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => addCostComponent(courseId)}
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add Cost Component
+                          </Button>
+                        </div>
+
+                        {/* Provider-specific constraints */}
+                        <div className="grid grid-cols-2 gap-4 p-3 bg-blue-50 rounded-lg">
+                          <div>
+                            <FormLabel htmlFor={`duration-${courseId}`}>Session Duration (hours)</FormLabel>
+                            <FormField
+                              control={form.control}
+                              name={`course_pricing.${courseId}.duration_hours` as any}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input
+                                      id={`duration-${courseId}`}
+                                      type="number"
+                                      min="0.5"
+                                      max="40"
+                                      step="0.5"
+                                      placeholder="8"
+                                      {...field}
+                                      onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <p className="text-xs text-gray-600 mt-1">Duration per session</p>
+                          </div>
+
+                          <div>
+                            <FormLabel htmlFor={`max-participants-${courseId}`}>Max Participants</FormLabel>
+                            <FormField
+                              control={form.control}
+                              name={`course_pricing.${courseId}.max_participants` as any}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input
+                                      id={`max-participants-${courseId}`}
+                                      type="number"
+                                      min="1"
+                                      max="50"
+                                      placeholder="15"
+                                      {...field}
+                                      onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <p className="text-xs text-gray-600 mt-1">Maximum group size</p>
+                          </div>
+
+                          <div>
+                            <FormLabel htmlFor={`location-${courseId}`}>Preferred Location</FormLabel>
+                            <FormField
+                              control={form.control}
+                              name={`course_pricing.${courseId}.location` as any}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input
+                                      id={`location-${courseId}`}
+                                      placeholder="Main location or specific venue"
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+
+                          <div>
+                            <FormLabel htmlFor={`notes-${courseId}`}>Provider Notes</FormLabel>
+                            <FormField
+                              control={form.control}
+                              name={`course_pricing.${courseId}.notes` as any}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input
+                                      id={`notes-${courseId}`}
+                                      placeholder="Special requirements or notes"
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </div>
                         
                         {/* Cost Breakdown */}
                         <div className="space-y-3">

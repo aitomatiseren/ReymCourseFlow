@@ -27,11 +27,13 @@ export function useLicenses() {
           id,
           name,
           category,
-          requires_renewal,
+          description,
+          validity_period_months,
           renewal_notice_months,
           renewal_grace_period_months,
-          created_at,
-          updated_at
+          level,
+          level_description,
+          created_at
         `)
         .order('category', { ascending: true })
         .order('name', { ascending: true });
@@ -79,7 +81,7 @@ export function useCertificatesForCourse(courseId: string) {
           grants_level,
           is_required,
           renewal_eligible,
-          licenses:licenses(id, name, category, requires_renewal)
+          licenses:licenses(id, name, category, description, validity_period_months)
         `)
         .eq('course_id', courseId);
 
@@ -295,7 +297,8 @@ export function useCertificateManagement() {
     mutationFn: async (license: {
       name: string;
       category: string;
-      requires_renewal?: boolean;
+      description?: string;
+      validity_period_months?: number;
       renewal_notice_months?: number;
       renewal_grace_period_months?: number;
     }) => {
@@ -323,7 +326,8 @@ export function useCertificateManagement() {
       updates: Partial<{
         name: string;
         category: string;
-        requires_renewal: boolean;
+        description: string;
+        validity_period_months: number;
         renewal_notice_months: number;
         renewal_grace_period_months: number;
       }>;

@@ -21,7 +21,9 @@
       "WebFetch(domain:cdr.ssvv.nl)",
       "WebFetch(domain:www.sir-safe.nl)",
       "WebFetch(domain:www.kiwaregister.com)",
-      "mcp__supabase__generate_typescript_types"
+      "mcp__supabase__generate_typescript_types",
+      "Bash(curl:*)",
+      "mcp__supabase__list_migrations"
     ],
     "deny": []
   }

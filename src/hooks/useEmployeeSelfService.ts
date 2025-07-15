@@ -273,7 +273,8 @@ export const useEmployeeCertificates = () => {
             id,
             name,
             category,
-            requires_renewal,
+            description,
+            validity_period_months,
             renewal_notice_months,
             renewal_grace_period_months
           )

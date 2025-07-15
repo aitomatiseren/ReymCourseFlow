@@ -2,8 +2,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, Clock, MapPin, Users, User, Eye, Truck, Euro } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, User, Eye, Truck, Euro, Award } from "lucide-react";
 import { Training } from "@/hooks/useTrainings";
+import { useCertificatesForCourse } from "@/hooks/useCertificates";
 import { useNavigate } from "react-router-dom";
 
 interface TrainingListViewProps {
@@ -11,6 +12,24 @@ interface TrainingListViewProps {
   onTrainingSelect: (trainingId: string) => void;
   onCreateTraining: () => void;
   highlightedTrainingId?: string | null;
+}
+
+// Component to show certificate badges for a training
+function CertificateBadges({ courseId }: { courseId?: string }) {
+  const { data: courseCertificates = [] } = useCertificatesForCourse(courseId || '');
+  
+  if (!courseId || courseCertificates.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="flex items-center space-x-1 mt-1">
+      <Award className="h-3 w-3 text-yellow-600" />
+      <span className="text-xs text-gray-500">
+        {courseCertificates.length} certificate{courseCertificates.length > 1 ? 's' : ''}
+      </span>
+    </div>
+  );
 }
 
 export function TrainingListView({
@@ -95,6 +114,7 @@ export function TrainingListView({
                           {training.sessions_count} sessions
                         </Badge>
                       )}
+                      <CertificateBadges courseId={training.course_id} />
                     </div>
                   </TableCell>
 

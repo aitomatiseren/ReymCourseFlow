@@ -26,7 +26,6 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    max_participants: "",
     sessions_required: "1",
     is_code95: false
   });
@@ -61,7 +60,6 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
       await createCourse.mutateAsync({
         title: formData.title,
         description: formData.description || undefined,
-        max_participants: formData.max_participants ? Number(formData.max_participants) : undefined,
         code95_points: formData.is_code95 ? 7 : null,
         sessions_required: Number(formData.sessions_required),
         has_checklist: checklistItems.length > 0,
@@ -76,7 +74,6 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
       setFormData({
         title: "",
         description: "",
-        max_participants: "",
         sessions_required: "1",
         is_code95: false
       });
@@ -122,16 +119,6 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="max_participants">{t('courses:addDialog.maxParticipants')}</Label>
-              <Input
-                id="max_participants"
-                type="number"
-                value={formData.max_participants}
-                onChange={(e) => setFormData({ ...formData, max_participants: e.target.value })}
-              />
-            </div>
-
-            <div>
               <Label htmlFor="sessions_required">{t('courses:addDialog.sessionsRequired')}</Label>
               <Input
                 id="sessions_required"
@@ -142,6 +129,13 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
               />
               <p className="text-xs text-gray-500 mt-1">{t('courses:addDialog.sessionsRequiredHelp')}</p>
             </div>
+          </div>
+          
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <p className="text-sm text-amber-800">
+              <strong>Note:</strong> Session duration and maximum participants are now configured per provider in the Provider section. 
+              This allows different providers to offer the same course with varying constraints.
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

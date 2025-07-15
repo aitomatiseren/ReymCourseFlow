@@ -16,6 +16,9 @@ interface CreateTrainingData {
   session_dates?: string[] | null;
   session_times?: string[] | null;
   session_end_times?: string[] | null;
+  price?: number;
+  cost_breakdown?: any[];
+  provider_id?: string;
 }
 
 export function useCreateTraining() {
@@ -48,7 +51,11 @@ export function useCreateTraining() {
           : null,
         session_end_times: isMultiSession && trainingData.session_end_times && trainingData.session_end_times.length > 0
           ? trainingData.session_end_times
-          : null
+          : null,
+        // Include cost data if available
+        price: trainingData.price || null,
+        cost_breakdown: trainingData.cost_breakdown || null,
+        provider_id: trainingData.provider_id || null
       };
       
       console.log('Inserting data:', insertData);

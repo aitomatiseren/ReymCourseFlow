@@ -55,8 +55,8 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
   showEmployeeSelection = true,
   showLicenseSelection = true
 }) => {
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState(prefilledEmployeeId || '');
-  const [selectedLicenseId, setSelectedLicenseId] = useState(prefilledLicenseId || '');
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState(prefilledEmployeeId || '__auto__');
+  const [selectedLicenseId, setSelectedLicenseId] = useState(prefilledLicenseId || '__auto__');
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [autoProcess, setAutoProcess] = useState(true);
 
@@ -92,8 +92,8 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
         // Upload the file
         const result = await uploadDocument.mutateAsync({
           file,
-          employeeId: selectedEmployeeId || undefined,
-          licenseId: selectedLicenseId || undefined
+          employeeId: selectedEmployeeId === '__auto__' ? undefined : selectedEmployeeId,
+          licenseId: selectedLicenseId === '__auto__' ? undefined : selectedLicenseId
         });
 
         clearInterval(progressInterval);
@@ -244,7 +244,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
                       <SelectValue placeholder="AI will try to detect employee..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Let AI detect employee</SelectItem>
+                      <SelectItem value="__auto__">Let AI detect employee</SelectItem>
                       {employees?.map(employee => (
                         <SelectItem key={employee.id} value={employee.id}>
                           {employee.name} ({employee.employee_number})
@@ -263,7 +263,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
                       <SelectValue placeholder="AI will try to detect certificate..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Let AI detect certificate</SelectItem>
+                      <SelectItem value="__auto__">Let AI detect certificate</SelectItem>
                       {licenses?.map(license => (
                         <SelectItem key={license.id} value={license.id}>
                           {license.name} ({license.category})

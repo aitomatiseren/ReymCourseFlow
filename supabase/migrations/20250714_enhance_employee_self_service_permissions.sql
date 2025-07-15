@@ -333,7 +333,7 @@ BEGIN
         el.expiry_date::DATE as current_expiry_date,
         (el.expiry_date - INTERVAL '1 month' * COALESCE(l.renewal_notice_months, 6))::DATE as renewal_notice_date,
         (el.expiry_date - INTERVAL '1 month' * COALESCE(l.renewal_notice_months, 6))::DATE as renewal_window_start,
-        COALESCE(l.requires_renewal, true) as is_renewable,
+        COALESCE(l.validity_period_months > 0, true) as is_renewable,
         (el.expiry_date - CURRENT_DATE)::INTEGER as days_until_expiry,
         CASE 
             WHEN el.expiry_date < CURRENT_DATE THEN 'expired'

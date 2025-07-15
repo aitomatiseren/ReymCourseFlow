@@ -13,6 +13,7 @@ export interface Provider {
   city?: string;
   country?: string;
   postcode?: string;
+  default_location?: string;
   additional_locations?: any;
   active: boolean;
   instructors?: any;
@@ -130,8 +131,39 @@ export function useProvidersForCourse(courseId?: string, enableRealTime = true) 
     queryFn: async () => {
       if (!courseId) return [];
       
-      console.log(`Fetching providers for course ${courseId}...`);
+      console.log(`[DEBUG] Fetching providers for course ${courseId}...`);
       
+      // First, let's check if the course_provider_courses table has any records for this course
+      const { data: relationshipData, error: relationshipError } = await supabase
+        .from('course_provider_courses')
+        .select('*')
+        .eq('course_id', courseId);
+      
+      console.log(`[DEBUG] Course provider relationships for course ${courseId}:`, relationshipData);
+      
+      if (relationshipError) {
+        console.error('[DEBUG] Error fetching course provider relationships:', relationshipError);
+      }
+      
+      // Now try a simplified query first to isolate the issue
+      console.log(`[DEBUG] Testing simplified query first...`);
+      const { data: simpleData, error: simpleError } = await supabase
+        .from('course_provider_courses')
+        .select(`
+          course_providers (
+            id,
+            name,
+            active
+          )
+        `)
+        .eq('course_id', courseId);
+      
+      console.log(`[DEBUG] Simple query result:`, simpleData);
+      if (simpleError) {
+        console.error('[DEBUG] Simple query error:', simpleError);
+      }
+
+      // Now try the full query (fixed to include default_location)
       const { data, error } = await supabase
         .from('course_provider_courses')
         .select(`
@@ -146,6 +178,7 @@ export function useProvidersForCourse(courseId?: string, enableRealTime = true) 
             city,
             country,
             postcode,
+            default_location,
             additional_locations,
             active,
             instructors,
@@ -157,16 +190,53 @@ export function useProvidersForCourse(courseId?: string, enableRealTime = true) 
         `)
         .eq('course_id', courseId);
       
+      console.log(`[DEBUG] Raw query result for course ${courseId}:`, data);
+      
       if (error) {
-        console.error('Error fetching providers for course:', error);
+        console.error('[DEBUG] Error fetching providers for course:', error);
         throw error;
       }
       
       const providers = data?.map(item => item.course_providers).filter(Boolean) || [];
-      console.log(`Fetched ${providers.length} providers for course ${courseId}`);
+      console.log(`[DEBUG] Processed providers for course ${courseId}:`, providers);
+      console.log(`[DEBUG] Fetched ${providers.length} providers for course ${courseId}`);
+      
+      // Additional debug: Check if providers are active
+      const activeProviders = providers.filter(p => p?.active !== false);
+      console.log(`[DEBUG] Active providers for course ${courseId}:`, activeProviders);
+      
       return providers as Provider[];
     },
     enabled: !!courseId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+// Hook for fetching provider-course specific pricing and details
+export function useProviderCourseDetails(providerId?: string, courseId?: string) {
+  return useQuery({
+    queryKey: ['provider-course-details', providerId, courseId],
+    queryFn: async () => {
+      if (!providerId || !courseId) return null;
+      
+      console.log(`Fetching provider-course details for provider ${providerId} and course ${courseId}...`);
+      
+      const { data, error } = await supabase
+        .from('course_provider_courses')
+        .select('*')
+        .eq('provider_id', providerId)
+        .eq('course_id', courseId)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching provider-course details:', error);
+        throw error;
+      }
+      
+      console.log('Fetched provider-course details:', data);
+      return data;
+    },
+    enabled: !!providerId && !!courseId,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }

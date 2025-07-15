@@ -6,6 +6,7 @@
         "certifications": "Certificaten",
         "certificateDefinitions": "Certificaat Definities",
         "trainingScheduler": "Training Planner",
+        "preliminaryPlanning": "Potloodplanning",
         "employeePortal": "Werknemers Portaal",
         "providers": "Aanbieders",
         "trainingSetup": "Training Setup",
@@ -255,7 +256,15 @@
         "costBreakdown": "Kostenspecificatie",
         "total": "Totaal",
         "courseChecklist": "Cursus Checklist",
-        "checklistAvailable": "Checklist items beschikbaar"
+        "checklistAvailable": "Checklist items beschikbaar",
+        "certificatesGranted": "Toegekende Certificaten",
+        "grantsLevel": "Kent Niveau Toe",
+        "required": "Verplicht",
+        "renewalEligible": "Verlengbaar",
+        "validFor": "Geldig voor",
+        "months": "maanden",
+        "noCertificatesGranted": "Geen certificaten toegekend",
+        "noCertificatesGrantedDesc": "Deze cursus kent geen certificaten toe na voltooiing."
     },
     "trainingSetup": {
         "subtitle": "Configureer cursussen en training aanbieders voor planning"

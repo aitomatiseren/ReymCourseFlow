@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Provider Query</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Debug Provider Query</h1>
+    <div id="results"></div>
+    
+    <script>
+        // Initialize Supabase client (you'll need to add your actual URL and anon key)
+        // const supabase = window.supabase.createClient('YOUR_SUPABASE_URL', 'YOUR_ANON_KEY');
+        
+        async function testQuery() {
+            try {
+                console.log('Testing course_provider_courses query...');
+                
+                // First, let's see what courses exist
+                const { data: courses, error: coursesError } = await supabase
+                    .from('courses')
+                    .select('id, title')
+                    .limit(5);
+                
+                if (coursesError) {
+                    console.error('Error fetching courses:', coursesError);
+                    return;
+                }
+                
+                console.log('Available courses:', courses);
+                
+                // Test with the first course ID
+                if (courses && courses.length > 0) {
+                    const courseId = courses[0].id;
+                    console.log(`Testing with course ID: ${courseId}`);
+                    
+                    // Test the problematic query
+                    const { data, error } = await supabase
+                        .from('course_provider_courses')
+                        .select(`
+                            course_providers (
+                                id,
+                                name,
+                                contact_person,
+                                email,
+                                phone,
+                                website,
+                                address,
+                                city,
+                                country,
+                                postcode,
+                                additional_locations,
+                                active,
+                                instructors,
+                                description,
+                                notes,
+                                created_at,
+                                updated_at
+                            )
+                        `)
+                        .eq('course_id', courseId);
+                    
+                    if (error) {
+                        console.error('Error in provider query:', error);
+                    } else {
+                        console.log('Raw query result:', data);
+                        
+                        const providers = data?.map(item => item.course_providers).filter(Boolean) || [];
+                        console.log('Processed providers:', providers);
+                        console.log(`Found ${providers.length} providers for course ${courseId}`);
+                    }
+                    
+                    // Also test a direct relationship query
+                    const { data: directData, error: directError } = await supabase
+                        .from('course_provider_courses')
+                        .select('*')
+                        .eq('course_id', courseId);
+                    
+                    console.log('Direct course_provider_courses data:', directData);
+                }
+                
+            } catch (err) {
+                console.error('Unexpected error:', err);
+            }
+        }
+        
+        // Add this to your browser console to test
+        window.testProviderQuery = testQuery;
+        
+        document.getElementById('results').innerHTML = `
+            <p>Open browser console and run: testProviderQuery()</p>
+            <p>Make sure to update the Supabase credentials first!</p>
+        `;
+    </script>
+</body>
+</html>

@@ -3,28 +3,15 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useProvidersForCourse } from "@/hooks/useProviders";
+import { useProvidersForCourse, Provider } from "@/hooks/useProviders";
 import { Badge } from "@/components/ui/badge";
 import { Building2, MapPin, Phone, Mail } from "lucide-react";
-
-interface CourseProvider {
-  id: string;
-  name: string;
-  default_location: string | null;
-  contact_person: string | null;
-  email: string | null;
-  phone: string | null;
-  city: string | null;
-  active: boolean;
-  additional_locations?: any;
-  instructors?: any;
-}
 
 interface ProviderSelectionSectionProps {
   selectedCourseId: string;
   selectedProviderId: string;
   onProviderChange: (providerId: string) => void;
-  onProviderDetailsChange?: (provider: CourseProvider | null) => void;
+  onProviderDetailsChange?: (provider: Provider | null) => void;
 }
 
 export function ProviderSelectionSection({
@@ -34,7 +21,14 @@ export function ProviderSelectionSection({
   onProviderDetailsChange
 }: ProviderSelectionSectionProps) {
   // Fetch providers that offer the selected course
-  const { data: providers = [], isLoading } = useProvidersForCourse(selectedCourseId) as { data: CourseProvider[] | undefined, isLoading: boolean };
+  const { data: providers = [], isLoading, error } = useProvidersForCourse(selectedCourseId) as { data: Provider[] | undefined, isLoading: boolean, error: any };
+
+  // Debug logging
+  console.log(`[ProviderSelectionSection] Course ID: ${selectedCourseId}`);
+  console.log(`[ProviderSelectionSection] Is Loading: ${isLoading}`);
+  console.log(`[ProviderSelectionSection] Error:`, error);
+  console.log(`[ProviderSelectionSection] Providers data:`, providers);
+  console.log(`[ProviderSelectionSection] Providers length: ${providers?.length || 0}`);
 
   // Get selected provider details
   const selectedProvider = providers.find(p => p.id === selectedProviderId);

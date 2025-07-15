@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { usePermissions } from '@/context/PermissionsContext';
 
@@ -10,19 +10,24 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     const { permissions, loading, userProfile, error } = usePermissions();
     const location = useLocation();
 
-    // Debug logging
-    console.log('AuthGuard state:', {
+    // Memoize authentication state to prevent unnecessary re-renders
+    const authState = useMemo(() => ({
         loading,
         hasUserProfile: !!userProfile,
         hasPermissions: !!permissions,
-        permissionsCount: permissions?.permissions?.size || 0,
-        isAdmin: permissions?.isAdmin || false,
-        roleName: permissions?.role?.name || null,
-        error,
-        pathname: location.pathname,
-        userProfileId: userProfile?.id,
-        permissionsArray: permissions?.permissions ? Array.from(permissions.permissions) : []
-    });
+        isAuthenticated: !!(userProfile || permissions),
+        error
+    }), [loading, userProfile, permissions, error]);
+
+    // Only log state changes, not every render
+    React.useEffect(() => {
+        console.log('AuthGuard state changed:', {
+            ...authState,
+            pathname: location.pathname,
+            userProfileId: userProfile?.id,
+            roleName: permissions?.role?.name || null,
+        });
+    }, [authState, location.pathname, userProfile?.id, permissions?.role?.name]);
 
     // Show loading spinner while checking auth state
     if (loading) {
@@ -64,18 +69,8 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
         );
     }
 
-    // Check if user is authenticated
-    // A user is authenticated if they have a userProfile OR permissions
-    const isAuthenticated = !!(userProfile || permissions);
-
-    console.log('AuthGuard authentication check:', {
-        isAuthenticated,
-        hasUserProfile: !!userProfile,
-        hasPermissions: !!permissions,
-        error
-    });
-
-    if (!isAuthenticated) {
+    // Use the memoized authentication state
+    if (!authState.isAuthenticated) {
         console.log('User not authenticated, redirecting to login');
         // Clear any stale auth data
         localStorage.removeItem('explicit_logout');
@@ -83,7 +78,6 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    console.log('User authenticated, rendering protected content');
     // User is authenticated, render the protected content
     return <>{children}</>;
 }; 

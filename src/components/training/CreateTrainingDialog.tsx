@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useCreateTraining } from "@/hooks/useCreateTraining";
 import { useCourses } from "@/hooks/useCourses";
+import { useProviderCourseDetails } from "@/hooks/useProviders";
 import { useToast } from "@/hooks/use-toast";
 import { CourseSelectionSection } from "./forms/CourseSelectionSection";
 import { SmartMultiSessionSection } from "./forms/SmartMultiSessionSection";
@@ -15,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Euro } from "lucide-react";
 
 // Custom DialogContent that prevents outside click and has custom ESC handling
 const CustomDialogContent = forwardRef<
@@ -61,6 +62,8 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
   const [status, setStatus] = useState<'scheduled' | 'confirmed' | 'cancelled' | 'completed'>('scheduled');
   const [requiresApproval, setRequiresApproval] = useState(false);
   const [checklist, setChecklist] = useState<Array<{ id: string; text: string; completed: boolean }>>([]);
+  const [price, setPrice] = useState<number | undefined>();
+  const [costBreakdown, setCostBreakdown] = useState<any[]>([]);
 
   // Multi-session state
   const [sessions, setSessions] = useState(1);
@@ -72,6 +75,9 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
   const createTraining = useCreateTraining();
   const { toast } = useToast();
   const prevProviderId = useRef<string | null>(null);
+  
+  // Fetch provider-course specific details (pricing, etc.)
+  const { data: providerCourseDetails } = useProviderCourseDetails(selectedProviderId, selectedCourseId);
 
   const selectedCourse = courses.find(course => course.id === selectedCourseId);
 
@@ -89,6 +95,19 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
       prevProviderId.current = provider?.id || null;
     }
   };
+
+  // Update cost data when provider-course details change
+  useEffect(() => {
+    if (providerCourseDetails) {
+      console.log('Updating cost data from provider-course details:', providerCourseDetails);
+      setPrice(providerCourseDetails.price ? Number(providerCourseDetails.price) : undefined);
+      setCostBreakdown(providerCourseDetails.cost_breakdown || []);
+    } else {
+      // Clear cost data if no provider-course details
+      setPrice(undefined);
+      setCostBreakdown([]);
+    }
+  }, [providerCourseDetails]);
 
   // Set pre-selected course
   useEffect(() => {
@@ -360,7 +379,9 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
         session_dates: sessionDates.length > 0 ? sessionDates : null,
         session_times: sessionTimes.length > 0 ? sessionTimes : null,
         session_end_times: sessionEndTimes.length > 0 ? sessionEndTimes : null,
-        checklist: checklist.length > 0 ? checklist : null
+        checklist: checklist.length > 0 ? checklist : null,
+        price: price,
+        cost_breakdown: costBreakdown.length > 0 ? costBreakdown : null
       };
 
       await createTraining.mutateAsync(trainingData);
@@ -518,6 +539,40 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
               </Select>
             </div>
           </div>
+
+          {/* Cost Breakdown Display */}
+          {selectedProviderId && (costBreakdown.length > 0 || price) && (
+            <div className="space-y-3 p-4 border rounded-lg bg-gray-50">
+              <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                <Euro className="h-4 w-4" />
+                Cost Breakdown
+              </h4>
+              {costBreakdown.length > 0 ? (
+                <div className="space-y-2">
+                  {costBreakdown.map((cost, index) => (
+                    <div key={index} className="flex items-center justify-between text-sm">
+                      <div>
+                        <div className="font-medium">{cost.name}</div>
+                        {cost.description && (
+                          <div className="text-gray-500 text-xs">{cost.description}</div>
+                        )}
+                      </div>
+                      <span className="font-medium">€{cost.amount}</span>
+                    </div>
+                  ))}
+                  <div className="border-t pt-2 flex items-center justify-between font-semibold">
+                    <span>Total per Participant</span>
+                    <span>€{price || costBreakdown.reduce((sum, cost) => sum + (cost.amount || 0), 0)}</span>
+                  </div>
+                </div>
+              ) : price ? (
+                <div className="flex items-center justify-between font-semibold">
+                  <span>Total per Participant</span>
+                  <span>€{price}</span>
+                </div>
+              ) : null}
+            </div>
+          )}
 
           <div className="flex items-center space-x-2">
             <Checkbox

@@ -249,7 +249,7 @@ export const useCertificateDefinitionManagement = () => {
   });
 
   const createLicenseDefinition = useMutation({
-    mutationFn: async (license: Omit<License, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (license: Omit<License, 'id' | 'created_at'>) => {
       const { data, error } = await supabase
         .from('licenses')
         .insert(license)

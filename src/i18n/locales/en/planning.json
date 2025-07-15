@@ -1,0 +1,212 @@
+{
+  "preliminaryPlanning": {
+    "title": "Preliminary Planning",
+    "description": "Organize certificate renewals and training needs through intelligent employee grouping and planning",
+    "createPlan": "Create New Plan",
+    "viewPlan": "View Plan",
+    "editPlan": "Edit Plan",
+    "deletePlan": "Delete Plan",
+    "status": {
+      "draft": "Draft",
+      "review": "Under Review", 
+      "approved": "Approved",
+      "finalized": "Finalized",
+      "archived": "Archived"
+    },
+    "employeeStatus": {
+      "new": "New Employee",
+      "expired": "Expired",
+      "renewal_due": "Renewal Due",
+      "renewal_approaching": "Renewal Approaching",
+      "valid": "Valid"
+    },
+    "groupTypes": {
+      "new": "New Employees",
+      "renewal": "Renewal Group",
+      "mixed": "Mixed Group"
+    }
+  },
+  "certificateExpiry": {
+    "title": "Certificate Expiry Analysis",
+    "description": "Monitor employee certificate expiry status and renewal requirements",
+    "filters": {
+      "certificateType": "Certificate Type",
+      "department": "Department",
+      "status": "Status",
+      "allCertificates": "All certificates",
+      "allStatuses": "All statuses",
+      "allDepartments": "All departments"
+    },
+    "stats": {
+      "urgentRenewals": "Urgent Renewals",
+      "newEmployees": "New Employees", 
+      "renewalsDue": "Renewals Due",
+      "activePlans": "Active Plans"
+    },
+    "table": {
+      "employee": "Employee",
+      "department": "Department",
+      "certificate": "Certificate",
+      "status": "Status",
+      "expiryDate": "Expiry Date",
+      "daysUntilExpiry": "Days Until Expiry",
+      "actions": "Actions"
+    },
+    "actions": {
+      "addToGroup": "Add to Group",
+      "scheduleTraining": "Schedule Training",
+      "exportCsv": "Export CSV"
+    }
+  },
+  "employeeGrouping": {
+    "title": "Employee Grouping",
+    "description": "Create intelligent groups of employees for efficient training planning",
+    "aiSuggestions": "AI-Generated Group Suggestions",
+    "manualSelection": "Manual Employee Selection",
+    "configuration": {
+      "certificateType": "Certificate Type",
+      "maxGroupSize": "Max Group Size",
+      "timeWindow": "Time Window (days)",
+      "generateSuggestions": "Generate Suggestions"
+    },
+    "departmentOverview": {
+      "title": "Department Overview",
+      "newEmployees": "New employees",
+      "renewalsNeeded": "Renewals needed",
+      "urgent": "Urgent"
+    },
+    "groupSuggestion": {
+      "priority": "Priority",
+      "employees": "employees",
+      "avgDaysUntilExpiry": "Avg: {{days}} days until expiry",
+      "mixedGroupTypes": "Mixed group types",
+      "preview": "Preview",
+      "createGroup": "Create Group",
+      "moreEmployees": "+{{count}} more employees"
+    },
+    "manualSelection": {
+      "selected": "{{count}} selected",
+      "createGroup": "Create Group"
+    }
+  },
+  "planningCalendar": {
+    "title": "Planning Calendar",
+    "description": "View preliminary plans in a calendar format",
+    "viewModes": {
+      "month": "Month",
+      "quarter": "Quarter"
+    },
+    "navigation": {
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "filters": {
+      "allPlans": "All plans"
+    },
+    "actions": {
+      "scheduleTraining": "Schedule Training",
+      "viewDetails": "View Details"
+    },
+    "timeline": {
+      "quarterTimeline": "Quarter Timeline",
+      "noPlansScheduled": "No plans scheduled"
+    },
+    "emptyState": {
+      "noPlans": "No preliminary plans for this period",
+      "description": "Plans will appear here when their planning period overlaps with the selected timeframe"
+    }
+  },
+  "planDialog": {
+    "create": {
+      "title": "Create New Preliminary Plan",
+      "description": "Create a new preliminary plan to organize certificate renewals and employee training needs."
+    },
+    "edit": {
+      "title": "Edit Preliminary Plan", 
+      "description": "Update the preliminary planning details below."
+    },
+    "fields": {
+      "planName": "Plan Name",
+      "planNamePlaceholder": "e.g., Q1 2025 Certificate Renewal Plan",
+      "description": "Description",
+      "descriptionPlaceholder": "Describe the scope and objectives of this preliminary plan...",
+      "planningPeriod": "Planning Period",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "status": "Status",
+      "notes": "Notes",
+      "notesPlaceholder": "Additional notes or comments about this plan..."
+    },
+    "suggestedPeriods": {
+      "q1": "Q1 2025",
+      "q2": "Q2 2025",
+      "h1": "H1 2025",
+      "fullYear": "Full Year 2025"
+    },
+    "actions": {
+      "cancel": "Cancel",
+      "createPlan": "Create Plan",
+      "updatePlan": "Update Plan",
+      "creating": "Creating...",
+      "updating": "Updating..."
+    },
+    "validation": {
+      "requiredFields": "Please fill in all required fields",
+      "invalidDateRange": "End date must be after start date"
+    },
+    "success": {
+      "created": "Preliminary plan created successfully",
+      "updated": "Preliminary plan updated successfully"
+    },
+    "error": {
+      "failedToCreate": "Failed to create preliminary plan",
+      "failedToUpdate": "Failed to update preliminary plan"
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "view": "View",
+    "create": "Create",
+    "export": "Export",
+    "search": "Search",
+    "filter": "Filter",
+    "sortBy": "Sort by",
+    "actions": "Actions",
+    "noData": "No data available",
+    "selectOption": "Select an option"
+  },
+  "conversion": {
+    "dialog": {
+      "title": "Convert to Definitive Training",
+      "description": "Convert this preliminary plan to definitive trainings. This will create actual training sessions in the training scheduler.",
+      "planSummary": "Plan Summary",
+      "planName": "Plan Name",
+      "status": "Status",
+      "trainings": "Trainings",
+      "participants": "Total Participants",
+      "notApproved": "Plan Not Approved",
+      "notApprovedDescription": "This plan must be approved before it can be converted to definitive trainings.",
+      "options": "Conversion Options",
+      "skipEmptyGroups": "Skip empty groups",
+      "skipEmptyGroupsDescription": "Only create trainings for groups that have participants assigned",
+      "important": "Important",
+      "importantDescription": "This action cannot be undone. Once converted, the preliminary plan will be finalized and trainings will be created in the system.",
+      "converting": "Converting...",
+      "convertToDefinitive": "Convert to Definitive"
+    },
+    "success": {
+      "title": "Plan Successfully Converted",
+      "description": "{{count}} training sessions have been created in the training scheduler."
+    },
+    "error": {
+      "title": "Conversion Failed",
+      "description": "There was an error converting the plan. Please try again."
+    }
+  }
+}

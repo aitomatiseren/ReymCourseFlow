@@ -41,10 +41,10 @@ import { toast } from '@/hooks/use-toast';
 export const ExemptionManagementDashboard: React.FC = () => {
   const [filters, setFilters] = useState({
     search: '',
-    employeeId: '',
-    licenseId: '',
-    approvalStatus: '',
-    exemptionType: '',
+    employeeId: '__all__',
+    licenseId: '__all__',
+    approvalStatus: '__all__',
+    exemptionType: '__all__',
     isActive: undefined as boolean | undefined
   });
   
@@ -52,8 +52,15 @@ export const ExemptionManagementDashboard: React.FC = () => {
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
 
-  // Data hooks
-  const { data: exemptions, isLoading } = useCertificateExemptions(filters);
+  // Data hooks - convert __all__ values to empty strings for the API
+  const apiFilters = {
+    ...filters,
+    employeeId: filters.employeeId === '__all__' ? '' : filters.employeeId,
+    licenseId: filters.licenseId === '__all__' ? '' : filters.licenseId,
+    approvalStatus: filters.approvalStatus === '__all__' ? '' : filters.approvalStatus,
+    exemptionType: filters.exemptionType === '__all__' ? '' : filters.exemptionType,
+  };
+  const { data: exemptions, isLoading } = useCertificateExemptions(apiFilters);
   const { data: pendingExemptions } = usePendingExemptions();
   const { data: statistics } = useExemptionStatistics();
   const { data: employees } = useEmployees();
@@ -277,7 +284,7 @@ export const ExemptionManagementDashboard: React.FC = () => {
                   <SelectValue placeholder="All employees" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All employees</SelectItem>
+                  <SelectItem value="__all__">All employees</SelectItem>
                   {employees?.map(emp => (
                     <SelectItem key={emp.id} value={emp.id}>
                       {emp.name}
@@ -297,7 +304,7 @@ export const ExemptionManagementDashboard: React.FC = () => {
                   <SelectValue placeholder="All certificates" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All certificates</SelectItem>
+                  <SelectItem value="__all__">All certificates</SelectItem>
                   {licenses?.map(license => (
                     <SelectItem key={license.id} value={license.id}>
                       {license.name}
@@ -317,7 +324,7 @@ export const ExemptionManagementDashboard: React.FC = () => {
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All statuses</SelectItem>
+                  <SelectItem value="__all__">All statuses</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="approved">Approved</SelectItem>
                   <SelectItem value="rejected">Rejected</SelectItem>
@@ -336,7 +343,7 @@ export const ExemptionManagementDashboard: React.FC = () => {
                   <SelectValue placeholder="All types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All types</SelectItem>
+                  <SelectItem value="__all__">All types</SelectItem>
                   <SelectItem value="temporary">Temporary</SelectItem>
                   <SelectItem value="permanent">Permanent</SelectItem>
                   <SelectItem value="conditional">Conditional</SelectItem>
@@ -357,7 +364,7 @@ export const ExemptionManagementDashboard: React.FC = () => {
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All</SelectItem>
+                  <SelectItem value="__all__">All</SelectItem>
                   <SelectItem value="true">Active Only</SelectItem>
                   <SelectItem value="false">Inactive Only</SelectItem>
                 </SelectContent>

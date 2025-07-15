@@ -1,0 +1,212 @@
+{
+  "preliminaryPlanning": {
+    "title": "Potloodplanning",
+    "description": "Organiseer certificaatverlengingen en trainingsbehoeften door intelligente werknemersgroeperingen en planning",
+    "createPlan": "Nieuw Plan Maken",
+    "viewPlan": "Plan Bekijken",
+    "editPlan": "Plan Bewerken", 
+    "deletePlan": "Plan Verwijderen",
+    "status": {
+      "draft": "Concept",
+      "review": "In Beoordeling",
+      "approved": "Goedgekeurd",
+      "finalized": "Definitief",
+      "archived": "Gearchiveerd"
+    },
+    "employeeStatus": {
+      "new": "Nieuwe Werknemer",
+      "expired": "Verlopen",
+      "renewal_due": "Verlenging Nodig",
+      "renewal_approaching": "Verlenging Nadert",
+      "valid": "Geldig"
+    },
+    "groupTypes": {
+      "new": "Nieuwe Werknemers",
+      "renewal": "Verlengingsgroep",
+      "mixed": "Gemengde Groep"
+    }
+  },
+  "certificateExpiry": {
+    "title": "Certificaat Vervaldatum Analyse",
+    "description": "Monitor de vervaldatum status van werknemerscertificaten en verlengingseisen",
+    "filters": {
+      "certificateType": "Certificaattype",
+      "department": "Afdeling",
+      "status": "Status",
+      "allCertificates": "Alle certificaten",
+      "allStatuses": "Alle statussen",
+      "allDepartments": "Alle afdelingen"
+    },
+    "stats": {
+      "urgentRenewals": "Urgente Verlengingen",
+      "newEmployees": "Nieuwe Werknemers",
+      "renewalsDue": "Verlengingen Nodig",
+      "activePlans": "Actieve Plannen"
+    },
+    "table": {
+      "employee": "Werknemer",
+      "department": "Afdeling",
+      "certificate": "Certificaat",
+      "status": "Status",
+      "expiryDate": "Vervaldatum",
+      "daysUntilExpiry": "Dagen Tot Vervaldatum",
+      "actions": "Acties"
+    },
+    "actions": {
+      "addToGroup": "Toevoegen aan Groep",
+      "scheduleTraining": "Training Inplannen",
+      "exportCsv": "Export CSV"
+    }
+  },
+  "employeeGrouping": {
+    "title": "Werknemersgroeperingen",
+    "description": "Maak intelligente groepen werknemers voor efficiënte trainingsplanning",
+    "aiSuggestions": "AI-Gegenereerde Groepssuggesties",
+    "manualSelection": "Handmatige Werknemersselectie",
+    "configuration": {
+      "certificateType": "Certificaattype",
+      "maxGroupSize": "Max Groepsgrootte",
+      "timeWindow": "Tijdvenster (dagen)",
+      "generateSuggestions": "Suggesties Genereren"
+    },
+    "departmentOverview": {
+      "title": "Afdelingsoverzicht",
+      "newEmployees": "Nieuwe werknemers",
+      "renewalsNeeded": "Verlengingen nodig",
+      "urgent": "Urgent"
+    },
+    "groupSuggestion": {
+      "priority": "Prioriteit",
+      "employees": "werknemers",
+      "avgDaysUntilExpiry": "Gem: {{days}} dagen tot vervaldatum",
+      "mixedGroupTypes": "Gemengde groeptypes",
+      "preview": "Voorbeeld",
+      "createGroup": "Groep Maken",
+      "moreEmployees": "+{{count}} meer werknemers"
+    },
+    "manualSelection": {
+      "selected": "{{count}} geselecteerd",
+      "createGroup": "Groep Maken"
+    }
+  },
+  "planningCalendar": {
+    "title": "Planningskalender",
+    "description": "Bekijk potloodplannen in kalenderformaat",
+    "viewModes": {
+      "month": "Maand",
+      "quarter": "Kwartaal"
+    },
+    "navigation": {
+      "previous": "Vorige",
+      "next": "Volgende"
+    },
+    "filters": {
+      "allPlans": "Alle plannen"
+    },
+    "actions": {
+      "scheduleTraining": "Training Inplannen",
+      "viewDetails": "Details Bekijken"
+    },
+    "timeline": {
+      "quarterTimeline": "Kwartaal Tijdlijn",
+      "noPlansScheduled": "Geen plannen ingepland"
+    },
+    "emptyState": {
+      "noPlans": "Geen potloodplannen voor deze periode",
+      "description": "Plannen verschijnen hier wanneer hun planningsperiode overlapt met het geselecteerde tijdsbestek"
+    }
+  },
+  "planDialog": {
+    "create": {
+      "title": "Nieuw Potloodplan Maken",
+      "description": "Maak een nieuw potloodplan om certificaatverlengingen en trainingsbehoeften van werknemers te organiseren."
+    },
+    "edit": {
+      "title": "Potloodplan Bewerken",
+      "description": "Werk de potloodplanning details hieronder bij."
+    },
+    "fields": {
+      "planName": "Plannaam",
+      "planNamePlaceholder": "bijv., Q1 2025 Certificaatverlenging Plan",
+      "description": "Beschrijving",
+      "descriptionPlaceholder": "Beschrijf de reikwijdte en doelstellingen van dit potloodplan...",
+      "planningPeriod": "Planningsperiode",
+      "startDate": "Startdatum",
+      "endDate": "Einddatum",
+      "status": "Status",
+      "notes": "Notities",
+      "notesPlaceholder": "Aanvullende notities of opmerkingen over dit plan..."
+    },
+    "suggestedPeriods": {
+      "q1": "Q1 2025",
+      "q2": "Q2 2025", 
+      "h1": "H1 2025",
+      "fullYear": "Heel Jaar 2025"
+    },
+    "actions": {
+      "cancel": "Annuleren",
+      "createPlan": "Plan Maken",
+      "updatePlan": "Plan Bijwerken",
+      "creating": "Maken...",
+      "updating": "Bijwerken..."
+    },
+    "validation": {
+      "requiredFields": "Vul alle verplichte velden in",
+      "invalidDateRange": "Einddatum moet na startdatum zijn"
+    },
+    "success": {
+      "created": "Potloodplan succesvol aangemaakt",
+      "updated": "Potloodplan succesvol bijgewerkt"
+    },
+    "error": {
+      "failedToCreate": "Kon potloodplan niet aanmaken",
+      "failedToUpdate": "Kon potloodplan niet bijwerken"
+    }
+  },
+  "common": {
+    "loading": "Laden...",
+    "error": "Fout",
+    "success": "Succes",
+    "save": "Opslaan",
+    "cancel": "Annuleren",
+    "delete": "Verwijderen",
+    "edit": "Bewerken",
+    "view": "Bekijken",
+    "create": "Maken",
+    "export": "Exporteren",
+    "search": "Zoeken",
+    "filter": "Filteren",
+    "sortBy": "Sorteren op",
+    "actions": "Acties",
+    "noData": "Geen gegevens beschikbaar",
+    "selectOption": "Selecteer een optie"
+  },
+  "conversion": {
+    "dialog": {
+      "title": "Omzetten naar Definitieve Training",
+      "description": "Zet dit potloodplan om naar definitieve trainingen. Dit maakt daadwerkelijke trainingsessies aan in de trainingsplanner.",
+      "planSummary": "Plan Samenvatting",
+      "planName": "Plan Naam",
+      "status": "Status",
+      "trainings": "Trainingen",
+      "participants": "Totaal Deelnemers",
+      "notApproved": "Plan Niet Goedgekeurd",
+      "notApprovedDescription": "Dit plan moet worden goedgekeurd voordat het kan worden omgezet naar definitieve trainingen.",
+      "options": "Conversie Opties",
+      "skipEmptyGroups": "Lege groepen overslaan",
+      "skipEmptyGroupsDescription": "Maak alleen trainingen aan voor groepen met toegewezen deelnemers",
+      "important": "Belangrijk",
+      "importantDescription": "Deze actie kan niet ongedaan worden gemaakt. Eenmaal omgezet, wordt het potloodplan definitief en worden trainingen aangemaakt in het systeem.",
+      "converting": "Omzetten...",
+      "convertToDefinitive": "Omzetten naar Definitief"
+    },
+    "success": {
+      "title": "Plan Succesvol Omgezet",
+      "description": "{{count}} trainingsessies zijn aangemaakt in de trainingsplanner."
+    },
+    "error": {
+      "title": "Conversie Mislukt",
+      "description": "Er is een fout opgetreden bij het omzetten van het plan. Probeer het opnieuw."
+    }
+  }
+}

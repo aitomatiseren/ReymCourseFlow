@@ -13,7 +13,8 @@ import {
   Bell,
   User,
   Wrench,
-  Shield
+  Shield,
+  PenTool
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { usePermissions } from "@/context/PermissionsContext";
@@ -31,13 +32,14 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const getMenuItems = (t: any) => [
+const getMenuItems = (t: (key: string) => string) => [
   { titleKey: "navigation.dashboard", url: "/", icon: Home, permissions: [] },
   { titleKey: "navigation.trainingSetup", url: "/training-setup", icon: Wrench, permissions: ["view_courses"] },
   { titleKey: "navigation.participants", url: "/participants", icon: Users, permissions: ["view_employees"] },
   { titleKey: "navigation.certifications", url: "/certifications", icon: Award, permissions: ["view_own_certificates"] },
   { titleKey: "navigation.certificateDefinitions", url: "/certificate-definitions", icon: Shield, permissions: ["manage_system_settings"] },
   { titleKey: "navigation.trainingScheduler", url: "/scheduling", icon: Calendar, permissions: ["view_schedules"] },
+  { titleKey: "navigation.preliminaryPlanning", url: "/preliminary-planning", icon: PenTool, permissions: ["view_schedules"] },
   { titleKey: "navigation.employeePortal", url: "/employee-dashboard", icon: User, permissions: ["view_own_profile"] },
   { titleKey: "navigation.notifications", url: "/communications", icon: Bell, permissions: [] },
   { titleKey: "navigation.reports", url: "/reports", icon: FileText, permissions: ["view_basic_reports"] },
@@ -76,7 +78,7 @@ export function AppSidebar() {
               {menuItems.map((item) => {
                 // Check if user has permission to see this menu item
                 // Admin users can see everything, others need specific permissions
-                const hasPermission = isAdmin || item.permissions.length === 0 || hasAnyPermission(item.permissions as any);
+                const hasPermission = isAdmin || item.permissions.length === 0 || hasAnyPermission(item.permissions as string[]);
                 if (!hasPermission) return null;
 
                 const isActive = location.pathname === item.url;

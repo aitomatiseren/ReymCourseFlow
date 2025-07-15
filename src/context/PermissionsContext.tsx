@@ -163,7 +163,7 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
 
         // Prevent concurrent calls
         if (fetchingPermissions) {
-            console.log('Already fetching permissions, skipping...');
+            console.debug('Already fetching permissions, skipping...');
             return;
         }
 
@@ -171,7 +171,7 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
         setError(null);
 
         try {
-            console.log('Fetching user permissions...');
+            console.debug('Fetching user permissions...');
 
             // Use provided user or get current user
             let currentUser = user;
@@ -504,7 +504,7 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
 
     // Fetch permissions on mount and when auth state changes
     useEffect(() => {
-        console.log('PermissionsProvider useEffect triggered');
+        console.debug('PermissionsProvider useEffect triggered');
 
         // Set a maximum loading time to prevent infinite spinners  
         initializationTimeoutRef.current = setTimeout(() => {
@@ -523,7 +523,7 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
         // Listen for auth changes first, then check initial session
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             console.log('Auth state changed:', event, session?.user?.id);
-            console.log('Current state:', { loading, initialized, fetchingPermissions });
+            console.log('Current state:', { loading: loadingRef.current, initialized: initializedRef.current, fetchingPermissions });
 
             // Handle TOKEN_REFRESHED event - this fires when window regains focus
             if (event === 'TOKEN_REFRESHED') {
@@ -653,7 +653,12 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                 filter: `id=eq.${userProfile.id}`
             }, () => {
                 console.log('User profile changed, refreshing permissions...');
-                refreshPermissions();
+                // Use a debounced version to prevent too many refreshes
+                setTimeout(() => {
+                    if (!wasExplicitlyLoggedOut()) {
+                        refreshPermissions();
+                    }
+                }, 1000);
             })
             .subscribe();
 
@@ -666,7 +671,12 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                 table: 'user_roles'
             }, () => {
                 console.log('User roles changed, refreshing permissions...');
-                refreshPermissions();
+                // Use a debounced version to prevent too many refreshes
+                setTimeout(() => {
+                    if (!wasExplicitlyLoggedOut()) {
+                        refreshPermissions();
+                    }
+                }, 1000);
             })
             .subscribe();
 
@@ -674,7 +684,7 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
             supabase.removeChannel(profileChannel);
             supabase.removeChannel(rolesChannel);
         };
-    }, [userProfile?.id, userProfile?.role?.id, refreshPermissions]);
+    }, [userProfile?.id, userProfile?.role?.id]); // Remove refreshPermissions from dependencies
 
     const value: PermissionsContextType = {
         permissions,

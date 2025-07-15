@@ -706,6 +706,8 @@ export type Database = {
           level: number | null
           level_description: string | null
           name: string
+          renewal_grace_period_months: number | null
+          renewal_notice_months: number | null
           validity_period_months: number | null
         }
         Insert: {
@@ -716,6 +718,8 @@ export type Database = {
           level?: number | null
           level_description?: string | null
           name: string
+          renewal_grace_period_months?: number | null
+          renewal_notice_months?: number | null
           validity_period_months?: number | null
         }
         Update: {
@@ -726,6 +730,8 @@ export type Database = {
           level?: number | null
           level_description?: string | null
           name?: string
+          renewal_grace_period_months?: number | null
+          renewal_notice_months?: number | null
           validity_period_months?: number | null
         }
         Relationships: []

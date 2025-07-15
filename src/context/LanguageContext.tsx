@@ -23,25 +23,29 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 
     // Load user language preference on mount
     useEffect(() => {
+        let mounted = true;
+        
         const loadLanguagePreference = async () => {
             try {
                 // First, check localStorage for immediate language setting
                 const savedLanguage = localStorage.getItem('reym-language') as Language;
                 if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'nl')) {
-                    setLanguageState(savedLanguage);
-                    i18n.changeLanguage(savedLanguage);
+                    if (mounted) {
+                        setLanguageState(savedLanguage);
+                        i18n.changeLanguage(savedLanguage);
+                    }
                 }
 
                 // Then, check if user is logged in and has a preference in the database
                 const { data: { user } } = await supabase.auth.getUser();
-                if (user) {
+                if (user && mounted) {
                     const { data: profile } = await supabase
                         .from('user_profiles')
                         .select('language_preference')
                         .eq('id', user.id)
                         .single();
 
-                    if (profile?.language_preference && profile.language_preference !== savedLanguage) {
+                    if (profile?.language_preference && profile.language_preference !== savedLanguage && mounted) {
                         const dbLanguage = profile.language_preference as Language;
                         setLanguageState(dbLanguage);
                         i18n.changeLanguage(dbLanguage);
@@ -51,12 +55,18 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
             } catch (error) {
                 console.error('Error loading language preference:', error);
             } finally {
-                setIsLoading(false);
+                if (mounted) {
+                    setIsLoading(false);
+                }
             }
         };
 
         loadLanguagePreference();
-    }, [i18n]);
+        
+        return () => {
+            mounted = false;
+        };
+    }, []); // Remove i18n dependency to prevent loops
 
     const setLanguage = async (newLanguage: Language) => {
         try {

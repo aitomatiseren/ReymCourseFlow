@@ -6,6 +6,7 @@
         "certifications": "Certifications",
         "certificateDefinitions": "Certificate Definitions",
         "trainingScheduler": "Training Scheduler",
+        "preliminaryPlanning": "Preliminary Planning",
         "employeePortal": "Employee Portal",
         "providers": "Providers",
         "trainingSetup": "Training Setup",
@@ -258,7 +259,15 @@
         "costBreakdown": "Cost Breakdown",
         "total": "Total",
         "courseChecklist": "Course Checklist",
-        "checklistAvailable": "Checklist items available"
+        "checklistAvailable": "Checklist items available",
+        "certificatesGranted": "Certificates Granted",
+        "grantsLevel": "Grants Level",
+        "required": "Required",
+        "renewalEligible": "Renewal Eligible",
+        "validFor": "Valid for",
+        "months": "months",
+        "noCertificatesGranted": "No certificates granted",
+        "noCertificatesGrantedDesc": "This course doesn't grant any certificates upon completion."
     },
     "trainingSetup": {
         "subtitle": "Configure courses and training providers for scheduling"

@@ -27,8 +27,8 @@ import { toast } from '@/hooks/use-toast';
 
 export const EmployeeTrainingBrowser: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [levelFilter, setLevelFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('__all__');
+  const [levelFilter, setLevelFilter] = useState('__all__');
   const [selectedTraining, setSelectedTraining] = useState<string | null>(null);
   const [enrollmentNotes, setEnrollmentNotes] = useState('');
   const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
@@ -43,8 +43,8 @@ export const EmployeeTrainingBrowser: React.FC = () => {
       training.course_category.toLowerCase().includes(searchTerm.toLowerCase()) ||
       training.instructor?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCategory = !categoryFilter || training.course_category === categoryFilter;
-    const matchesLevel = !levelFilter || training.course_level.toString() === levelFilter;
+    const matchesCategory = !categoryFilter || categoryFilter === '__all__' || training.course_category === categoryFilter;
+    const matchesLevel = !levelFilter || levelFilter === '__all__' || training.course_level.toString() === levelFilter;
 
     return matchesSearch && matchesCategory && matchesLevel;
   }) || [];
@@ -162,7 +162,7 @@ export const EmployeeTrainingBrowser: React.FC = () => {
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value="__all__">All Categories</SelectItem>
                 {categories.map(category => (
                   <SelectItem key={category} value={category}>
                     {category}
@@ -175,7 +175,7 @@ export const EmployeeTrainingBrowser: React.FC = () => {
                 <SelectValue placeholder="All Levels" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Levels</SelectItem>
+                <SelectItem value="__all__">All Levels</SelectItem>
                 {levels.map(level => (
                   <SelectItem key={level} value={level.toString()}>
                     Level {level}
@@ -187,8 +187,8 @@ export const EmployeeTrainingBrowser: React.FC = () => {
               variant="outline" 
               onClick={() => {
                 setSearchTerm('');
-                setCategoryFilter('');
-                setLevelFilter('');
+                setCategoryFilter('__all__');
+                setLevelFilter('__all__');
               }}
             >
               Clear Filters
@@ -339,8 +339,8 @@ export const EmployeeTrainingBrowser: React.FC = () => {
               variant="outline" 
               onClick={() => {
                 setSearchTerm('');
-                setCategoryFilter('');
-                setLevelFilter('');
+                setCategoryFilter('__all__');
+                setLevelFilter('__all__');
               }}
             >
               Clear all filters

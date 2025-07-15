@@ -20,6 +20,7 @@ import {
 } from "@/utils/code95Utils";
 import { AlertTriangle, CheckCircle, Clock, Users, Search, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
+import { Code95RegistryVerification } from "./Code95RegistryVerification";
 
 export function Code95Dashboard() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -214,11 +215,12 @@ export function Code95Dashboard() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="all" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="all">All ({filteredEmployees.length})</TabsTrigger>
               <TabsTrigger value="expired">Expired ({stats.expired})</TabsTrigger>
               <TabsTrigger value="expiring">Expiring ({stats.expiring})</TabsTrigger>
               <TabsTrigger value="compliant">Compliant ({stats.compliant})</TabsTrigger>
+              <TabsTrigger value="registry">Registry</TabsTrigger>
             </TabsList>
             
             <TabsContent value="all" className="mt-6">
@@ -253,6 +255,10 @@ export function Code95Dashboard() {
                 })} 
                 certificates={certificates} 
               />
+            </TabsContent>
+            
+            <TabsContent value="registry" className="mt-6">
+              <Code95RegistryVerification />
             </TabsContent>
           </Tabs>
         </CardContent>
