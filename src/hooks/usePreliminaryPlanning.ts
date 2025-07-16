@@ -29,10 +29,15 @@ export interface PreliminaryPlanGroup {
   certificate_id?: string;
   group_type: 'new' | 'renewal' | 'mixed';
   location?: string;
+  provider_id?: string;
   priority: number;
   max_participants?: number;
   target_completion_date?: string;
+  planned_start_date?: string;
+  planned_end_date?: string;
   estimated_cost?: number;
+  provider_recommendation?: string;
+  sessions_required?: number;
   notes?: string;
   metadata: Record<string, unknown>;
   created_at: string;
@@ -60,7 +65,7 @@ export interface PreliminaryPlanGroupEmployee {
     last_name: string;
     email: string;
     department?: string;
-    position?: string;
+    job_title?: string;
   };
 }
 
@@ -93,7 +98,8 @@ export interface CertificateExpiryAnalysis {
   last_name: string;
   email: string;
   department?: string;
-  position?: string;
+  job_title?: string;
+  work_location?: string;
   employee_license_id?: string;
   license_id: string;
   expiry_date?: string;
@@ -102,9 +108,13 @@ export interface CertificateExpiryAnalysis {
   license_category: string;
   renewal_notice_months?: number;
   renewal_grace_period_months?: number;
-  employee_status: 'new' | 'expired' | 'renewal_due' | 'renewal_approaching' | 'valid';
+  employee_status: 'new' | 'expired' | 'renewal_due' | 'renewal_approaching' | 'valid' | 'expiring_during_period';
   days_until_expiry?: number;
   renewal_window_start?: string;
+  // Additional fields from the time-aware function
+  days_until_expiry_from_period_start?: number;
+  expires_during_period?: boolean;
+  needs_renewal_during_period?: boolean;
 }
 
 // Hook for fetching all preliminary plans
@@ -162,21 +172,60 @@ export function useCertificateExpiryAnalysis(filters?: {
   department?: string;
   employee_status?: string;
   days_until_expiry_max?: number;
+  preliminary_plan_id?: string;
 }) {
   return useQuery({
     queryKey: ['certificate-expiry-analysis', filters],
     queryFn: async () => {
+      // If a preliminary plan is selected, use the time-aware function for contextual filtering
+      if (filters?.preliminary_plan_id && filters.preliminary_plan_id !== 'all') {
+        const { data: planData, error: planError } = await supabase
+          .from('preliminary_plans')
+          .select('planning_period_start, planning_period_end')
+          .eq('id', filters.preliminary_plan_id)
+          .single();
+
+        if (planError) throw planError;
+        if (!planData) throw new Error('Plan not found');
+
+        const { data, error } = await supabase
+          .rpc('get_certificate_expiry_analysis_for_period', {
+            planning_start_date: planData.planning_period_start,
+            planning_end_date: planData.planning_period_end,
+            filter_license_id: filters.license_id || null,
+            department_filter: filters.department || null
+          });
+
+        if (error) throw error;
+
+        // Apply additional filters
+        let filteredData = data || [];
+        
+        if (filters?.employee_status) {
+          filteredData = filteredData.filter(emp => emp.employee_status === filters.employee_status);
+        }
+        
+        if (filters?.days_until_expiry_max) {
+          filteredData = filteredData.filter(emp => 
+            emp.days_until_expiry !== null && emp.days_until_expiry <= filters.days_until_expiry_max!
+          );
+        }
+
+        return filteredData as CertificateExpiryAnalysis[];
+      }
+
+      // Default query when no plan is selected
       let query = supabase
         .from('certificate_expiry_analysis')
         .select('*');
 
-      // IMPORTANT: For certificate expiry planning, only include employees with certificates that are expiring
-      // Exclude employees with "new" status (who don't have the certificate yet) and "valid" status (not expiring soon)
+      // IMPORTANT: For certificate expiry planning, include employees with certificates that are expiring AND new employees who need training
+      // Exclude only "valid" status (not expiring soon) to keep new employees, expired, renewal_due, and renewal_approaching
       if (filters?.employee_status) {
         query = query.eq('employee_status', filters.employee_status);
       } else {
-        // Default: only include expiring certificates (not new certificates or valid long-term certificates)
-        query = query.in('employee_status', ['expired', 'renewal_due', 'renewal_approaching']);
+        // Default: include new employees and expiring certificates (exclude only valid long-term certificates)
+        query = query.in('employee_status', ['new', 'expired', 'renewal_due', 'renewal_approaching']);
       }
 
       // Apply other filters
@@ -235,7 +284,7 @@ export function usePreliminaryPlanGroups(planId: string) {
               last_name,
               email,
               department,
-              position
+              job_title
             )
           )
         `)
@@ -251,7 +300,7 @@ export function usePreliminaryPlanGroups(planId: string) {
             last_name: string;
             email: string;
             department?: string;
-            position?: string;
+            job_title?: string;
           };
         })[];
       })[];
@@ -448,8 +497,8 @@ export function usePreliminaryPlanningMutations() {
           const participantInserts = prelimTraining.preliminary_plan_groups.preliminary_plan_group_employees.map(emp => ({
             training_id: newTraining.id,
             employee_id: emp.employee_id,
-            status: 'registered',
-            attendance_status: 'pending'
+            status: 'enrolled',
+            registration_date: new Date().toISOString()
           }));
 
           const { error: participantsError } = await supabase

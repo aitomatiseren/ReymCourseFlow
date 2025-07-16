@@ -297,7 +297,7 @@ export class IntelligentScheduler {
           first_name,
           last_name,
           department,
-          position
+          job_title
         )
       `)
       .eq('status', 'active')
@@ -316,12 +316,13 @@ export class IntelligentScheduler {
       .from('employee_learning_profiles')
       .select(`
         employee_id,
-        preferred_learning_style,
+        learning_style,
         training_capacity_per_month,
-        preferred_training_duration,
-        preferred_group_size,
-        learning_pace,
-        special_requirements
+        language_preference,
+        special_accommodations,
+        performance_level,
+        previous_training_success_rate,
+        preferred_training_times
       `);
 
     if (error) {
@@ -354,8 +355,7 @@ export class IntelligentScheduler {
         course_id,
         provider_id,
         date,
-        start_time,
-        end_time,
+        time,
         max_participants,
         training_participants(count)
       `)
@@ -376,13 +376,12 @@ export class IntelligentScheduler {
       .select(`
         employee_id,
         work_schedule,
-        work_location,
-        weekly_hours,
-        start_time,
-        end_time,
-        flexible_hours,
-        remote_work_eligible,
-        preferred_training_days
+        primary_work_location,
+        contract_type,
+        notice_period_days,
+        travel_restrictions,
+        mobility_limitations,
+        remote_work_percentage
       `);
 
     if (error) {
@@ -582,7 +581,7 @@ export class IntelligentScheduler {
   private calculateLearningStyleMatch(learningProfile: any, constraints: SchedulingConstraints): number {
     if (!learningProfile || !constraints.learningStylePreferences?.length) return 50;
     
-    const match = constraints.learningStylePreferences.includes(learningProfile.preferred_learning_style);
+    const match = constraints.learningStylePreferences.includes(learningProfile.learning_style);
     return match ? 100 : 25;
   }
 

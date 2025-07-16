@@ -424,7 +424,8 @@ export class SecureDatabaseService {
         .insert({
           training_id: trainingId,
           employee_id: employeeId,
-          status: 'registered'
+          status: 'enrolled',
+          registration_date: new Date().toISOString()
         })
         .select()
         .single();

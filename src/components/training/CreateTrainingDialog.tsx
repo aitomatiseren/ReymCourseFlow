@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CourseSelectionSection } from "./forms/CourseSelectionSection";
 import { SmartMultiSessionSection } from "./forms/SmartMultiSessionSection";
 import { ChecklistManagementSection } from "./forms/ChecklistManagementSection";
+import { PlanSelectionSection } from "./forms/PlanSelectionSection";
 import { IntelligentSchedulingRecommendations } from "./IntelligentSchedulingRecommendations";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -77,6 +78,11 @@ export function CreateTrainingDialog({
   const [price, setPrice] = useState<number | undefined>();
   const [costBreakdown, setCostBreakdown] = useState<any[]>([]);
 
+  // Plan selection state
+  const [selectedPlanId, setSelectedPlanId] = useState("");
+  const [selectedGroupId, setSelectedGroupId] = useState("");
+  const [planDetails, setPlanDetails] = useState<any>(null);
+
   // Multi-session state
   const [sessions, setSessions] = useState(1);
   const [sessionDates, setSessionDates] = useState<string[]>([]);
@@ -84,12 +90,103 @@ export function CreateTrainingDialog({
   const [sessionEndTimes, setSessionEndTimes] = useState<string[]>([]);
 
   const { data: courses = [] } = useCourses();
+  
+  // Auto-populate fields when a preliminary plan group is selected
+  useEffect(() => {
+    if (planDetails && planDetails.group) {
+      const group = planDetails.group;
+      
+      // Auto-populate max participants if not already set
+      if (group.max_participants && !maxParticipants) {
+        setMaxParticipants(group.max_participants.toString());
+      }
+      
+      // Auto-populate location if not already set
+      if (group.location && !location) {
+        setLocation(group.location);
+      }
+      
+      // Auto-populate title if not already set and group has a name
+      if (group.name && !title) {
+        setTitle(`${group.name} - Training`);
+      }
+      
+      // Auto-populate sessions count if available
+      if (group.sessions_required && sessions === 1) {
+        setSessions(group.sessions_required);
+      }
+      
+      // Auto-populate estimated cost if available
+      if (group.estimated_cost && !price) {
+        setPrice(group.estimated_cost);
+      }
+      
+      // Auto-populate session dates if available
+      if (group.planned_start_date && sessionDates.length === 0) {
+        const startDate = new Date(group.planned_start_date);
+        const endDate = group.planned_end_date ? new Date(group.planned_end_date) : startDate;
+        const sessionsRequired = group.sessions_required || 1;
+        
+        // Generate session dates
+        const dates = [];
+        const currentDate = new Date(startDate);
+        
+        for (let i = 0; i < sessionsRequired; i++) {
+          if (i === 0) {
+            dates.push(currentDate.toISOString().split('T')[0]);
+          } else {
+            // Add one day for each subsequent session, skipping weekends
+            do {
+              currentDate.setDate(currentDate.getDate() + 1);
+            } while (currentDate.getDay() === 0 || currentDate.getDay() === 6); // Skip weekends
+            dates.push(currentDate.toISOString().split('T')[0]);
+          }
+        }
+        
+        setSessionDates(dates);
+        
+        // Set default session times (9:00 AM - 5:00 PM)
+        const defaultStartTime = '09:00';
+        const defaultEndTime = '17:00';
+        setSessionTimes(Array(sessionsRequired).fill(defaultStartTime));
+        setSessionEndTimes(Array(sessionsRequired).fill(defaultEndTime));
+      }
+      
+      // Auto-populate certificate if group has one
+      if (group.certificate_id && !preSelectedLicenseId) {
+        // Find courses that grant this certificate
+        const certificateCourses = courses.filter(course => 
+          course.course_certificates?.some(cc => cc.license_id === group.certificate_id)
+        );
+        
+        // If only one course available, auto-select it
+        if (certificateCourses.length === 1 && !selectedCourseId) {
+          setSelectedCourseId(certificateCourses[0].id);
+          
+          // Also try to auto-select the recommended provider if available
+          if (group.provider_recommendation && !selectedProviderId) {
+            // This will be handled by the provider selection logic when the course is selected
+            // We can't directly select the provider here since it depends on the course providers
+          }
+        }
+      }
+    }
+  }, [planDetails, maxParticipants, location, title, courses, selectedCourseId, preSelectedLicenseId, sessions, price, sessionDates.length]);
   const createTraining = useCreateTraining();
   const { toast } = useToast();
   const prevProviderId = useRef<string | null>(null);
   
   // Fetch provider-course specific details (pricing, etc.)
   const { data: providerCourseDetails } = useProviderCourseDetails(selectedProviderId, selectedCourseId);
+  
+  // Auto-select provider based on group recommendation when course is selected
+  useEffect(() => {
+    if (planDetails && planDetails.group && planDetails.group.provider_recommendation && selectedCourseId && !selectedProviderId) {
+      // This effect should trigger when course providers are loaded
+      // We need to check if the recommended provider is available for the selected course
+      // This will be handled by the CourseSelectionSection component when providers are loaded
+    }
+  }, [planDetails, selectedCourseId, selectedProviderId]);
   
   // Intelligent scheduler integration
   const {
@@ -351,6 +448,9 @@ export function CreateTrainingDialog({
     setStatus('scheduled');
     setRequiresApproval(false);
     setChecklist([]);
+    setSelectedPlanId("");
+    setSelectedGroupId("");
+    setPlanDetails(null);
     setSessions(1);
     setSessionDates([]);
     setSessionTimes([]);
@@ -476,7 +576,9 @@ export function CreateTrainingDialog({
         session_end_times: sessionEndTimes.length > 0 ? sessionEndTimes : null,
         checklist: checklist.length > 0 ? checklist : null,
         price: price,
-        cost_breakdown: costBreakdown.length > 0 ? costBreakdown : null
+        cost_breakdown: costBreakdown.length > 0 ? costBreakdown : null,
+        preliminary_plan_id: selectedPlanId || null,
+        preliminary_plan_group_id: selectedGroupId || null
       };
 
       await createTraining.mutateAsync(trainingData);
@@ -535,6 +637,14 @@ export function CreateTrainingDialog({
             onProviderDetailsChange={handleProviderDetailsChange}
           />
 
+          <PlanSelectionSection
+            selectedPlanId={selectedPlanId}
+            selectedGroupId={selectedGroupId}
+            onPlanChange={setSelectedPlanId}
+            onGroupChange={setSelectedGroupId}
+            onPlanDetailsChange={setPlanDetails}
+            preSelectedLicenseId={preSelectedLicenseId}
+          />
 
           <SmartMultiSessionSection
             selectedCourse={selectedCourse}
@@ -721,6 +831,15 @@ export function CreateTrainingDialog({
                 onTitleChange={setTitle}
                 onProviderChange={handleProviderChange}
                 onProviderDetailsChange={handleProviderDetailsChange}
+              />
+
+              <PlanSelectionSection
+                selectedPlanId={selectedPlanId}
+                selectedGroupId={selectedGroupId}
+                onPlanChange={setSelectedPlanId}
+                onGroupChange={setSelectedGroupId}
+                onPlanDetailsChange={setPlanDetails}
+                preSelectedLicenseId={preSelectedLicenseId}
               />
 
               {/* Get Recommendations Button */}

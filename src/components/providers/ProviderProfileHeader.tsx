@@ -45,6 +45,9 @@ export function ProviderProfileHeader({ providerId }: ProviderProfileHeaderProps
             course_id,
             price,
             cost_breakdown,
+            number_of_sessions,
+            max_participants,
+            notes,
             courses (
               id,
               title,
@@ -71,6 +74,8 @@ export function ProviderProfileHeader({ providerId }: ProviderProfileHeaderProps
       if (error) throw error;
       return data;
     },
+    staleTime: 0, // Always refetch when invalidated
+    cacheTime: 0, // Don't cache for too long
   });
 
   if (isLoading) {

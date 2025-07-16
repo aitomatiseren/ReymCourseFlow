@@ -108,7 +108,7 @@ export function CertificateExpiryOverview({
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {Object.entries(groupByStatus).map(([status, items]) => {
           const getStatusConfig = (status: string) => {
             switch (status) {
@@ -118,6 +118,8 @@ export function CertificateExpiryOverview({
                 return { color: 'text-orange-600', bgColor: 'bg-orange-50', icon: Calendar };
               case 'renewal_approaching':
                 return { color: 'text-yellow-600', bgColor: 'bg-yellow-50', icon: Calendar };
+              case 'expiring_during_period':
+                return { color: 'text-orange-600', bgColor: 'bg-orange-50', icon: AlertTriangle };
               case 'new':
                 return { color: 'text-blue-600', bgColor: 'bg-blue-50', icon: UserPlus };
               default:
@@ -166,8 +168,8 @@ export function CertificateExpiryOverview({
         </CardHeader>
         <CardContent>
           {/* Search and Filters */}
-          <div className="flex items-center gap-4 mb-6">
-            <div className="relative flex-1">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
+            <div className="relative flex-1 w-full sm:w-auto">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Search employees, certificates, or departments..."
@@ -176,12 +178,12 @@ export function CertificateExpiryOverview({
                 className="pl-10"
               />
             </div>
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium">Sort by:</label>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <label className="text-sm font-medium whitespace-nowrap">Sort by:</label>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as 'name' | 'expiry' | 'department')}
-                className="rounded border border-gray-300 px-3 py-1 text-sm"
+                className="rounded border border-gray-300 px-3 py-1 text-sm flex-1 sm:flex-none"
               >
                 <option value="expiry">Days Until Expiry</option>
                 <option value="name">Employee Name</option>
@@ -196,19 +198,20 @@ export function CertificateExpiryOverview({
               <p>No employees found matching the current filters</p>
             </div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Employee</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Certificate</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Expiry Date</TableHead>
-                    <TableHead>Days Until Expiry</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
+            <div className="overflow-x-auto">
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-[200px]">Employee</TableHead>
+                      <TableHead className="min-w-[120px]">Department</TableHead>
+                      <TableHead className="min-w-[180px]">Certificate</TableHead>
+                      <TableHead className="min-w-[100px]">Status</TableHead>
+                      <TableHead className="min-w-[120px]">Expiry Date</TableHead>
+                      <TableHead className="min-w-[120px]">Days Until Expiry</TableHead>
+                      <TableHead className="min-w-[150px]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
                 <TableBody>
                   {filteredData.map((item, index) => (
                     <TableRow key={`${item.employee_id}-${item.license_id || 'no-license'}-${index}`}>
@@ -259,14 +262,15 @@ export function CertificateExpiryOverview({
                         )}
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button variant="outline" size="sm">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                          <Button variant="outline" size="sm" className="w-full sm:w-auto">
                             Add to Group
                           </Button>
                           <Button 
                             variant="outline" 
                             size="sm"
                             onClick={() => onAddToExistingTraining?.(item.employee_id, item.license_id)}
+                            className="w-full sm:w-auto"
                           >
                             Add to Training
                           </Button>
@@ -275,6 +279,7 @@ export function CertificateExpiryOverview({
                               variant="outline" 
                               size="sm"
                               onClick={() => onScheduleNewTraining?.(item.employee_id, item.license_id)}
+                              className="w-full sm:w-auto"
                             >
                               Schedule Training
                             </Button>
@@ -284,7 +289,8 @@ export function CertificateExpiryOverview({
                     </TableRow>
                   ))}
                 </TableBody>
-              </Table>
+                </Table>
+              </div>
             </div>
           )}
 

@@ -19,6 +19,9 @@ interface CreateTrainingData {
   price?: number;
   cost_breakdown?: any[];
   provider_id?: string;
+  preliminary_plan_id?: string | null;
+  preliminary_plan_group_id?: string | null;
+  preliminary_plan_training_id?: string | null;
 }
 
 export function useCreateTraining() {
@@ -55,7 +58,11 @@ export function useCreateTraining() {
         // Include cost data if available
         price: trainingData.price || null,
         cost_breakdown: trainingData.cost_breakdown || null,
-        provider_id: trainingData.provider_id || null
+        provider_id: trainingData.provider_id || null,
+        // Include preliminary plan associations if available
+        preliminary_plan_id: trainingData.preliminary_plan_id || null,
+        preliminary_plan_group_id: trainingData.preliminary_plan_group_id || null,
+        preliminary_plan_training_id: trainingData.preliminary_plan_training_id || null
       };
       
       console.log('Inserting data:', insertData);
@@ -72,10 +79,49 @@ export function useCreateTraining() {
       }
       
       console.log('Training created successfully:', data);
+      
+      // If training was created from a preliminary plan group, automatically add the group participants
+      if (trainingData.preliminary_plan_group_id) {
+        console.log('Adding preliminary plan group participants to training...');
+        
+        // Get the group employees
+        const { data: groupEmployees, error: groupError } = await supabase
+          .from('preliminary_plan_group_employees')
+          .select('employee_id')
+          .eq('group_id', trainingData.preliminary_plan_group_id);
+        
+        if (groupError) {
+          console.error('Error fetching group employees:', groupError);
+          // Don't fail the training creation, just log the error
+        } else if (groupEmployees && groupEmployees.length > 0) {
+          console.log('Found group employees:', groupEmployees);
+          
+          // Add all group employees as participants
+          const participantInserts = groupEmployees.map(emp => ({
+            training_id: data.id,
+            employee_id: emp.employee_id,
+            status: 'enrolled',
+            registration_date: new Date().toISOString()
+          }));
+          
+          const { error: participantsError } = await supabase
+            .from('training_participants')
+            .insert(participantInserts);
+          
+          if (participantsError) {
+            console.error('Error adding participants:', participantsError);
+            // Don't fail the training creation, just log the error
+          } else {
+            console.log('Successfully added participants from preliminary plan group');
+          }
+        }
+      }
+      
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trainings'] });
+      queryClient.invalidateQueries({ queryKey: ['training-participants'] });
     }
   });
 }

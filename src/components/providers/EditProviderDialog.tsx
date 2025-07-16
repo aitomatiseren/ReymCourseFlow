@@ -237,6 +237,8 @@ export function EditProviderDialog({
 
   const updateProviderMutation = useMutation({
     mutationFn: async (data: ProviderFormData) => {
+      console.log("Starting provider update with data:", data);
+      
       // First, update the provider
       const { error: providerError } = await supabase
         .from("course_providers")
@@ -258,18 +260,30 @@ export function EditProviderDialog({
         })
         .eq("id", provider.id);
 
-      if (providerError) throw providerError;
+      if (providerError) {
+        console.error("Provider update error:", providerError);
+        throw providerError;
+      }
+      
+      console.log("Provider updated successfully");
 
       // Delete existing course associations
+      console.log("Deleting existing course associations for provider:", provider.id);
       const { error: deleteError } = await supabase
         .from("course_provider_courses")
         .delete()
         .eq("provider_id", provider.id);
 
-      if (deleteError) throw deleteError;
+      if (deleteError) {
+        console.error("Error deleting existing course associations:", deleteError);
+        throw deleteError;
+      }
+      
+      console.log("Successfully deleted existing course associations");
 
       // Create new course associations with pricing
       if (data.courses.length > 0) {
+        console.log("Creating new course associations for courses:", data.courses);
         const courseProviderData = data.courses.map((courseId) => {
           const pricing = data.course_pricing[courseId] || {};
           const costBreakdown = pricing.cost_breakdown || [];
@@ -307,14 +321,33 @@ export function EditProviderDialog({
       return true;
     },
     onSuccess: () => {
+      console.log("Provider update completed successfully");
       toast.success("Provider updated successfully");
-      queryClient.invalidateQueries({ queryKey: ["course-providers"] });
-      queryClient.invalidateQueries({ queryKey: ["provider", provider.id] });
+      
+      // Small delay to ensure database consistency
+      setTimeout(() => {
+        // Invalidate all related queries to ensure UI updates
+        queryClient.invalidateQueries({ queryKey: ["course-providers"] });
+        queryClient.invalidateQueries({ queryKey: ["provider", provider.id] });
+        queryClient.invalidateQueries({ queryKey: ["provider-trainings", provider.id] });
+        queryClient.invalidateQueries({ queryKey: ["course-providers-for-course"] });
+        queryClient.invalidateQueries({ queryKey: ["provider-course-details"] });
+        
+        // Remove stale data from cache and force fresh fetch
+        queryClient.removeQueries({ queryKey: ["provider", provider.id] });
+        queryClient.removeQueries({ queryKey: ["course-providers"] });
+        
+        // Force a refetch of the provider data
+        queryClient.refetchQueries({ queryKey: ["provider", provider.id] });
+        
+        console.log("Cache invalidation completed");
+      }, 100);
+      
       onOpenChange(false);
     },
     onError: (error) => {
-      toast.error("Failed to update provider");
       console.error("Error updating provider:", error);
+      toast.error(`Failed to update provider: ${error.message || error}`);
     },
   });
 
@@ -426,6 +459,13 @@ export function EditProviderDialog({
     console.log("Form submitted with data:", data);
     console.log("Form validation state:", form.formState.errors);
     
+    // Check for validation errors
+    if (Object.keys(form.formState.errors).length > 0) {
+      console.error("Form has validation errors:", form.formState.errors);
+      toast.error("Please fix the form errors before submitting");
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
       // Process website URL to ensure it has a protocol
@@ -453,8 +493,7 @@ export function EditProviderDialog({
       await updateProviderMutation.mutateAsync(processedData);
     } catch (error) {
       console.error("Error in onSubmit:", error);
-      setIsSubmitting(false);
-      throw error;
+      toast.error(`Update failed: ${error.message || 'Unknown error'}`);
     } finally {
       setIsSubmitting(false);
     }

@@ -20,8 +20,7 @@ import {
   Eye,
   Edit,
   Trash2,
-  Filter,
-  Brain
+  Filter
 } from "lucide-react";
 import { usePreliminaryPlans, useCertificateExpiryAnalysis } from "@/hooks/usePreliminaryPlanning";
 import { useLicenses } from "@/hooks/useCertificates";
@@ -32,8 +31,6 @@ import { PlanningCalendarView } from "@/components/planning/PlanningCalendarView
 import { ConvertPlanDialog } from "@/components/planning/ConvertPlanDialog";
 import { PlanningAnalytics } from "@/components/planning/PlanningAnalytics";
 import { PlanViewDialog } from "@/components/planning/PlanViewDialog";
-import { useIntelligentScheduler } from "@/hooks/useIntelligentScheduler";
-import { IntelligentSchedulingRecommendations } from "@/components/training/IntelligentSchedulingRecommendations";
 
 export default function PreliminaryPlanning() {
   const { t } = useTranslation(['common', 'planning']);
@@ -42,6 +39,7 @@ export default function PreliminaryPlanning() {
   const [selectedDepartment, setSelectedDepartment] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [activeTab, setActiveTab] = useState('plans');
+  const [selectedPlanId, setSelectedPlanId] = useState<string>('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedPlanForConversion, setSelectedPlanForConversion] = useState<typeof preliminaryPlans[0] | null>(null);
   const [isConversionDialogOpen, setIsConversionDialogOpen] = useState(false);
@@ -53,19 +51,13 @@ export default function PreliminaryPlanning() {
   const { data: preliminaryPlans = [], isLoading: plansLoading } = usePreliminaryPlans();
   const { data: licenses = [] } = useLicenses();
   
-  // Intelligent scheduler integration
-  const {
-    isAnalyzing,
-    recommendations,
-    getSchedulingRecommendations,
-    clearRecommendations
-  } = useIntelligentScheduler();
   
   const expiryFilters = {
     license_id: selectedLicenseId && selectedLicenseId !== 'all' ? selectedLicenseId : undefined,
     department: selectedDepartment || undefined,
     employee_status: selectedStatus && selectedStatus !== 'all' ? selectedStatus : undefined,
-    days_until_expiry_max: selectedStatus === 'renewal_due' ? 180 : undefined
+    days_until_expiry_max: selectedStatus === 'renewal_due' ? 180 : undefined,
+    preliminary_plan_id: selectedPlanId && selectedPlanId !== 'all' ? selectedPlanId : undefined
   };
   
   const { data: expiryAnalysis = [], isLoading: expiryLoading } = useCertificateExpiryAnalysis(expiryFilters);
@@ -107,6 +99,11 @@ export default function PreliminaryPlanning() {
           <Clock className="h-3 w-3" />
           Approaching ({daysUntilExpiry} days)
         </Badge>;
+      case 'expiring_during_period':
+        return <Badge variant="secondary" className="flex items-center gap-1 bg-yellow-100 text-yellow-800">
+          <Clock className="h-3 w-3" />
+          Expiring in Period ({daysUntilExpiry} days)
+        </Badge>;
       case 'new':
         return <Badge variant="secondary" className="flex items-center gap-1 bg-blue-100 text-blue-800">
           <Users className="h-3 w-3" />
@@ -119,48 +116,13 @@ export default function PreliminaryPlanning() {
 
   const urgentExpiryCount = expiryAnalysis.filter(item => 
     item.employee_status === 'expired' || 
+    item.employee_status === 'expiring_during_period' ||
     (item.employee_status === 'renewal_due' && (item.days_until_expiry || 0) <= 30)
   ).length;
 
   const newEmployeesCount = expiryAnalysis.filter(item => item.employee_status === 'new').length;
   const renewalDueCount = expiryAnalysis.filter(item => item.employee_status === 'renewal_due').length;
 
-  // Handle intelligent scheduling for certificate expiry
-  const handleGetExpiryRecommendations = async () => {
-    if (!selectedLicenseId || selectedLicenseId === 'all') {
-      return;
-    }
-
-    const urgentEmployees = expiryAnalysis
-      .filter(item => item.employee_status === 'expired' || item.employee_status === 'renewal_due')
-      .map(item => item.employee_id);
-
-    if (urgentEmployees.length === 0) {
-      return;
-    }
-
-    const constraints = {
-      courseId: selectedLicenseId, // Use license ID as course filter
-      requiredEmployeeIds: urgentEmployees,
-      urgencyLevel: 'high' as const,
-      teamCoverageRequired: true,
-      maxParticipants: 20
-    };
-
-    await getSchedulingRecommendations(constraints);
-  };
-
-  const handleApplyExpiryRecommendation = (recommendation: any) => {
-    // Navigate to training creation with pre-filled data
-    navigate('/training/create', {
-      state: {
-        courseId: selectedLicenseId,
-        providerId: recommendation.provider.id,
-        suggestedDates: recommendation.suggestedDates,
-        participants: recommendation.availableEmployees
-      }
-    });
-  };
 
   return (
     <Layout>
@@ -244,16 +206,12 @@ export default function PreliminaryPlanning() {
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="plans">{t('planning:preliminaryPlanning.title')}</TabsTrigger>
           <TabsTrigger value="expiry">{t('planning:certificateExpiry.title')}</TabsTrigger>
           <TabsTrigger value="grouping">{t('planning:employeeGrouping.title')}</TabsTrigger>
           <TabsTrigger value="calendar">{t('planning:planningCalendar.title')}</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="intelligent" className="flex items-center gap-2">
-            <Brain className="h-4 w-4" />
-            AI Scheduling
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="plans" className="space-y-6">
@@ -406,6 +364,8 @@ export default function PreliminaryPlanning() {
             expiryData={expiryAnalysis}
             licenses={licenses}
             onLicenseChange={setSelectedLicenseId}
+            selectedPlanId={selectedPlanId}
+            onPlanChange={setSelectedPlanId}
           />
         </TabsContent>
 
@@ -417,84 +377,6 @@ export default function PreliminaryPlanning() {
           <PlanningAnalytics />
         </TabsContent>
 
-        <TabsContent value="intelligent" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Brain className="h-5 w-5 text-blue-600" />
-                AI-Powered Scheduling Recommendations
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {/* Certificate Selection for Scheduling */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Certificate-Based Scheduling</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Certificate Type</label>
-                      <Select value={selectedLicenseId} onValueChange={setSelectedLicenseId}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select certificate type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {licenses.map((license) => (
-                            <SelectItem key={license.id} value={license.id}>
-                              {license.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="flex items-end">
-                      <Button
-                        onClick={handleGetExpiryRecommendations}
-                        disabled={!selectedLicenseId || selectedLicenseId === 'all' || isAnalyzing}
-                        className="flex items-center gap-2"
-                      >
-                        <Brain className="h-4 w-4" />
-                        {isAnalyzing ? 'Analyzing...' : 'Get Recommendations'}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Urgency Summary */}
-                {selectedLicenseId && selectedLicenseId !== 'all' && (
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <h4 className="font-medium text-blue-900 mb-2">Urgency Analysis</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-red-600">{expiryAnalysis.filter(e => e.employee_status === 'expired').length}</div>
-                        <div className="text-gray-600">Expired</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-orange-600">{expiryAnalysis.filter(e => e.employee_status === 'renewal_due').length}</div>
-                        <div className="text-gray-600">Due Soon</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-yellow-600">{expiryAnalysis.filter(e => e.employee_status === 'renewal_approaching').length}</div>
-                        <div className="text-gray-600">Approaching</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-blue-600">{expiryAnalysis.filter(e => e.employee_status === 'new').length}</div>
-                        <div className="text-gray-600">New Employees</div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Intelligent Scheduling Recommendations */}
-                <IntelligentSchedulingRecommendations
-                  recommendations={recommendations}
-                  isAnalyzing={isAnalyzing}
-                  onApplyRecommendation={handleApplyExpiryRecommendation}
-                  onRefreshRecommendations={handleGetExpiryRecommendations}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
 
         <PreliminaryPlanDialog

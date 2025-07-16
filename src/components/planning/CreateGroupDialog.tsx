@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -28,16 +28,21 @@ import { CalendarIcon, Users, Award, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useLicenses } from "@/hooks/useCertificates";
+import { useProviders } from "@/hooks/useProviders";
 
 const groupSchema = z.object({
   name: z.string().min(1, "Group name is required"),
   description: z.string().optional(),
   certificate_id: z.string().optional(),
   group_type: z.enum(['new', 'renewal', 'mixed']),
-  location: z.string().optional(),
+  provider_id: z.string().optional(),
   priority: z.number().min(1).max(5).default(3),
   max_participants: z.number().min(1).max(50).optional(),
   target_completion_date: z.date().optional(),
+  planned_start_date: z.date().optional(),
+  planned_end_date: z.date().optional(),
+  provider_recommendation: z.string().optional(),
+  sessions_required: z.number().optional(),
   notes: z.string().optional(),
 });
 
@@ -53,6 +58,16 @@ interface CreateGroupDialogProps {
   suggestedType?: 'new' | 'renewal' | 'mixed';
   suggestedCertificateId?: string;
   suggestedLocation?: string;
+  suggestedPriority?: number;
+  suggestedDescription?: string;
+  suggestedTargetDate?: Date;
+  suggestedMaxParticipants?: number;
+  suggestedStartDate?: Date;
+  suggestedEndDate?: Date;
+  suggestedEstimatedCost?: number;
+  suggestedProviderRecommendation?: string;
+  suggestedSessionsRequired?: number;
+  suggestedSchedulingNotes?: string;
 }
 
 export function CreateGroupDialog({
@@ -65,36 +80,76 @@ export function CreateGroupDialog({
   suggestedType,
   suggestedCertificateId,
   suggestedLocation,
+  suggestedPriority,
+  suggestedDescription,
+  suggestedTargetDate,
+  suggestedMaxParticipants,
+  suggestedStartDate,
+  suggestedEndDate,
+  suggestedEstimatedCost,
+  suggestedProviderRecommendation,
+  suggestedSessionsRequired,
+  suggestedSchedulingNotes,
 }: CreateGroupDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [targetDate, setTargetDate] = useState<Date | undefined>();
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
   const { data: licenses = [] } = useLicenses();
+  const { data: providers = [] } = useProviders();
 
   const form = useForm<GroupFormData>({
     resolver: zodResolver(groupSchema),
     defaultValues: {
-      name: suggestedName || "",
+      name: "",
       description: "",
-      certificate_id: suggestedCertificateId || "",
-      group_type: suggestedType || "mixed",
-      location: suggestedLocation || "",
+      certificate_id: "",
+      group_type: "mixed",
+      provider_id: "",
       priority: 3,
-      max_participants: employeeIds.length,
+      max_participants: undefined,
+      estimated_cost: undefined,
+      sessions_required: undefined,
       notes: "",
     },
   });
+
+  // Update form values when suggested values change
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        name: suggestedName || "",
+        description: suggestedDescription || `Training group with ${employeeIds.length} employees`,
+        certificate_id: suggestedCertificateId || "",
+        group_type: suggestedType || "mixed",
+        provider_id: suggestedProviderRecommendation || "none",
+        priority: suggestedPriority || 3,
+        max_participants: suggestedMaxParticipants || employeeIds.length,
+        sessions_required: suggestedSessionsRequired || undefined,
+        notes: suggestedSchedulingNotes || `Auto-generated group from employee selection. Created on ${new Date().toLocaleDateString()}`,
+      });
+      setTargetDate(suggestedTargetDate);
+      setStartDate(suggestedStartDate);
+      setEndDate(suggestedEndDate);
+    }
+  }, [open, suggestedName, suggestedDescription, suggestedCertificateId, suggestedType, suggestedProviderRecommendation, suggestedPriority, suggestedMaxParticipants, suggestedEstimatedCost, suggestedSessionsRequired, suggestedSchedulingNotes, suggestedTargetDate, suggestedStartDate, suggestedEndDate, employeeIds.length, form]);
 
   const handleSubmit = async (data: GroupFormData) => {
     setIsSubmitting(true);
     try {
       const submissionData = {
         ...data,
+        provider_id: data.provider_id === "none" ? undefined : data.provider_id,
         target_completion_date: targetDate,
+        planned_start_date: startDate,
+        planned_end_date: endDate,
       };
       await onCreateGroup(submissionData, employeeIds);
       onOpenChange(false);
       form.reset();
       setTargetDate(undefined);
+      setStartDate(undefined);
+      setEndDate(undefined);
     } catch (error) {
       console.error("Error creating group:", error);
     } finally {
@@ -171,7 +226,7 @@ export function CreateGroupDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">No specific certificate</SelectItem>
+                        <SelectItem value="none">No specific certificate</SelectItem>
                         {licenses.map((license) => (
                           <SelectItem key={license.id} value={license.id}>
                             {license.name} - {license.category}
@@ -208,20 +263,32 @@ export function CreateGroupDialog({
               />
             </div>
 
-            {/* Location and Priority */}
+            {/* Provider and Priority */}
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="location"
+                name="provider_id"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex items-center gap-1">
                       <MapPin className="h-4 w-4" />
-                      Location
+                      Provider
                     </FormLabel>
-                    <FormControl>
-                      <Input placeholder="Training location (optional)" {...field} />
-                    </FormControl>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select provider (optional)" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">No specific provider</SelectItem>
+                        {providers.map((provider) => (
+                          <SelectItem key={provider.id} value={provider.id}>
+                            {provider.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -253,7 +320,7 @@ export function CreateGroupDialog({
               />
             </div>
 
-            {/* Max Participants and Target Date */}
+            {/* Max Participants and Sessions Required */}
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -276,8 +343,67 @@ export function CreateGroupDialog({
                 )}
               />
 
+              <FormField
+                control={form.control}
+                name="sessions_required"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Sessions Required</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        min="1" 
+                        max="10"
+                        placeholder="Number of sessions"
+                        {...field}
+                        onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+
+            {/* Target Completion Date */}
+            <FormItem>
+              <FormLabel>Target Completion Date</FormLabel>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full pl-3 text-left font-normal",
+                        !targetDate && "text-muted-foreground"
+                      )}
+                    >
+                      {targetDate ? (
+                        format(targetDate, "PPP")
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={targetDate}
+                    onSelect={setTargetDate}
+                    disabled={(date) => date < new Date()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </FormItem>
+
+            {/* Planned Start and End Dates */}
+            <div className="grid grid-cols-2 gap-4">
               <FormItem>
-                <FormLabel>Target Completion Date</FormLabel>
+                <FormLabel>Planned Start Date</FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>
@@ -285,13 +411,13 @@ export function CreateGroupDialog({
                         variant={"outline"}
                         className={cn(
                           "w-full pl-3 text-left font-normal",
-                          !targetDate && "text-muted-foreground"
+                          !startDate && "text-muted-foreground"
                         )}
                       >
-                        {targetDate ? (
-                          format(targetDate, "PPP")
+                        {startDate ? (
+                          format(startDate, "PPP")
                         ) : (
-                          <span>Pick a date</span>
+                          <span>Pick start date</span>
                         )}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                       </Button>
@@ -300,8 +426,41 @@ export function CreateGroupDialog({
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={targetDate}
-                      onSelect={setTargetDate}
+                      selected={startDate}
+                      onSelect={setStartDate}
+                      disabled={(date) => date < new Date()}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </FormItem>
+
+              <FormItem>
+                <FormLabel>Planned End Date</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full pl-3 text-left font-normal",
+                          !endDate && "text-muted-foreground"
+                        )}
+                      >
+                        {endDate ? (
+                          format(endDate, "PPP")
+                        ) : (
+                          <span>Pick end date</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={endDate}
+                      onSelect={setEndDate}
                       disabled={(date) => date < new Date()}
                       initialFocus
                     />

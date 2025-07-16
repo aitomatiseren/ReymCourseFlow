@@ -17,13 +17,15 @@ import {
   DollarSign,
   Euro,
   Award,
-  Trophy
+  Trophy,
+  UserPlus
 } from "lucide-react";
 import { Training } from "@/hooks/useTrainings";
 import { EmployeeStatusBadge } from "@/components/employee/EmployeeStatusBadge";
 import { EmployeeStatus } from "@/constants/employeeStatus";
 import { useToast } from "@/hooks/use-toast";
 import { EditTrainingDialog } from "./EditTrainingDialog";
+import { AddEmployeesToTrainingDialog } from "./AddEmployeesToTrainingDialog";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTrainingParticipants } from "@/hooks/useTrainingParticipants";
@@ -52,6 +54,7 @@ export function TrainingDetailsView({
   onRemoveParticipant 
 }: TrainingDetailsViewProps) {
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showAddEmployeesDialog, setShowAddEmployeesDialog] = useState(false);
   const { toast } = useToast();
   const { participants: hookParticipants, updateParticipantCode95Status } = useTrainingParticipants(training.id);
   const { data: courseCertificates = [], isLoading: certificatesLoading } = useCertificatesForCourse(training.course_id || '');
@@ -319,8 +322,9 @@ export function TrainingDetailsView({
                     Mark All as Attended
                   </Button>
                 )}
-                <Button onClick={onAddParticipant} size="sm">
-                  Add Participant
+                <Button onClick={() => setShowAddEmployeesDialog(true)} size="sm">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Add Employees
                 </Button>
               </div>
             </div>
@@ -487,6 +491,21 @@ export function TrainingDetailsView({
         open={showEditDialog}
         onOpenChange={setShowEditDialog}
         training={training}
+      />
+
+      {/* Add Employees Dialog */}
+      <AddEmployeesToTrainingDialog
+        open={showAddEmployeesDialog}
+        onOpenChange={setShowAddEmployeesDialog}
+        trainingId={training.id}
+        trainingTitle={training.title}
+        onEmployeesAdded={() => {
+          // This will trigger a refresh of the participants data
+          toast({
+            title: "Employees Added",
+            description: "The participant list has been updated.",
+          });
+        }}
       />
     </div>
   );

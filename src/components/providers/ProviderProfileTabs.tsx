@@ -63,6 +63,8 @@ export function ProviderProfileTabs({ providerId }: ProviderProfileTabsProps) {
       if (error) throw error;
       return data;
     },
+    staleTime: 0, // Always refetch when invalidated
+    cacheTime: 0, // Don't cache for too long
   });
 
   // Query for trainings associated with this provider
