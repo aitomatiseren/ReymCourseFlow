@@ -33,41 +33,40 @@ import { AddressLookup } from "@/components/users/AddressLookup";
 
 const providerSchema = z.object({
   name: z.string().min(1, "Provider name is required"),
-  contact_person: z.string().optional(),
-  email: z.string().email("Invalid email").optional().or(z.literal("")),
-  phone: z.string().optional(),
-  website: z.string().optional().or(z.literal("")).refine(val => {
+  contact_person: z.string().default(""),
+  email: z.string().email("Invalid email").default("").or(z.literal("")),
+  phone: z.string().default(""),
+  website: z.string().default("").or(z.literal("")).refine(val => {
     if (!val || val === "") return true;
     // Allow URLs with or without protocol
     const urlPattern = /^(https?:\/\/)?(www\.)?[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}([\/?#][^\s]*)?$/;
     return urlPattern.test(val);
   }, { message: "Invalid URL format" }),
-  address: z.string().optional(),
-  postcode: z.string().optional(),
-  city: z.string().optional(),
+  address: z.string().default(""),
+  postcode: z.string().default(""),
+  city: z.string().default(""),
   country: z.string().default("Netherlands"),
   additional_locations: z.array(z.object({
     name: z.string().min(1, "Location name is required"),
-    address: z.string(),
-    postcode: z.string().optional(),
-    city: z.string().optional(),
-    country: z.string().optional(),
+    address: z.string().default(""),
+    postcode: z.string().default(""),
+    city: z.string().default(""),
+    country: z.string().default("Netherlands"),
   })).default([]),
   instructors: z.array(z.string()).default([]),
-  description: z.string().optional(),
-  notes: z.string().optional(),
+  description: z.string().default(""),
+  notes: z.string().default(""),
   active: z.boolean().default(true),
   courses: z.array(z.string()).default([]),
   course_pricing: z.record(z.object({
     cost_breakdown: z.array(z.object({
-      name: z.string().optional(),
+      name: z.string().default(""),
       amount: z.number().optional(),
-      description: z.string().optional(),
+      description: z.string().default(""),
     })).default([]),
-    duration_hours: z.number().min(0.5).max(40).optional(),
+    number_of_sessions: z.number().min(1).max(20).optional(),
     max_participants: z.number().min(1).max(50).optional(),
-    location: z.string().optional(),
-    notes: z.string().optional(),
+    notes: z.string().default(""),
   })).default({}),
 });
 
@@ -195,9 +194,8 @@ export function EditProviderDialog({
         provider.course_provider_courses.forEach((cpc: any) => {
           coursePricing[cpc.course_id] = {
             cost_breakdown: Array.isArray(cpc.cost_breakdown) ? cpc.cost_breakdown : [],
-            duration_hours: cpc.duration_hours || undefined,
+            number_of_sessions: cpc.number_of_sessions || undefined,
             max_participants: cpc.max_participants || undefined,
-            location: cpc.location || '',
             notes: cpc.notes || '',
           };
         });
@@ -205,22 +203,22 @@ export function EditProviderDialog({
       console.log("Built course pricing object:", coursePricing);
 
       form.reset({
-        name: provider.name || "",
-        contact_person: provider.contact_person || "",
-        email: provider.email || "",
-        phone: provider.phone || "",
-        website: provider.website || "",
-        address: provider.address || "",
-        postcode: provider.postcode || "",
-        city: provider.city || "",
-        country: provider.country || "Netherlands",
-        additional_locations: normalizeLocations(provider.additional_locations) || [],
+        name: provider.name ?? "",
+        contact_person: provider.contact_person ?? "",
+        email: provider.email ?? "",
+        phone: provider.phone ?? "",
+        website: provider.website ?? "",
+        address: provider.address ?? "",
+        postcode: provider.postcode ?? "",
+        city: provider.city ?? "",
+        country: provider.country ?? "Netherlands",
+        additional_locations: normalizeLocations(provider.additional_locations) ?? [],
         instructors: Array.isArray(provider.instructors) ? provider.instructors : [],
-        description: provider.description || "",
-        notes: provider.notes || "",
+        description: provider.description ?? "",
+        notes: provider.notes ?? "",
         active: provider.active ?? true,
-        courses: provider.course_provider_courses?.map((cpc: any) => cpc.course_id) || [],
-        course_pricing: coursePricing,
+        courses: provider.course_provider_courses?.map((cpc: any) => cpc.course_id) ?? [],
+        course_pricing: coursePricing ?? {},
       });
     }
   }, [provider, open, form]);
@@ -285,9 +283,8 @@ export function EditProviderDialog({
             active: true,
             price: calculatedPrice > 0 ? calculatedPrice : null,
             cost_breakdown: costBreakdown.length > 0 ? costBreakdown : null,
-            duration_hours: pricing.duration_hours || null,
+            number_of_sessions: pricing.number_of_sessions || null,
             max_participants: pricing.max_participants || null,
-            location: pricing.location || null,
             notes: pricing.notes || null,
           };
           
@@ -407,6 +404,22 @@ export function EditProviderDialog({
   const removeInstructor = (index: number) => {
     const currentInstructors = form.getValues("instructors");
     form.setValue("instructors", currentInstructors.filter((_, i) => i !== index));
+  };
+
+  // Cost breakdown management functions
+  const addCostComponent = (courseId: string) => {
+    const currentPricing = form.getValues(`course_pricing.${courseId}`) || { cost_breakdown: [] };
+    const newComponent = { name: "", amount: undefined, description: "" };
+    const updatedBreakdown = [...(currentPricing.cost_breakdown || []), newComponent];
+    
+    form.setValue(`course_pricing.${courseId}.cost_breakdown`, updatedBreakdown);
+  };
+
+  const removeCostComponent = (courseId: string, index: number) => {
+    const currentPricing = form.getValues(`course_pricing.${courseId}`) || { cost_breakdown: [] };
+    const updatedBreakdown = (currentPricing.cost_breakdown || []).filter((_, i) => i !== index);
+    
+    form.setValue(`course_pricing.${courseId}.cost_breakdown`, updatedBreakdown);
   };
 
   const onSubmit = async (data: ProviderFormData) => {
@@ -685,7 +698,7 @@ export function EditProviderDialog({
                             <div className="flex gap-2">
                               <Input
                                 placeholder="Location name"
-                                value={location.name}
+                                value={location.name || ""}
                                 onChange={(e) => {
                                   const newLocations = [...field.value];
                                   newLocations[index] = { ...newLocations[index], name: e.target.value };
@@ -918,29 +931,28 @@ export function EditProviderDialog({
                         {/* Provider-specific constraints */}
                         <div className="grid grid-cols-2 gap-4 p-3 bg-blue-50 rounded-lg">
                           <div>
-                            <FormLabel htmlFor={`duration-${courseId}`}>Session Duration (hours)</FormLabel>
+                            <FormLabel htmlFor={`sessions-${courseId}`}>Number of Sessions</FormLabel>
                             <FormField
                               control={form.control}
-                              name={`course_pricing.${courseId}.duration_hours` as any}
+                              name={`course_pricing.${courseId}.number_of_sessions` as any}
                               render={({ field }) => (
                                 <FormItem>
                                   <FormControl>
                                     <Input
-                                      id={`duration-${courseId}`}
+                                      id={`sessions-${courseId}`}
                                       type="number"
-                                      min="0.5"
-                                      max="40"
-                                      step="0.5"
-                                      placeholder="8"
-                                      {...field}
-                                      onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                      min="1"
+                                      max="20"
+                                      placeholder="1"
+                                      value={field.value !== undefined ? field.value.toString() : ""}
+                                      onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
                                     />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
                               )}
                             />
-                            <p className="text-xs text-gray-600 mt-1">Duration per session</p>
+                            <p className="text-xs text-gray-600 mt-1">Number of sessions required</p>
                           </div>
 
                           <div>
@@ -957,7 +969,7 @@ export function EditProviderDialog({
                                       min="1"
                                       max="50"
                                       placeholder="15"
-                                      {...field}
+                                      value={field.value !== undefined ? field.value.toString() : ""}
                                       onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
                                     />
                                   </FormControl>
@@ -968,27 +980,7 @@ export function EditProviderDialog({
                             <p className="text-xs text-gray-600 mt-1">Maximum group size</p>
                           </div>
 
-                          <div>
-                            <FormLabel htmlFor={`location-${courseId}`}>Preferred Location</FormLabel>
-                            <FormField
-                              control={form.control}
-                              name={`course_pricing.${courseId}.location` as any}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormControl>
-                                    <Input
-                                      id={`location-${courseId}`}
-                                      placeholder="Main location or specific venue"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-
-                          <div>
+                          <div className="col-span-2">
                             <FormLabel htmlFor={`notes-${courseId}`}>Provider Notes</FormLabel>
                             <FormField
                               control={form.control}
@@ -999,7 +991,8 @@ export function EditProviderDialog({
                                     <Input
                                       id={`notes-${courseId}`}
                                       placeholder="Special requirements or notes"
-                                      {...field}
+                                      value={field.value || ""}
+                                      onChange={field.onChange}
                                     />
                                   </FormControl>
                                   <FormMessage />
@@ -1035,13 +1028,13 @@ export function EditProviderDialog({
                                       min="0"
                                       step="0.01"
                                       placeholder="Amount"
-                                      value={component.amount || ""}
+                                      value={component.amount !== undefined ? component.amount.toString() : ""}
                                       onChange={(e) => {
                                         const value = e.target.value;
                                         const newComponents = [...field.value];
                                         // Only allow numbers and decimal points
                                         if (value === "" || /^\d*\.?\d*$/.test(value)) {
-                                          newComponents[index] = { ...newComponents[index], amount: value ? parseFloat(value) : 0 };
+                                          newComponents[index] = { ...newComponents[index], amount: value ? parseFloat(value) : undefined };
                                           field.onChange(newComponents);
                                         }
                                       }}

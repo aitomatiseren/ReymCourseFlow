@@ -170,15 +170,21 @@ export function useCertificateExpiryAnalysis(filters?: {
         .from('certificate_expiry_analysis')
         .select('*');
 
-      // Apply filters
+      // IMPORTANT: For certificate expiry planning, only include employees with certificates that are expiring
+      // Exclude employees with "new" status (who don't have the certificate yet) and "valid" status (not expiring soon)
+      if (filters?.employee_status) {
+        query = query.eq('employee_status', filters.employee_status);
+      } else {
+        // Default: only include expiring certificates (not new certificates or valid long-term certificates)
+        query = query.in('employee_status', ['expired', 'renewal_due', 'renewal_approaching']);
+      }
+
+      // Apply other filters
       if (filters?.license_id) {
         query = query.eq('license_id', filters.license_id);
       }
       if (filters?.department) {
         query = query.eq('department', filters.department);
-      }
-      if (filters?.employee_status) {
-        query = query.eq('employee_status', filters.employee_status);
       }
       if (filters?.days_until_expiry_max) {
         query = query.lte('days_until_expiry', filters.days_until_expiry_max);
@@ -511,7 +517,7 @@ async function calculateEmployeePriorityScore(
   }
 }
 
-// Hook for intelligent employee grouping suggestions
+// Hook for intelligent employee grouping suggestions with existing training consideration
 export function useEmployeeGroupingSuggestions(
   licenseId: string,
   maxGroupSize: number = 15,
@@ -536,8 +542,78 @@ export function useEmployeeGroupingSuggestions(
           throw error;
         }
 
-        // Group employees by location and expiry timeframe
-        const suggestions = groupEmployeesIntelligently(expiryData, maxGroupSize, timeWindowDays);
+        // Get existing trainings with available capacity for the same license/certificate
+        const { data: existingTrainings, error: trainingsError } = await supabase
+          .from('trainings')
+          .select(`
+            id,
+            title,
+            date,
+            time,
+            location,
+            max_participants,
+            status,
+            course_id,
+            courses (
+              id,
+              title,
+              course_certificates (
+                license_id,
+                licenses (
+                  id,
+                  name
+                )
+              )
+            )
+          `)
+          .eq('status', 'scheduled')
+          .gte('date', new Date().toISOString().split('T')[0])
+          .order('date', { ascending: true });
+
+        if (trainingsError) {
+          console.error("Error fetching existing trainings:", trainingsError);
+          throw trainingsError;
+        }
+
+        // Get current participant counts
+        const { data: participantCounts, error: participantError } = await supabase
+          .from('training_participants')
+          .select('training_id')
+          .in('status', ['enrolled', 'attended']);
+
+        if (participantError) {
+          console.error("Error fetching participant counts:", participantError);
+          throw participantError;
+        }
+
+        // Calculate available capacity for each training
+        const participantCountsMap = participantCounts.reduce((acc, participant) => {
+          acc[participant.training_id] = (acc[participant.training_id] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+
+        // Filter trainings that have capacity and are relevant to the license
+        const relevantTrainings = existingTrainings?.filter(training => {
+          const currentParticipants = participantCountsMap[training.id] || 0;
+          const hasCapacity = currentParticipants < training.max_participants;
+          
+          // Check if the training course is relevant to the license
+          const courseRelevant = training.courses?.course_certificates?.some(cc => 
+            cc.license_id === licenseId
+          );
+          
+          return hasCapacity && courseRelevant;
+        }) || [];
+
+        // Group employees by location and expiry timeframe, considering existing trainings
+        const suggestions = groupEmployeesIntelligently(
+          expiryData, 
+          maxGroupSize, 
+          timeWindowDays, 
+          relevantTrainings,
+          participantCountsMap
+        );
+        
         return suggestions;
       } catch (err) {
         console.error("Caught error in useEmployeeGroupingSuggestions queryFn:", err);
@@ -553,7 +629,9 @@ export function useEmployeeGroupingSuggestions(
 function groupEmployeesIntelligently(
   employees: CertificateExpiryAnalysis[],
   maxGroupSize: number,
-  timeWindowDays: number
+  timeWindowDays: number,
+  existingTrainings: any[] = [],
+  participantCountsMap: Record<string, number> = {}
 ) {
   const groups: {
     id: string;
@@ -562,6 +640,15 @@ function groupEmployeesIntelligently(
     averageDaysUntilExpiry: number;
     department?: string;
     priority: number;
+    existingTraining?: {
+      id: string;
+      title: string;
+      date: string;
+      time: string;
+      location: string;
+      availableSpots: number;
+      maxParticipants: number;
+    };
   }[] = [];
 
   // Sort employees by department and expiry urgency
@@ -585,8 +672,83 @@ function groupEmployeesIntelligently(
     return acc;
   }, {} as Record<string, CertificateExpiryAnalysis[]>);
 
+  // First, try to assign employees to existing trainings with available capacity
+  const remainingEmployees = [...employees];
+  
+  for (const training of existingTrainings) {
+    const currentParticipants = participantCountsMap[training.id] || 0;
+    const availableSpots = training.max_participants - currentParticipants;
+    
+    if (availableSpots > 0) {
+      // Find employees that could fit in this training (considering timing and location)
+      const suitableEmployees = remainingEmployees.filter(emp => {
+        const daysUntilExpiry = emp.days_until_expiry || 999;
+        const trainingDate = new Date(training.date);
+        const employeeExpiryDate = emp.expiry_date ? new Date(emp.expiry_date) : null;
+        
+        // Check if training date is before expiry date (with some buffer)
+        if (employeeExpiryDate) {
+          const bufferDays = 30; // Training should be at least 30 days before expiry
+          const latestTrainingDate = new Date(employeeExpiryDate);
+          latestTrainingDate.setDate(latestTrainingDate.getDate() - bufferDays);
+          
+          if (trainingDate > latestTrainingDate) {
+            return false;
+          }
+        }
+        
+        return daysUntilExpiry >= 0; // Not already expired
+      });
+      
+      if (suitableEmployees.length > 0) {
+        // Take up to available spots, prioritizing most urgent
+        const employeesToAssign = suitableEmployees
+          .sort((a, b) => (a.days_until_expiry || 999) - (b.days_until_expiry || 999))
+          .slice(0, availableSpots);
+        
+        if (employeesToAssign.length > 0) {
+          groups.push({
+            id: `existing-${training.id}`,
+            name: `Add to: ${training.title}`,
+            employees: employeesToAssign,
+            averageDaysUntilExpiry: Math.round(
+              employeesToAssign.reduce((sum, emp) => sum + (emp.days_until_expiry || 999), 0) / employeesToAssign.length
+            ),
+            department: employeesToAssign[0].department,
+            priority: 100, // Highest priority for existing trainings
+            existingTraining: {
+              id: training.id,
+              title: training.title,
+              date: training.date,
+              time: training.time,
+              location: training.location,
+              availableSpots,
+              maxParticipants: training.max_participants
+            }
+          });
+          
+          // Remove assigned employees from remaining employees
+          employeesToAssign.forEach(emp => {
+            const index = remainingEmployees.findIndex(e => e.employee_id === emp.employee_id);
+            if (index > -1) {
+              remainingEmployees.splice(index, 1);
+            }
+          });
+        }
+      }
+    }
+  }
+
+  // Create new groups for remaining employees
+  const remainingDepartmentGroups = remainingEmployees.reduce((acc, emp) => {
+    const dept = emp.department || 'Unknown';
+    if (!acc[dept]) acc[dept] = [];
+    acc[dept].push(emp);
+    return acc;
+  }, {} as Record<string, CertificateExpiryAnalysis[]>);
+
   // Create optimal groups within each department
-  Object.entries(departmentGroups).forEach(([department, deptEmployees]) => {
+  Object.entries(remainingDepartmentGroups).forEach(([department, deptEmployees]) => {
     let currentGroup: CertificateExpiryAnalysis[] = [];
     
     for (let i = 0; i < deptEmployees.length; i++) {

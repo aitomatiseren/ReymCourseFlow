@@ -66,7 +66,20 @@ export function CourseProviderGrid() {
             courses (
               id,
               title,
-              category
+              category,
+              course_certificates (
+                id,
+                grants_level,
+                is_required,
+                renewal_eligible,
+                licenses (
+                  id,
+                  name,
+                  category,
+                  description,
+                  validity_period_months
+                )
+              )
             )
           )
         `)
@@ -207,8 +220,17 @@ export function CourseProviderGrid() {
                         key={cpc.course_id}
                         variant="outline"
                         className="text-xs"
+                        title={cpc.courses.course_certificates && cpc.courses.course_certificates.length > 0 
+                          ? `Certificates Granted: ${cpc.courses.course_certificates.map((cert: any) => 
+                              `${cert.licenses.name}${cert.grants_level ? ` (${cert.grants_level})` : ''}${cert.is_required ? ' - Required' : ''}${cert.renewal_eligible ? ' - Renewal Eligible' : ''}`
+                            ).join(', ')}`
+                          : 'No certificates linked to this course'
+                        }
                       >
                         {cpc.courses.title}
+                        {cpc.courses.course_certificates && cpc.courses.course_certificates.length > 0 && (
+                          <span className="ml-1 text-blue-600">•</span>
+                        )}
                       </Badge>
                     ))}
                     {provider.course_provider_courses.length > 3 && (

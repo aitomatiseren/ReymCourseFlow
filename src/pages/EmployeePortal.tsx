@@ -7,13 +7,15 @@ import {
   Award, 
   Calendar, 
   User,
-  AlertTriangle
+  AlertTriangle,
+  Clock
 } from 'lucide-react';
 import { EmployeeDashboard } from '@/components/employee/EmployeeDashboard';
 import { EmployeeTrainingBrowser } from '@/components/employee/EmployeeTrainingBrowser';
 import { EmployeeCertificateManager } from '@/components/employee/EmployeeCertificateManager';
 import { EmployeeTrainingCalendar } from '@/components/employee/EmployeeTrainingCalendar';
 import { EmployeeSelfService } from '@/components/employee/EmployeeSelfService';
+import { EmployeeAvailabilityManager } from '@/components/employee/EmployeeAvailabilityManager';
 import { useEmployeeCertificateRenewals } from '@/hooks/useEmployeeSelfService';
 import { usePermissions } from '@/context/PermissionsContext';
 
@@ -56,7 +58,7 @@ export default function EmployeePortal() {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 lg:w-fit lg:grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6 lg:w-fit lg:grid-cols-6">
           <TabsTrigger value="dashboard" className="flex items-center gap-2">
             <Home className="h-4 w-4" />
             <span className="hidden sm:inline">Dashboard</span>
@@ -78,6 +80,10 @@ export default function EmployeePortal() {
             <Calendar className="h-4 w-4" />
             <span className="hidden sm:inline">Calendar</span>
           </TabsTrigger>
+          <TabsTrigger value="availability" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            <span className="hidden sm:inline">Availability</span>
+          </TabsTrigger>
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <User className="h-4 w-4" />
             <span className="hidden sm:inline">Profile</span>
@@ -98,6 +104,10 @@ export default function EmployeePortal() {
 
         <TabsContent value="calendar" className="mt-6">
           <EmployeeTrainingCalendar />
+        </TabsContent>
+
+        <TabsContent value="availability" className="mt-6">
+          <EmployeeAvailabilityManager selectedEmployeeId={userProfile?.employee?.id} />
         </TabsContent>
 
         <TabsContent value="profile" className="mt-6">

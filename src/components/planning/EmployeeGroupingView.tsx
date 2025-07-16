@@ -20,10 +20,15 @@ import {
   MessageSquare,
   Send
 } from "lucide-react";
-import { CertificateExpiryAnalysis, useEmployeeGroupingSuggestions } from "@/hooks/usePreliminaryPlanning";
+import { CertificateExpiryAnalysis, useEmployeeGroupingSuggestions, usePreliminaryPlanningMutations } from "@/hooks/usePreliminaryPlanning";
 import { useTrainings } from "@/hooks/useTrainings";
 import { useProviders } from "@/hooks/useProviders";
 import { AIService } from "@/services/ai";
+import { useProviderPreferencesSummary } from "@/hooks/useProviderPreferences";
+import { useEmployeeAvailabilitySummary, useEmployeeComprehensiveData } from "@/hooks/useEmployeeAvailability";
+import { CreateGroupDialog } from "./CreateGroupDialog";
+import { usePreliminaryPlans } from "@/hooks/usePreliminaryPlanning";
+import { useToast } from "@/hooks/use-toast";
 
 interface EmployeeGroupingViewProps {
   selectedLicenseId: string;
@@ -46,7 +51,28 @@ export function EmployeeGroupingView({
   const [aiPlanningResult, setAiPlanningResult] = useState<any>(null);
   const [isProcessingRequest, setIsProcessingRequest] = useState(false);
   
+  // Dialog state
+  const [isCreateGroupDialogOpen, setIsCreateGroupDialogOpen] = useState(false);
+  const [currentGroupData, setCurrentGroupData] = useState<{
+    employeeIds: string[];
+    employeeNames: string[];
+    suggestedName?: string;
+    suggestedType?: 'new' | 'renewal' | 'mixed';
+    suggestedCertificateId?: string;
+    suggestedLocation?: string;
+  }>({
+    employeeIds: [],
+    employeeNames: [],
+  });
+  
   const aiService = AIService.getInstance();
+  const { toast } = useToast();
+  const { data: preliminaryPlans = [] } = usePreliminaryPlans();
+  const { 
+    createPreliminaryPlan, 
+    createPreliminaryPlanGroup, 
+    addEmployeeToGroup 
+  } = usePreliminaryPlanningMutations();
 
   const { data: groupingSuggestions = [], isLoading: suggestionsLoading } = useEmployeeGroupingSuggestions(
     selectedLicenseId !== 'all' ? selectedLicenseId : '',
@@ -56,6 +82,9 @@ export function EmployeeGroupingView({
 
   const { data: existingTrainings = [], isLoading: trainingsLoading } = useTrainings();
   const { data: providers = [], isLoading: providersLoading } = useProviders();
+  const { data: providerPreferences = {}, isLoading: preferencesLoading } = useProviderPreferencesSummary();
+  const { data: employeeAvailability = {}, isLoading: availabilityLoading } = useEmployeeAvailabilitySummary();
+  const { data: comprehensiveEmployeeData = [], isLoading: comprehensiveLoading } = useEmployeeComprehensiveData();
 
   const selectedLicense = licenses.find(license => license.id === selectedLicenseId);
 
@@ -104,9 +133,21 @@ export function EmployeeGroupingView({
   const createGroupFromSelection = () => {
     if (selectedEmployees.size === 0) return;
     
-    // Here you would implement the actual group creation logic
-    console.log('Creating group with employees:', Array.from(selectedEmployees));
-    setSelectedEmployees(new Set());
+    // Get employee names for the dialog
+    const employeeNames = expiryData
+      .filter(employee => selectedEmployees.has(employee.employee_id))
+      .map(employee => employee.employee_name);
+    
+    // Set up the group data for the dialog
+    setCurrentGroupData({
+      employeeIds: Array.from(selectedEmployees),
+      employeeNames,
+      suggestedName: `${selectedLicense?.name || 'Certificate'} Group - ${new Date().toLocaleDateString()}`,
+      suggestedType: 'mixed',
+      suggestedCertificateId: selectedLicenseId !== 'all' ? selectedLicenseId : undefined,
+    });
+    
+    setIsCreateGroupDialogOpen(true);
   };
 
   const handlePreviewGroup = (suggestion: any) => {
@@ -117,14 +158,130 @@ export function EmployeeGroupingView({
 
   const handleCreateGroup = (suggestion: any) => {
     console.log('Creating group from suggestion:', suggestion);
-    // TODO: Implement group creation dialog
-    alert(`Create group: ${suggestion.name}\nThis will create a preliminary plan group with ${suggestion.employees.length} employees.`);
+    
+    // Set up the group data for the dialog
+    setCurrentGroupData({
+      employeeIds: suggestion.employees.map((emp: any) => emp.employee_id),
+      employeeNames: suggestion.employees.map((emp: any) => emp.employee_name),
+      suggestedName: suggestion.name,
+      suggestedType: suggestion.type || 'mixed',
+      suggestedCertificateId: selectedLicenseId !== 'all' ? selectedLicenseId : undefined,
+      suggestedLocation: suggestion.department || '',
+    });
+    
+    setIsCreateGroupDialogOpen(true);
   };
 
   const handleCreateAIGroup = (group: any) => {
     console.log('Creating AI-suggested group:', group);
-    // TODO: Implement actual group creation logic
-    alert(`Create AI Group: ${group.name}\nEmployees: ${group.employees?.join(', ')}\nReasoning: ${group.reasoning}`);
+    
+    // Parse employee data from AI result
+    const employeeNames = group.employees || [];
+    const employeeIds = employeeNames.map((name: string) => {
+      // Find employee ID by name (this is a simplified approach)
+      const employee = expiryData.find(emp => emp.employee_name === name);
+      return employee?.employee_id || name; // fallback to name if ID not found
+    });
+    
+    // Set up the group data for the dialog
+    setCurrentGroupData({
+      employeeIds,
+      employeeNames,
+      suggestedName: group.name,
+      suggestedType: group.type || 'mixed',
+      suggestedCertificateId: selectedLicenseId !== 'all' ? selectedLicenseId : undefined,
+      suggestedLocation: group.location || '',
+    });
+    
+    setIsCreateGroupDialogOpen(true);
+  };
+
+  // Main group creation function
+  const handleCreateGroupFromDialog = async (groupData: any, employeeIds: string[]) => {
+    try {
+      // First, find or create a preliminary plan to contain the group
+      let planId = '';
+      
+      // Look for an existing active plan or create a new one
+      const activePlan = preliminaryPlans.find(plan => 
+        plan.status === 'draft' || plan.status === 'review'
+      );
+      
+      if (activePlan) {
+        planId = activePlan.id;
+      } else {
+        // Create a new preliminary plan
+        const newPlan = await createPreliminaryPlan.mutateAsync({
+          name: `Training Plan - ${new Date().toLocaleDateString()}`,
+          description: `Preliminary training plan created for ${groupData.name}`,
+          planning_period_start: new Date().toISOString().split('T')[0],
+          planning_period_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 year from now
+          status: 'draft',
+          version: 1,
+          metadata: {
+            created_from: 'employee_grouping_view',
+            license_id: selectedLicenseId !== 'all' ? selectedLicenseId : undefined,
+          }
+        });
+        planId = newPlan.id;
+      }
+
+      // Create the group
+      const newGroup = await createPreliminaryPlanGroup.mutateAsync({
+        plan_id: planId,
+        name: groupData.name,
+        description: groupData.description || '',
+        certificate_id: groupData.certificate_id || undefined,
+        group_type: groupData.group_type,
+        location: groupData.location || '',
+        priority: groupData.priority,
+        max_participants: groupData.max_participants || employeeIds.length,
+        target_completion_date: groupData.target_completion_date 
+          ? groupData.target_completion_date.toISOString().split('T')[0] 
+          : undefined,
+        notes: groupData.notes || '',
+        metadata: {
+          created_from: 'employee_grouping_view',
+          license_id: selectedLicenseId !== 'all' ? selectedLicenseId : undefined,
+        }
+      });
+
+      // Add employees to the group
+      const employeePromises = employeeIds.map(employeeId => {
+        const employee = expiryData.find(emp => emp.employee_id === employeeId);
+        return addEmployeeToGroup.mutateAsync({
+          group_id: newGroup.id,
+          employee_id: employeeId,
+          employee_type: employee?.employee_status === 'new' ? 'new' : 'renewal',
+          current_certificate_id: employee?.license_id || undefined,
+          certificate_expiry_date: employee?.expiry_date || undefined,
+          notes: `Added from employee grouping view on ${new Date().toLocaleDateString()}`,
+        });
+      });
+
+      await Promise.all(employeePromises);
+
+      // Clear selected employees
+      setSelectedEmployees(new Set());
+
+      // Show success message
+      toast({
+        title: "Group Created Successfully",
+        description: `Created group "${groupData.name}" with ${employeeIds.length} employees.`,
+      });
+
+      // Refresh data
+      queryClient.invalidateQueries({ queryKey: ['preliminary-plans'] });
+      queryClient.invalidateQueries({ queryKey: ['preliminary-plan-groups'] });
+
+    } catch (error) {
+      console.error('Error creating group:', error);
+      toast({
+        title: "Error Creating Group",
+        description: error instanceof Error ? error.message : "Failed to create group",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleCreateAllGroups = () => {
@@ -136,16 +293,32 @@ export function EmployeeGroupingView({
   };
 
   const handleRequestModification = () => {
-    // Pre-populate the textarea with a modification request
-    const modificationPrompt = `Please modify the previous grouping suggestion. Consider these changes:\n\n- [Describe what you'd like to change]\n- [Any specific requirements]\n- [Preferences for group composition]\n\nOriginal request: "${planningRequest}"`;
+    // More helpful modification request with examples
+    const modificationPrompt = `Please modify the previous grouping suggestion. Examples of changes you can request:
+
+- Change group sizes (e.g., "make smaller groups of 6 people each")
+- Combine or split groups (e.g., "merge groups 1 and 2" or "split the large group")
+- Adjust timing (e.g., "schedule VCA groups in different months")
+- Change department groupings (e.g., "keep night shift workers together")
+- Modify priorities (e.g., "prioritize the expired certificates first")
+- Add constraints (e.g., "avoid scheduling during summer months")
+
+What changes would you like to make?
+
+Original request: "${planningRequest}"`;
+    
     setPlanningRequest(modificationPrompt);
     
-    // Scroll to the input area
-    const textarea = document.querySelector('textarea[placeholder*="Describe your training planning needs"]');
-    if (textarea) {
-      textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      (textarea as HTMLTextAreaElement).focus();
-    }
+    // Scroll to the input area with a slight delay to ensure DOM is updated
+    setTimeout(() => {
+      const textarea = document.getElementById('planning-request-textarea');
+      if (textarea) {
+        textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        (textarea as HTMLTextAreaElement).focus();
+        // Also highlight the textarea briefly to show where it is
+        (textarea as HTMLTextAreaElement).select();
+      }
+    }, 100);
   };
 
   const handleNaturalLanguagePlanning = async () => {
@@ -198,19 +371,27 @@ export function EmployeeGroupingView({
         return `${monthData.monthName}: ${count} trainings, ${totalParticipants} total participants`;
       });
 
-      // Get provider information for the selected certificate type
-      const selectedLicenseName = licenses.find(l => l.id === selectedLicenseId)?.name || 'Unknown';
+      // Get provider information with preferences for the selected certificate type
+      const currentLicenseName = licenses.find(l => l.id === selectedLicenseId)?.name || 'Unknown';
       const relevantProviders = providers.filter(provider => 
         provider.course_provider_courses?.some((cpc: any) => 
-          cpc.courses?.title?.toLowerCase().includes(selectedLicenseName.toLowerCase()) ||
+          cpc.courses?.title?.toLowerCase().includes(currentLicenseName.toLowerCase()) ||
           cpc.course_id === selectedLicenseId
         )
       );
 
+      // Get provider preferences for this course
+      const coursePreferences = providerPreferences[selectedLicenseId] || { providers: [] };
+      const preferencesSummary = coursePreferences.providers.length > 0 
+        ? coursePreferences.providers.map((pref: any) => 
+            `Priority ${pref.priority_rank}: ${pref.provider?.name} - Cost: €${pref.cost_per_participant || 'N/A'}, Distance: ${pref.distance_from_hub_km || 'N/A'}km, Quality: ${pref.quality_rating || 'N/A'}/10, Lead time: ${pref.booking_lead_time_days || 14} days`
+          ).join('\n')
+        : 'No provider preferences set for this course';
+
       // Create provider constraints summary
       const providerConstraints = relevantProviders.map(provider => {
         const relevantCourses = provider.course_provider_courses?.filter((cpc: any) => 
-          cpc.courses?.title?.toLowerCase().includes(selectedLicenseName.toLowerCase()) ||
+          cpc.courses?.title?.toLowerCase().includes(currentLicenseName.toLowerCase()) ||
           cpc.course_id === selectedLicenseId
         ) || [];
         
@@ -229,6 +410,34 @@ export function EmployeeGroupingView({
           ).join('\n')
         : 'No provider constraints available for this certificate type';
 
+      // Get employee availability data
+      const availabilityConflicts = Object.entries(employeeAvailability).map(([employeeId, data]: [string, any]) => {
+        const employee = data.employee;
+        const conflicts = data.availabilities.filter((av: any) => av.status === 'active');
+        if (conflicts.length === 0) return null;
+        
+        return `${employee.first_name} ${employee.last_name}: ${conflicts.map((c: any) => 
+          `${c.availability_type} (${c.start_date} to ${c.end_date || 'ongoing'}) - ${c.reason || 'No reason specified'}`
+        ).join(', ')}`;
+      }).filter(Boolean);
+
+      const availabilitySummary = availabilityConflicts.length > 0 
+        ? availabilityConflicts.join('\n')
+        : 'No active availability conflicts';
+
+      // Get comprehensive employee data for better context
+      const employeeProfiles = comprehensiveEmployeeData.slice(0, 15).map((emp: any) => {
+        const availability = emp.employee_availability?.find((av: any) => av.status === 'active');
+        const learning = emp.employee_learning_profiles?.[0];
+        const workArrangement = emp.employee_work_arrangements?.[0];
+        
+        return `${emp.first_name} ${emp.last_name} (${emp.department || 'Unknown'}):`
+          + `\n  Work: ${workArrangement?.work_schedule || 'Standard'} at ${workArrangement?.primary_work_location || 'Main office'}`
+          + `\n  Learning: ${learning?.learning_style || 'Unknown'} learner, ${learning?.performance_level || 'standard'} level`
+          + `\n  Availability: ${availability ? `${availability.availability_type} until ${availability.end_date || 'ongoing'}` : 'Available'}`
+          + `\n  Capacity: ${learning?.training_capacity_per_month || 2} trainings/month`;
+      }).join('\n\n');
+
       const prompt = `You are a training planning assistant for long-term preliminary planning. Help create employee groups based on this request:
 
 REQUEST: "${planningRequest}"
@@ -240,7 +449,10 @@ CONTEXT:
 - Current Max Group Size: ${maxGroupSize}
 - Time Window: ${timeWindowDays} days
 
-PROVIDER CONSTRAINTS FOR ${selectedLicenseName}:
+PROVIDER PREFERENCES FOR ${currentLicenseName} (Priority Ranked):
+${preferencesSummary}
+
+PROVIDER CONSTRAINTS FOR ${currentLicenseName}:
 ${providerSummary}
 
 EXISTING TRAINING SCHEDULE (Next 12 months):
@@ -248,6 +460,30 @@ ${scheduleConflicts.length > 0 ? scheduleConflicts.join('\n\n') : 'No scheduled 
 
 TRAINING LOAD SUMMARY:
 ${busyPeriods.length > 0 ? busyPeriods.join('\n') : 'No training load data available'}
+
+EMPLOYEE AVAILABILITY CONFLICTS:
+${availabilitySummary}
+
+COMPREHENSIVE EMPLOYEE PROFILES:
+${employeeProfiles}
+
+IMPORTANT: If the user asks about existing trainings, completed trainings, training history, or potential duplicates, ALWAYS provide this information. Even if trainings seem "unrelated" to the current request, the user needs this information to make informed decisions about avoiding duplicates or understanding training obligations.
+
+PROVIDER SELECTION GUIDELINES:
+- ALWAYS prioritize providers based on the preference rankings above
+- Consider cost-effectiveness: balance cost per participant with quality ratings
+- Factor in distance from work hub to minimize travel time and costs
+- Account for booking lead times when scheduling
+- Consider provider flexibility for rescheduling if needed
+- If no preferences are set, recommend establishing provider preferences
+
+EMPLOYEE AVAILABILITY GUIDELINES:
+- NEVER schedule employees who have active availability conflicts
+- Consider work schedules (part-time, night shift, remote) when grouping
+- Respect learning capacity limits (typically 2 trainings per month)
+- Account for different learning styles when selecting providers
+- Consider travel restrictions and mobility limitations
+- Factor in notice periods for employees leaving soon
 
 LONG-TERM SCHEDULING CONSIDERATIONS:
 - This is preliminary planning for the next 12 months
@@ -258,11 +494,24 @@ LONG-TERM SCHEDULING CONSIDERATIONS:
 - Group employees strategically to maximize efficiency
 - Consider certification expiry dates and renewal deadlines
 - Plan for both new employee onboarding and renewal cycles
+- ALWAYS provide information about existing/completed trainings when asked - the user needs this to decide about duplicates
+- Prioritize employees with higher impact availability conflicts
+- Consider team coverage - don't schedule entire teams simultaneously
+- Account for employee learning preferences and performance levels
 
-EMPLOYEE DATA:
+EMPLOYEE DATA (showing employees with ${selectedLicenseName} certificates):
 ${expiryData.slice(0, 20).map(emp => 
-  `${emp.first_name} ${emp.last_name} - ${emp.department || 'Unknown'} - ${emp.employee_status} - ${emp.days_until_expiry || 'N/A'} days`
+  `${emp.first_name} ${emp.last_name} - ${emp.department || 'Unknown'} - ${emp.employee_status} - Certificate: ${emp.license_name} (${emp.license_category}) - ${emp.days_until_expiry || 'N/A'} days until expiry`
 ).join('\n')}
+
+IMPORTANT: The employees listed above are specifically those who have ${selectedLicenseName} certificates. When you create groups, use these exact employees from the list above.
+
+SECONDARY QUESTIONS: If the user asks about existing trainings, training history, potential duplicates, or employee training obligations, provide detailed information in the secondary_questions_answered field. This includes:
+- Past completed trainings for mentioned employees
+- Upcoming scheduled trainings that might conflict
+- Certificate expiry dates and renewal schedules
+- Training load and capacity information
+- Any other relevant training-related information the user requests
 
 Please provide a JSON response with:
 {
@@ -279,6 +528,7 @@ Please provide a JSON response with:
   ],
   "explanation": "Overall explanation of the 12-month grouping strategy",
   "recommendations": "Long-term scheduling recommendations and optimization suggestions",
+  "secondary_questions_answered": "Answer any secondary questions from the user's request (like training obligations, conflicts, employee details, existing trainings, etc.). Always provide this information when asked, even if it seems unrelated to the main grouping task.",
   "schedule_conflicts_considered": true,
   "planning_horizon": "12 months"
 }`;
@@ -433,6 +683,7 @@ Please provide a JSON response with:
             <div className="space-y-2">
               <label className="text-sm font-medium">Describe your training planning needs:</label>
               <Textarea
+                id="planning-request-textarea"
                 placeholder="e.g., 'Create 3 groups for BHV training, each with 8-10 people from different departments' or 'Group employees for VCA renewal but keep night shift workers together'"
                 value={planningRequest}
                 onChange={(e) => setPlanningRequest(e.target.value)}
@@ -441,7 +692,7 @@ Please provide a JSON response with:
             </div>
             <Button 
               onClick={handleNaturalLanguagePlanning}
-              disabled={!planningRequest.trim() || isProcessingRequest || !selectedLicenseId || trainingsLoading || providersLoading}
+              disabled={!planningRequest.trim() || isProcessingRequest || !selectedLicenseId || trainingsLoading || providersLoading || preferencesLoading || availabilityLoading}
               className="w-full"
             >
               {isProcessingRequest ? (
@@ -449,7 +700,7 @@ Please provide a JSON response with:
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                   Processing...
                 </>
-              ) : trainingsLoading || providersLoading ? (
+              ) : trainingsLoading || providersLoading || preferencesLoading || availabilityLoading ? (
                 <>
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                   Loading data...
@@ -580,6 +831,13 @@ Please provide a JSON response with:
                   <div>
                     <h5 className="font-medium text-sm text-blue-800">Recommendations:</h5>
                     <p className="text-sm text-gray-700 bg-white p-3 rounded border">{aiPlanningResult.recommendations}</p>
+                  </div>
+                )}
+                
+                {aiPlanningResult.secondary_questions_answered && (
+                  <div>
+                    <h5 className="font-medium text-sm text-blue-800">Additional Information:</h5>
+                    <p className="text-sm text-gray-700 bg-white p-3 rounded border">{aiPlanningResult.secondary_questions_answered}</p>
                   </div>
                 )}
                 
@@ -819,6 +1077,19 @@ Please provide a JSON response with:
           </CardContent>
         </Card>
       )}
+
+      {/* Create Group Dialog */}
+      <CreateGroupDialog
+        open={isCreateGroupDialogOpen}
+        onOpenChange={setIsCreateGroupDialogOpen}
+        onCreateGroup={handleCreateGroupFromDialog}
+        employeeIds={currentGroupData.employeeIds}
+        employeeNames={currentGroupData.employeeNames}
+        suggestedName={currentGroupData.suggestedName}
+        suggestedType={currentGroupData.suggestedType}
+        suggestedCertificateId={currentGroupData.suggestedCertificateId}
+        suggestedLocation={currentGroupData.suggestedLocation}
+      />
     </div>
   );
 }

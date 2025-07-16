@@ -16,6 +16,13 @@ export interface Course {
   checklist_items?: any[];
   cost_breakdown?: any[];
   created_at: string;
+  course_certificates?: Array<{
+    license_id: string;
+    licenses: {
+      id: string;
+      name: string;
+    };
+  }>;
 }
 
 export function useCourses(enableRealTime = true) {
@@ -64,7 +71,16 @@ export function useCourses(enableRealTime = true) {
 
       const { data, error } = await supabase
         .from('courses')
-        .select('*')
+        .select(`
+          *,
+          course_certificates (
+            license_id,
+            licenses (
+              id,
+              name
+            )
+          )
+        `)
         .order('title');
 
       if (error) {

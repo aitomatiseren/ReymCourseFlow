@@ -57,6 +57,20 @@ const providerSchema = z.object({
   description: z.string().optional(),
   notes: z.string().optional(),
   active: z.boolean().default(true),
+  // Cost and distance fields
+  default_hourly_rate: z.number().min(0, "Rate must be positive").optional(),
+  travel_cost_per_km: z.number().min(0, "Travel cost must be positive").optional(),
+  base_location_lat: z.number().min(-90).max(90).optional(),
+  base_location_lng: z.number().min(-180).max(180).optional(),
+  min_group_size: z.number().min(1, "Min group size must be at least 1").default(1),
+  max_group_size: z.number().min(1, "Max group size must be at least 1").default(20)
+    .refine((val, ctx) => val >= ctx.parent.min_group_size, {
+      message: "Max group size must be greater than or equal to min group size"
+    }),
+  setup_cost: z.number().min(0, "Setup cost must be positive").optional(),
+  cancellation_fee: z.number().min(0, "Cancellation fee must be positive").optional(),
+  advance_booking_days: z.number().min(0, "Advance booking days must be positive").default(14),
+  cost_currency: z.string().length(3, "Currency must be 3 characters").default("EUR"),
   courses: z.array(z.string()).default([]),
   course_pricing: z.record(z.object({
     cost_breakdown: z.array(z.object({
@@ -64,9 +78,8 @@ const providerSchema = z.object({
       amount: z.number().optional(),
       description: z.string().optional(),
     })).default([]),
-    duration_hours: z.number().min(0.5).max(40).optional(),
+    number_of_sessions: z.number().min(1).max(20).optional(),
     max_participants: z.number().min(1).max(50).optional(),
-    location: z.string().optional(),
     notes: z.string().optional(),
   })).default({}),
 });
@@ -122,6 +135,17 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
       description: "",
       notes: "",
       active: true,
+      // Cost and distance fields
+      default_hourly_rate: undefined,
+      travel_cost_per_km: undefined,
+      base_location_lat: undefined,
+      base_location_lng: undefined,
+      min_group_size: 1,
+      max_group_size: 20,
+      setup_cost: undefined,
+      cancellation_fee: undefined,
+      advance_booking_days: 14,
+      cost_currency: "EUR",
       courses: [],
       course_pricing: {},
     },
@@ -159,6 +183,17 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
           description: data.description || null,
           notes: data.notes || null,
           active: data.active,
+          // Cost and distance fields
+          default_hourly_rate: data.default_hourly_rate || null,
+          travel_cost_per_km: data.travel_cost_per_km || null,
+          base_location_lat: data.base_location_lat || null,
+          base_location_lng: data.base_location_lng || null,
+          min_group_size: data.min_group_size || 1,
+          max_group_size: data.max_group_size || 20,
+          setup_cost: data.setup_cost || null,
+          cancellation_fee: data.cancellation_fee || null,
+          advance_booking_days: data.advance_booking_days || 14,
+          cost_currency: data.cost_currency || "EUR",
         })
         .select()
         .single();
@@ -180,9 +215,8 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
             active: true,
             price: calculatedPrice > 0 ? calculatedPrice : null,
             cost_breakdown: costBreakdown.length > 0 ? costBreakdown : null,
-            duration_hours: pricing.duration_hours || null,
+            number_of_sessions: pricing.number_of_sessions || null,
             max_participants: pricing.max_participants || null,
-            location: pricing.location || null,
             notes: pricing.notes || null,
           };
         });
@@ -740,6 +774,252 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
                 />
               </div>
 
+              {/* Cost and Distance Information */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium">Cost and Distance Information</h3>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="default_hourly_rate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Default Hourly Rate (€)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="150.00"
+                            {...field}
+                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Standard hourly rate for training sessions
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="travel_cost_per_km"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Travel Cost per KM (€)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="0.30"
+                            {...field}
+                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Cost per kilometer for travel
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="setup_cost"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Setup Cost (€)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="50.00"
+                            {...field}
+                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          One-time setup cost per session
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="cancellation_fee"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cancellation Fee (€)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="100.00"
+                            {...field}
+                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Fee for training cancellation
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="min_group_size"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Min Group Size</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="1"
+                            placeholder="1"
+                            {...field}
+                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 1)}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Minimum participants required
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="max_group_size"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Max Group Size</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="1"
+                            placeholder="20"
+                            {...field}
+                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 20)}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Maximum participants allowed
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="advance_booking_days"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Advance Booking (Days)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            placeholder="14"
+                            {...field}
+                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 14)}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Days required for advance booking
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="cost_currency"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Currency</FormLabel>
+                        <FormControl>
+                          <Input
+                            maxLength={3}
+                            placeholder="EUR"
+                            {...field}
+                            onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Currency code (e.g., EUR, USD)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="base_location_lat"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Base Location Latitude</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.000001"
+                            min="-90"
+                            max="90"
+                            placeholder="52.370216"
+                            {...field}
+                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Latitude for distance calculations
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="base_location_lng"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Base Location Longitude</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.000001"
+                            min="-180"
+                            max="180"
+                            placeholder="4.895168"
+                            {...field}
+                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Longitude for distance calculations
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
               {/* Course Selection */}
               <div className="space-y-4">
                 <h3 className="text-sm font-medium">Offered Courses</h3>
@@ -774,9 +1054,8 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
                                         if (checked) {
                                           form.setValue(`course_pricing.${course.id}`, { 
                                             cost_breakdown: [],
-                                            duration_hours: undefined,
+                                            number_of_sessions: undefined,
                                             max_participants: undefined,
-                                            location: '',
                                             notes: ''
                                           });
                                         } else {
@@ -837,29 +1116,28 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
                         {/* Provider-specific constraints */}
                         <div className="grid grid-cols-2 gap-4 p-3 bg-blue-50 rounded-lg">
                           <div>
-                            <FormLabel htmlFor={`duration-${courseId}`}>Session Duration (hours)</FormLabel>
+                            <FormLabel htmlFor={`sessions-${courseId}`}>Number of Sessions</FormLabel>
                             <FormField
                               control={form.control}
-                              name={`course_pricing.${courseId}.duration_hours` as any}
+                              name={`course_pricing.${courseId}.number_of_sessions` as any}
                               render={({ field }) => (
                                 <FormItem>
                                   <FormControl>
                                     <Input
-                                      id={`duration-${courseId}`}
+                                      id={`sessions-${courseId}`}
                                       type="number"
-                                      min="0.5"
-                                      max="40"
-                                      step="0.5"
-                                      placeholder="8"
+                                      min="1"
+                                      max="20"
+                                      placeholder="1"
                                       {...field}
-                                      onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                      onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
                                     />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
                               )}
                             />
-                            <p className="text-xs text-gray-600 mt-1">Duration per session</p>
+                            <p className="text-xs text-gray-600 mt-1">Number of sessions required</p>
                           </div>
 
                           <div>
@@ -887,27 +1165,7 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
                             <p className="text-xs text-gray-600 mt-1">Maximum group size</p>
                           </div>
 
-                          <div>
-                            <FormLabel htmlFor={`location-${courseId}`}>Preferred Location</FormLabel>
-                            <FormField
-                              control={form.control}
-                              name={`course_pricing.${courseId}.location` as any}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormControl>
-                                    <Input
-                                      id={`location-${courseId}`}
-                                      placeholder="Main location or specific venue"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-
-                          <div>
+                          <div className="col-span-2">
                             <FormLabel htmlFor={`notes-${courseId}`}>Provider Notes</FormLabel>
                             <FormField
                               control={form.control}

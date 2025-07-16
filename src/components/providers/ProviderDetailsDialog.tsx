@@ -18,6 +18,8 @@ import {
   User,
   FileText,
   Calendar,
+  Award,
+  Trophy,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -210,11 +212,40 @@ export function ProviderDetailsDialog({
                       key={cpc.course_id}
                       className="flex items-center justify-between p-2 bg-gray-50 rounded"
                     >
-                      <div>
+                      <div className="flex-1">
                         <div className="font-medium">{cpc.courses.title}</div>
                         {cpc.courses.category && (
                           <div className="text-xs text-gray-600">
                             {cpc.courses.category}
+                          </div>
+                        )}
+                        {cpc.courses.course_certificates && cpc.courses.course_certificates.length > 0 && (
+                          <div className="mt-2">
+                            <div className="text-xs font-medium text-gray-900 mb-1 flex items-center space-x-1">
+                              <Award className="h-3 w-3" />
+                              <span>Certificates:</span>
+                            </div>
+                            <div className="space-y-1">
+                              {cpc.courses.course_certificates.map((cert: any) => (
+                                <div key={cert.id} className="flex items-center justify-between text-xs bg-gray-100 p-2 rounded">
+                                  <div className="flex items-center space-x-1">
+                                    <Trophy className="h-3 w-3 text-yellow-600" />
+                                    <span className="font-medium">{cert.licenses.name}</span>
+                                  </div>
+                                  <div className="flex space-x-1">
+                                    {cert.grants_level && (
+                                      <span className="text-gray-600">({cert.grants_level})</span>
+                                    )}
+                                    {cert.is_required && (
+                                      <Badge variant="destructive" className="text-xs">Required</Badge>
+                                    )}
+                                    {cert.renewal_eligible && (
+                                      <Badge variant="secondary" className="text-xs">Renewal</Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>

@@ -151,11 +151,10 @@ export type Database = {
           cost_breakdown: Json | null
           course_id: string
           created_at: string | null
-          duration_hours: number | null
           id: string
-          location: string | null
           max_participants: number | null
           notes: string | null
+          number_of_sessions: number | null
           price: number | null
           provider_id: string
           updated_at: string | null
@@ -165,11 +164,10 @@ export type Database = {
           cost_breakdown?: Json | null
           course_id: string
           created_at?: string | null
-          duration_hours?: number | null
           id?: string
-          location?: string | null
           max_participants?: number | null
           notes?: string | null
+          number_of_sessions?: number | null
           price?: number | null
           provider_id: string
           updated_at?: string | null
@@ -179,11 +177,10 @@ export type Database = {
           cost_breakdown?: Json | null
           course_id?: string
           created_at?: string | null
-          duration_hours?: number | null
           id?: string
-          location?: string | null
           max_participants?: number | null
           notes?: string | null
+          number_of_sessions?: number | null
           price?: number | null
           provider_id?: string
           updated_at?: string | null
@@ -211,19 +208,29 @@ export type Database = {
           additional_locations: Json | null
           additional_locations_backup: string[] | null
           address: string | null
+          advance_booking_days: number | null
+          base_location_lat: number | null
+          base_location_lng: number | null
+          cancellation_fee: number | null
           city: string | null
           contact_person: string | null
+          cost_currency: string | null
           country: string | null
           created_at: string | null
+          default_hourly_rate: number | null
           default_location: string | null
           description: string | null
           email: string | null
           id: string
           instructors: string[] | null
+          max_group_size: number | null
+          min_group_size: number | null
           name: string
           notes: string | null
           phone: string | null
           postcode: string | null
+          setup_cost: number | null
+          travel_cost_per_km: number | null
           updated_at: string | null
           website: string | null
         }
@@ -232,19 +239,29 @@ export type Database = {
           additional_locations?: Json | null
           additional_locations_backup?: string[] | null
           address?: string | null
+          advance_booking_days?: number | null
+          base_location_lat?: number | null
+          base_location_lng?: number | null
+          cancellation_fee?: number | null
           city?: string | null
           contact_person?: string | null
+          cost_currency?: string | null
           country?: string | null
           created_at?: string | null
+          default_hourly_rate?: number | null
           default_location?: string | null
           description?: string | null
           email?: string | null
           id?: string
           instructors?: string[] | null
+          max_group_size?: number | null
+          min_group_size?: number | null
           name: string
           notes?: string | null
           phone?: string | null
           postcode?: string | null
+          setup_cost?: number | null
+          travel_cost_per_km?: number | null
           updated_at?: string | null
           website?: string | null
         }
@@ -253,19 +270,29 @@ export type Database = {
           additional_locations?: Json | null
           additional_locations_backup?: string[] | null
           address?: string | null
+          advance_booking_days?: number | null
+          base_location_lat?: number | null
+          base_location_lng?: number | null
+          cancellation_fee?: number | null
           city?: string | null
           contact_person?: string | null
+          cost_currency?: string | null
           country?: string | null
           created_at?: string | null
+          default_hourly_rate?: number | null
           default_location?: string | null
           description?: string | null
           email?: string | null
           id?: string
           instructors?: string[] | null
+          max_group_size?: number | null
+          min_group_size?: number | null
           name?: string
           notes?: string | null
           phone?: string | null
           postcode?: string | null
+          setup_cost?: number | null
+          travel_cost_per_km?: number | null
           updated_at?: string | null
           website?: string | null
         }
@@ -1070,6 +1097,306 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      employee_availability: {
+        Row: {
+          id: string
+          employee_id: string
+          availability_type: string
+          status: string
+          start_date: string
+          end_date: string | null
+          reason: string | null
+          impact_level: string
+          notes: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          employee_id: string
+          availability_type: string
+          status: string
+          start_date: string
+          end_date?: string | null
+          reason?: string | null
+          impact_level?: string
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          employee_id?: string
+          availability_type?: string
+          status?: string
+          start_date?: string
+          end_date?: string | null
+          reason?: string | null
+          impact_level?: string
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_availability_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      employee_learning_profiles: {
+        Row: {
+          id: string
+          employee_id: string
+          learning_style: string | null
+          language_preference: string | null
+          special_accommodations: string | null
+          performance_level: string | null
+          previous_training_success_rate: number | null
+          preferred_training_times: Json | null
+          training_capacity_per_month: number | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          employee_id: string
+          learning_style?: string | null
+          language_preference?: string | null
+          special_accommodations?: string | null
+          performance_level?: string | null
+          previous_training_success_rate?: number | null
+          preferred_training_times?: Json | null
+          training_capacity_per_month?: number | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          employee_id?: string
+          learning_style?: string | null
+          language_preference?: string | null
+          special_accommodations?: string | null
+          performance_level?: string | null
+          previous_training_success_rate?: number | null
+          preferred_training_times?: Json | null
+          training_capacity_per_month?: number | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_learning_profiles_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      employee_work_arrangements: {
+        Row: {
+          id: string
+          employee_id: string
+          primary_work_location: string | null
+          work_schedule: string | null
+          contract_type: string | null
+          notice_period_days: number | null
+          travel_restrictions: string | null
+          mobility_limitations: string | null
+          remote_work_percentage: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          employee_id: string
+          primary_work_location?: string | null
+          work_schedule?: string | null
+          contract_type?: string | null
+          notice_period_days?: number | null
+          travel_restrictions?: string | null
+          mobility_limitations?: string | null
+          remote_work_percentage?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          employee_id?: string
+          primary_work_location?: string | null
+          work_schedule?: string | null
+          contract_type?: string | null
+          notice_period_days?: number | null
+          travel_restrictions?: string | null
+          mobility_limitations?: string | null
+          remote_work_percentage?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_work_arrangements_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      provider_preferences: {
+        Row: {
+          id: string
+          course_id: string
+          provider_id: string
+          priority_rank: number
+          cost_per_participant: number | null
+          distance_from_hub_km: number | null
+          quality_rating: number | null
+          booking_lead_time_days: number | null
+          cancellation_policy: string | null
+          rescheduling_flexibility_score: number | null
+          notes: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          course_id: string
+          provider_id: string
+          priority_rank: number
+          cost_per_participant?: number | null
+          distance_from_hub_km?: number | null
+          quality_rating?: number | null
+          booking_lead_time_days?: number | null
+          cancellation_policy?: string | null
+          rescheduling_flexibility_score?: number | null
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          course_id?: string
+          provider_id?: string
+          priority_rank?: number
+          cost_per_participant?: number | null
+          distance_from_hub_km?: number | null
+          quality_rating?: number | null
+          booking_lead_time_days?: number | null
+          cancellation_policy?: string | null
+          rescheduling_flexibility_score?: number | null
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_preferences_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provider_preferences_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "training_providers"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      work_hubs: {
+        Row: {
+          id: string
+          name: string
+          address: string
+          latitude: number | null
+          longitude: number | null
+          is_primary: boolean | null
+          employee_count: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          address: string
+          latitude?: number | null
+          longitude?: number | null
+          is_primary?: boolean | null
+          employee_count?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          address?: string
+          latitude?: number | null
+          longitude?: number | null
+          is_primary?: boolean | null
+          employee_count?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      business_context_settings: {
+        Row: {
+          id: string
+          setting_type: string
+          setting_name: string
+          start_date: string | null
+          end_date: string | null
+          impact_level: string | null
+          description: string | null
+          constraints: Json | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          setting_type: string
+          setting_name: string
+          start_date?: string | null
+          end_date?: string | null
+          impact_level?: string | null
+          description?: string | null
+          constraints?: Json | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          setting_type?: string
+          setting_name?: string
+          start_date?: string | null
+          end_date?: string | null
+          impact_level?: string | null
+          description?: string | null
+          constraints?: Json | null
+          created_by?: string | null
+          created_at?: string
           updated_at?: string
         }
         Relationships: []

@@ -11,12 +11,16 @@ import { useToast } from "@/hooks/use-toast";
 import { CourseSelectionSection } from "./forms/CourseSelectionSection";
 import { SmartMultiSessionSection } from "./forms/SmartMultiSessionSection";
 import { ChecklistManagementSection } from "./forms/ChecklistManagementSection";
+import { IntelligentSchedulingRecommendations } from "./IntelligentSchedulingRecommendations";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Trash2, Euro } from "lucide-react";
+import { useIntelligentScheduler } from "@/hooks/useIntelligentScheduler";
+import { SchedulingRecommendation } from "@/services/scheduling/intelligent-scheduler";
+import { Plus, Trash2, Euro, Brain, Sparkles } from "lucide-react";
 
 // Custom DialogContent that prevents outside click and has custom ESC handling
 const CustomDialogContent = forwardRef<
@@ -47,10 +51,18 @@ interface CreateTrainingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   preSelectedCourseId?: string;
+  preSelectedLicenseId?: string;
+  preSelectedEmployeeId?: string;
 }
 
 
-export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }: CreateTrainingDialogProps) {
+export function CreateTrainingDialog({ 
+  open, 
+  onOpenChange, 
+  preSelectedCourseId,
+  preSelectedLicenseId,
+  preSelectedEmployeeId
+}: CreateTrainingDialogProps) {
   const { t } = useTranslation(['training', 'common']);
   const [selectedCourseId, setSelectedCourseId] = useState("");
   const [selectedProviderId, setSelectedProviderId] = useState("");
@@ -78,8 +90,23 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
   
   // Fetch provider-course specific details (pricing, etc.)
   const { data: providerCourseDetails } = useProviderCourseDetails(selectedProviderId, selectedCourseId);
+  
+  // Intelligent scheduler integration
+  const {
+    isAnalyzing,
+    recommendations,
+    getSchedulingRecommendations,
+    clearRecommendations
+  } = useIntelligentScheduler();
 
   const selectedCourse = courses.find(course => course.id === selectedCourseId);
+
+  // Filter courses based on pre-selected license if provided
+  const filteredCourses = preSelectedLicenseId 
+    ? courses.filter(course => 
+        course.course_certificates?.some(cc => cc.license_id === preSelectedLicenseId)
+      )
+    : courses;
 
   const handleProviderChange = (providerId: string) => {
     setSelectedProviderId(providerId);
@@ -122,6 +149,23 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
       }
     }
   }, [preSelectedCourseId, courses]);
+
+  // Auto-select first course if license is provided but no specific course is selected
+  useEffect(() => {
+    if (preSelectedLicenseId && courses.length > 0 && !preSelectedCourseId && !selectedCourseId) {
+      const relevantCourses = courses.filter(course => 
+        course.course_certificates?.some(cc => cc.license_id === preSelectedLicenseId)
+      );
+      
+      if (relevantCourses.length > 0) {
+        const firstCourse = relevantCourses[0];
+        setSelectedCourseId(firstCourse.id);
+        setTitle(firstCourse.title);
+        setMaxParticipants(firstCourse.max_participants?.toString() || "");
+        setSessions(firstCourse.sessions_required || 1);
+      }
+    }
+  }, [preSelectedLicenseId, courses, preSelectedCourseId, selectedCourseId]);
 
   // Update sessions arrays when sessions count changes
   useEffect(() => {
@@ -311,6 +355,57 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
     setSessionDates([]);
     setSessionTimes([]);
     setSessionEndTimes([]);
+    clearRecommendations();
+  };
+
+  // Get scheduling recommendations
+  const handleGetRecommendations = async () => {
+    if (!selectedCourseId) {
+      toast({
+        title: "Course Required",
+        description: "Please select a course before getting recommendations",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const constraints = {
+      courseId: selectedCourseId,
+      preferredStartDate: sessionDates[0] ? new Date(sessionDates[0]) : undefined,
+      maxParticipants: maxParticipants ? parseInt(maxParticipants) : undefined,
+      urgencyLevel: 'medium' as const,
+      teamCoverageRequired: true
+    };
+
+    await getSchedulingRecommendations(constraints);
+  };
+
+  // Apply a scheduling recommendation
+  const handleApplyRecommendation = (recommendation: SchedulingRecommendation) => {
+    // Apply provider information
+    setSelectedProviderId(recommendation.provider.id);
+    
+    // Apply scheduling information
+    const suggestedSessions = recommendation.suggestedDates.sessions;
+    if (suggestedSessions.length > 0) {
+      setSessions(suggestedSessions.length);
+      setSessionDates(suggestedSessions.map(s => s.date));
+      setSessionTimes(suggestedSessions.map(s => s.startTime));
+      setSessionEndTimes(suggestedSessions.map(s => s.endTime));
+    }
+
+    // Apply cost information
+    setPrice(recommendation.provider.totalEstimatedCost);
+    
+    // Apply location if available
+    if (recommendation.provider.name) {
+      setLocation("Provider location"); // Default, user can change
+    }
+
+    toast({
+      title: "Recommendation Applied",
+      description: `Applied scheduling recommendation for ${recommendation.provider.name}`,
+    });
   };
 
   const validateForm = () => {
@@ -405,19 +500,32 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
   return (
     <Dialog open={open} onOpenChange={onOpenChange} modal>
       <CustomDialogContent
-        className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto"
+        className="sm:max-w-[1000px] max-h-[90vh] overflow-y-auto"
         onOpenChange={onOpenChange}
       >
         <DialogHeader>
-          <DialogTitle>{t('training:createDialog.title')}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            {t('training:createDialog.title')}
+            <Sparkles className="h-5 w-5 text-blue-500" />
+          </DialogTitle>
           <DialogDescription>
-            {t('training:createDialog.description')}
+            {t('training:createDialog.description')} Use AI-powered recommendations for optimal scheduling.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <Tabs defaultValue="manual" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="manual">Manual Setup</TabsTrigger>
+            <TabsTrigger value="intelligent" className="flex items-center gap-2">
+              <Brain className="h-4 w-4" />
+              AI Recommendations
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="manual" className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
           <CourseSelectionSection
-            courses={courses}
+            courses={filteredCourses}
             selectedCourseId={selectedCourseId}
             title={title}
             selectedProviderId={selectedProviderId}
@@ -587,18 +695,141 @@ export function CreateTrainingDialog({ open, onOpenChange, preSelectedCourseId }
             onChecklistChange={setChecklist}
           />
 
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              {t('training:createDialog.cancel')}
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={createTraining.isPending || !selectedProviderId}
-            >
-              {createTraining.isPending ? t('training:createDialog.creating') : t('training:createDialog.createTraining')}
-            </Button>
-          </div>
-        </form>
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                  {t('training:createDialog.cancel')}
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={createTraining.isPending || !selectedProviderId}
+                >
+                  {createTraining.isPending ? t('training:createDialog.creating') : t('training:createDialog.createTraining')}
+                </Button>
+              </div>
+            </form>
+          </TabsContent>
+
+          <TabsContent value="intelligent" className="space-y-6">
+            <div className="space-y-4">
+              {/* Course Selection for Recommendations */}
+              <CourseSelectionSection
+                courses={filteredCourses}
+                selectedCourseId={selectedCourseId}
+                title={title}
+                selectedProviderId={selectedProviderId}
+                onCourseChange={handleCourseChange}
+                onTitleChange={setTitle}
+                onProviderChange={handleProviderChange}
+                onProviderDetailsChange={handleProviderDetailsChange}
+              />
+
+              {/* Get Recommendations Button */}
+              <div className="flex justify-center">
+                <Button
+                  onClick={handleGetRecommendations}
+                  disabled={!selectedCourseId || isAnalyzing}
+                  className="flex items-center gap-2"
+                >
+                  <Brain className="h-4 w-4" />
+                  {isAnalyzing ? 'Analyzing...' : 'Get AI Recommendations'}
+                </Button>
+              </div>
+
+              {/* Intelligent Scheduling Recommendations */}
+              <IntelligentSchedulingRecommendations
+                recommendations={recommendations}
+                isAnalyzing={isAnalyzing}
+                onApplyRecommendation={handleApplyRecommendation}
+                onRefreshRecommendations={handleGetRecommendations}
+              />
+
+              {/* Manual form for final adjustments after applying recommendation */}
+              {selectedProviderId && (
+                <div className="border-t pt-6">
+                  <h3 className="text-lg font-semibold mb-4">Final Adjustments</h3>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <SmartMultiSessionSection
+                      selectedCourse={selectedCourse}
+                      sessions={sessions}
+                      sessionDates={sessionDates}
+                      sessionTimes={sessionTimes}
+                      sessionEndTimes={sessionEndTimes}
+                      onSessionsChange={setSessions}
+                      onSessionDateChange={handleSessionDateChange}
+                      onSessionTimeChange={handleSessionTimeChange}
+                      onSessionEndTimeChange={handleSessionEndTimeChange}
+                      onCopyTimeToAll={handleCopyTimeToAll}
+                    />
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="instructor-ai">{t('training:createDialog.instructorLabel')}</Label>
+                        <Input
+                          id="instructor-ai"
+                          value={instructor}
+                          onChange={(e) => setInstructor(e.target.value)}
+                          placeholder={t('training:createDialog.instructorPlaceholder')}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="location-ai">{t('training:createDialog.locationLabel')}</Label>
+                        <Input
+                          id="location-ai"
+                          value={location}
+                          onChange={(e) => setLocation(e.target.value)}
+                          placeholder={t('training:createDialog.locationPlaceholder')}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="maxParticipants-ai">{t('training:createDialog.maxParticipantsLabel')}</Label>
+                        <Input
+                          id="maxParticipants-ai"
+                          type="number"
+                          min="1"
+                          value={maxParticipants}
+                          onChange={(e) => setMaxParticipants(e.target.value)}
+                          placeholder={t('training:createDialog.maxParticipantsPlaceholder')}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="status-ai">{t('training:createDialog.statusLabel')}</Label>
+                        <Select value={status} onValueChange={(value: 'scheduled' | 'confirmed' | 'cancelled' | 'completed') => setStatus(value)}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="scheduled">{t('training:status.scheduled')}</SelectItem>
+                            <SelectItem value="confirmed">{t('training:status.confirmed')}</SelectItem>
+                            <SelectItem value="cancelled">{t('training:status.cancelled')}</SelectItem>
+                            <SelectItem value="completed">{t('training:status.completed')}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end space-x-2 pt-4">
+                      <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                        {t('training:createDialog.cancel')}
+                      </Button>
+                      <Button 
+                        type="submit" 
+                        disabled={createTraining.isPending || !selectedProviderId}
+                      >
+                        {createTraining.isPending ? t('training:createDialog.creating') : t('training:createDialog.createTraining')}
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       </CustomDialogContent>
     </Dialog>
   );

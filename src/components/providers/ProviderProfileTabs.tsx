@@ -10,7 +10,9 @@ import {
   User,
   BookOpen,
   Activity,
-  Info
+  Info,
+  Award,
+  Trophy
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,11 +33,27 @@ export function ProviderProfileTabs({ providerId }: ProviderProfileTabsProps) {
             course_id,
             price,
             cost_breakdown,
+            number_of_sessions,
+            max_participants,
+            notes,
             courses (
               id,
               title,
               category,
-              duration_hours
+              duration_hours,
+              course_certificates (
+                id,
+                grants_level,
+                is_required,
+                renewal_eligible,
+                licenses (
+                  id,
+                  name,
+                  category,
+                  description,
+                  validity_period_months
+                )
+              )
             )
           )
         `)
@@ -126,13 +144,81 @@ export function ProviderProfileTabs({ providerId }: ProviderProfileTabsProps) {
                           </Badge>
                         )}
                       </div>
+                      
+                      {/* Certificate information */}
+                      {cpc.courses.course_certificates && cpc.courses.course_certificates.length > 0 && (
+                        <div className="mb-3">
+                          <h4 className="text-sm font-medium text-gray-900 mb-2 flex items-center space-x-2">
+                            <Award className="h-4 w-4" />
+                            <span>Certificates Granted</span>
+                          </h4>
+                          <div className="space-y-2">
+                            {cpc.courses.course_certificates.map((cert: any) => (
+                              <div key={cert.id} className="border rounded-lg p-3 bg-gray-50">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-2">
+                                    <Trophy className="h-4 w-4 text-yellow-600" />
+                                    <div>
+                                      <h5 className="font-medium text-gray-900 text-sm">
+                                        {cert.licenses?.name || 'Unknown Certificate'}
+                                      </h5>
+                                      <div className="flex items-center space-x-2 mt-1">
+                                        {cert.licenses?.category && (
+                                          <Badge variant="outline" className="text-xs">
+                                            {cert.licenses.category}
+                                          </Badge>
+                                        )}
+                                        {cert.licenses?.description && (
+                                          <span className="text-xs text-gray-600">
+                                            {cert.licenses.description}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    {cert.grants_level && (
+                                      <div className="text-xs font-medium text-gray-900">
+                                        Grants Level: {cert.grants_level}
+                                      </div>
+                                    )}
+                                    <div className="flex space-x-1 mt-1">
+                                      {cert.is_required && (
+                                        <Badge variant="destructive" className="text-xs">
+                                          Required
+                                        </Badge>
+                                      )}
+                                      {cert.renewal_eligible && (
+                                        <Badge variant="secondary" className="text-xs">
+                                          Renewal Eligible
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    {cert.licenses?.validity_period_months && (
+                                      <div className="text-xs text-gray-500 mt-1">
+                                        Valid for {cert.licenses.validity_period_months} months
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       <div className="space-y-3">
                         {/* Course details */}
-                        {cpc.courses.duration_hours && (
-                          <div className="text-sm text-gray-600">
-                            <span>{cpc.courses.duration_hours} hours</span>
-                          </div>
-                        )}
+                        <div className="flex space-x-4 text-sm text-gray-600">
+                          {cpc.courses.duration_hours && (
+                            <span>{cpc.courses.duration_hours} hours per session</span>
+                          )}
+                          {cpc.number_of_sessions && (
+                            <span>• {cpc.number_of_sessions} session{cpc.number_of_sessions !== 1 ? 's' : ''}</span>
+                          )}
+                          {cpc.max_participants && (
+                            <span>• Max {cpc.max_participants} participants</span>
+                          )}
+                        </div>
                         
                         {/* Provider pricing */}
                         {cpc.price && (

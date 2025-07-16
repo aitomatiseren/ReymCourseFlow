@@ -19,12 +19,16 @@ interface CertificateExpiryOverviewProps {
   expiryData: CertificateExpiryAnalysis[];
   isLoading: boolean;
   getExpiryStatusBadge: (status: string, daysUntilExpiry?: number) => JSX.Element;
+  onAddToExistingTraining?: (employeeId: string, licenseId: string) => void;
+  onScheduleNewTraining?: (employeeId: string, licenseId: string) => void;
 }
 
 export function CertificateExpiryOverview({ 
   expiryData, 
   isLoading, 
-  getExpiryStatusBadge 
+  getExpiryStatusBadge,
+  onAddToExistingTraining,
+  onScheduleNewTraining
 }: CertificateExpiryOverviewProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<'name' | 'expiry' | 'department'>('expiry');
@@ -259,8 +263,19 @@ export function CertificateExpiryOverview({
                           <Button variant="outline" size="sm">
                             Add to Group
                           </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => onAddToExistingTraining?.(item.employee_id, item.license_id)}
+                          >
+                            Add to Training
+                          </Button>
                           {item.employee_status === 'new' && (
-                            <Button variant="outline" size="sm">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => onScheduleNewTraining?.(item.employee_id, item.license_id)}
+                            >
                               Schedule Training
                             </Button>
                           )}

@@ -36,6 +36,8 @@ export function TrainingScheduler() {
   };
 
   const preSelectedCourseId = searchParams.get('courseId');
+  const preSelectedLicenseId = searchParams.get('licenseId');
+  const preSelectedEmployeeId = searchParams.get('employeeId');
   const { toast } = useToast();
 
   const { data: trainings = [], isLoading: trainingsLoading, error: trainingsError } = useTrainings();
@@ -44,12 +46,12 @@ export function TrainingScheduler() {
 
   const selectedTraining = trainings.find(t => t.id === selectedTrainingId);
 
-  // Auto-open create dialog if courseId is provided
+  // Auto-open create dialog if courseId or licenseId is provided
   useEffect(() => {
-    if (preSelectedCourseId && courses.length > 0) {
+    if ((preSelectedCourseId || preSelectedLicenseId) && courses.length > 0) {
       setShowCreateForm(true);
     }
-  }, [preSelectedCourseId, courses.length]);
+  }, [preSelectedCourseId, preSelectedLicenseId, courses.length]);
 
   // Check for highlight parameter in URL
   useEffect(() => {
@@ -177,6 +179,8 @@ export function TrainingScheduler() {
         open={showCreateForm}
         onOpenChange={setShowCreateForm}
         preSelectedCourseId={preSelectedCourseId || undefined}
+        preSelectedLicenseId={preSelectedLicenseId || undefined}
+        preSelectedEmployeeId={preSelectedEmployeeId || undefined}
       />
 
       {selectedTrainingId && (

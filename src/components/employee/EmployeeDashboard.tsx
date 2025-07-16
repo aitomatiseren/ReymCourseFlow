@@ -18,6 +18,7 @@ import {
 import { useEmployeeDashboardStats, useEmployeeCertificateRenewals } from '@/hooks/useEmployeeSelfService';
 import { usePermissions } from '@/context/PermissionsContext';
 import { formatDistanceToNow } from 'date-fns';
+import { EmployeeAvailabilityCard } from './EmployeeAvailabilityCard';
 
 export const EmployeeDashboard: React.FC = () => {
   const { userProfile } = usePermissions();
@@ -169,8 +170,8 @@ export const EmployeeDashboard: React.FC = () => {
         </Card>
       </div>
 
-      {/* Quick Actions and Renewals */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Quick Actions, Renewals, and Availability */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Quick Actions */}
         <Card>
           <CardHeader>
@@ -252,6 +253,13 @@ export const EmployeeDashboard: React.FC = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Employee Availability */}
+        <EmployeeAvailabilityCard 
+          employeeId={userProfile?.employee?.id || ''} 
+          showManageButton={true}
+          maxItems={3}
+        />
       </div>
 
       {/* Recent Activity Preview */}

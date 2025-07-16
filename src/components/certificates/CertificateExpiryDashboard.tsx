@@ -74,6 +74,11 @@ export function CertificateExpiryDashboard() {
     // In real app, this would initiate replacement workflow
   };
 
+  const handleAddToExistingTraining = (certificateId: string) => {
+    console.log(`Adding employee to existing training for certificate ${certificateId}`);
+    // This will open the training selection dialog
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -150,6 +155,13 @@ export function CertificateExpiryDashboard() {
                     </div>
                     
                     <div className="flex space-x-2 ml-4">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleAddToExistingTraining(cert.id)}
+                      >
+                        Add to Existing Training
+                      </Button>
                       {replacementType ? (
                         <Button 
                           size="sm"
