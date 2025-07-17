@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin, Users, User, CheckSquare, Eye, Clock, Truck, Euro, Award } from "lucide-react";
+import { Calendar, MapPin, Users, User, CheckSquare, Eye, Clock, Truck, Euro, Award, Shield } from "lucide-react";
 import { Training } from "@/hooks/useTrainings";
 import { useCertificatesForCourse } from "@/hooks/useCertificates";
 import { useNavigate } from "react-router-dom";
@@ -152,6 +152,12 @@ export function TrainingGridView({
                       <Badge variant="outline" className="bg-blue-100 text-blue-800 text-xs">
                         <Truck className="h-3 w-3 mr-1" />
                         {training.code95_points} pts
+                      </Badge>
+                    )}
+                    {training.requiresApproval && (
+                      <Badge variant="outline" className="bg-orange-100 text-orange-800 text-xs">
+                        <Shield className="h-3 w-3 mr-1" />
+                        Approval Required
                       </Badge>
                     )}
                     <CertificateBadge courseId={training.course_id} />

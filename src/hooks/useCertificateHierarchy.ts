@@ -6,13 +6,19 @@ type CertificatePrerequisite = Tables<'certificate_prerequisites'>;
 type License = Tables<'licenses'>;
 type EmployeeLicense = Tables<'employee_licenses'>;
 
-export interface LicenseWithPrerequisites extends License {
+export interface LicenseWithHierarchy extends License {
   prerequisites?: License[];
   dependents?: License[];
+  supersedes?: License;
+  superseded_by?: License[];
+  hierarchy_order?: number;
+  is_base_level?: boolean;
 }
 
 export interface EmployeeLicenseWithLevel extends EmployeeLicense {
   license?: License;
+  superseded_by?: License;
+  is_effective?: boolean;
   can_renew_without_lower_levels?: boolean;
 }
 
@@ -39,15 +45,32 @@ export const useCertificatePrerequisites = () => {
   });
 };
 
-// Hook to fetch licenses with their hierarchy information
+// Hook to fetch the complete certificate hierarchy
+export const useCertificateHierarchy = () => {
+  return useQuery({
+    queryKey: ['certificate-hierarchy'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .rpc('get_certificate_hierarchy');
+
+      if (error) throw error;
+      return data;
+    },
+  });
+};
+
+// Hook to fetch licenses with their full hierarchy information
 export const useLicensesWithHierarchy = () => {
   return useQuery({
     queryKey: ['licenses-hierarchy'],
     queryFn: async () => {
       const { data: licenses, error: licensesError } = await supabase
         .from('licenses')
-        .select('*')
-        .order('level', { ascending: true });
+        .select(`
+          *,
+          supersedes:licenses!licenses_supersedes_license_id_fkey(*)
+        `)
+        .order('hierarchy_order', { ascending: true });
 
       if (licensesError) throw licensesError;
 
@@ -62,13 +85,14 @@ export const useLicensesWithHierarchy = () => {
       if (prereqError) throw prereqError;
 
       // Build hierarchy map
-      const licenseMap = new Map<string, LicenseWithPrerequisites>();
+      const licenseMap = new Map<string, LicenseWithHierarchy>();
       
       licenses.forEach(license => {
         licenseMap.set(license.id, {
           ...license,
           prerequisites: [],
-          dependents: []
+          dependents: [],
+          superseded_by: []
         });
       });
 
@@ -80,6 +104,19 @@ export const useLicensesWithHierarchy = () => {
         if (certificate && prerequisite) {
           certificate.prerequisites?.push(prerequisite);
           prerequisite.dependents?.push(certificate);
+        }
+      });
+
+      // Add superseding relationships
+      licenses.forEach(license => {
+        if (license.supersedes_license_id) {
+          const superseded = licenseMap.get(license.supersedes_license_id);
+          const current = licenseMap.get(license.id);
+          
+          if (superseded && current) {
+            current.supersedes = superseded;
+            superseded.superseded_by?.push(current);
+          }
         }
       });
 
@@ -143,6 +180,60 @@ export const usePrerequisiteCheck = (employeeId: string, licenseId: string) => {
   });
 };
 
+// Hook to check if employee needs a certificate (considering superseding)
+export const useEmployeeCertificateNeed = (employeeId: string, licenseId: string) => {
+  return useQuery({
+    queryKey: ['employee-certificate-need', employeeId, licenseId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .rpc('employee_needs_certificate', {
+          employee_id_param: employeeId,
+          license_id_param: licenseId
+        });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!employeeId && !!licenseId,
+  });
+};
+
+// Hook to get employee's effective certificates (considering superseding)
+export const useEmployeeEffectiveCertificates = (employeeId: string) => {
+  return useQuery({
+    queryKey: ['employee-effective-certificates', employeeId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .rpc('get_employee_effective_certificates', {
+          employee_id_param: employeeId
+        });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!employeeId,
+  });
+};
+
+// Hook to get certificate progression paths
+export const useCertificateProgressionPaths = (licenseId?: string) => {
+  return useQuery({
+    queryKey: ['certificate-progression-paths', licenseId],
+    queryFn: async () => {
+      if (!licenseId) return [];
+      
+      const { data, error } = await supabase
+        .rpc('get_certificate_progression_paths', {
+          license_id_param: licenseId
+        });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!licenseId,
+  });
+};
+
 // Hook to check if employee can renew at current level
 export const useRenewalEligibility = (employeeId: string, licenseId: string) => {
   return useQuery({
@@ -179,8 +270,8 @@ export const useRenewalEligibility = (employeeId: string, licenseId: string) => 
   });
 };
 
-// Hook to manage certificate prerequisites
-export const useCertificatePrerequisiteManagement = () => {
+// Hook to manage certificate prerequisites and hierarchy
+export const useCertificateHierarchyManagement = () => {
   const queryClient = useQueryClient();
 
   const addPrerequisite = useMutation({
@@ -200,6 +291,7 @@ export const useCertificatePrerequisiteManagement = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['certificate-prerequisites'] });
       queryClient.invalidateQueries({ queryKey: ['licenses-hierarchy'] });
+      queryClient.invalidateQueries({ queryKey: ['certificate-hierarchy'] });
     },
   });
 
@@ -216,13 +308,53 @@ export const useCertificatePrerequisiteManagement = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['certificate-prerequisites'] });
       queryClient.invalidateQueries({ queryKey: ['licenses-hierarchy'] });
+      queryClient.invalidateQueries({ queryKey: ['certificate-hierarchy'] });
+    },
+  });
+
+  const updateSuperseding = useMutation({
+    mutationFn: async ({ 
+      certificateId, 
+      supersedesId, 
+      hierarchyOrder,
+      isBaseLevel 
+    }: { 
+      certificateId: string; 
+      supersedesId?: string | null;
+      hierarchyOrder?: number;
+      isBaseLevel?: boolean;
+    }) => {
+      const { data, error } = await supabase
+        .from('licenses')
+        .update({
+          supersedes_license_id: supersedesId,
+          hierarchy_order: hierarchyOrder,
+          is_base_level: isBaseLevel,
+        })
+        .eq('id', certificateId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['licenses-hierarchy'] });
+      queryClient.invalidateQueries({ queryKey: ['certificate-hierarchy'] });
+      queryClient.invalidateQueries({ queryKey: ['licenses'] });
     },
   });
 
   return {
     addPrerequisite,
     removePrerequisite,
+    updateSuperseding,
   };
+};
+
+// Legacy hook name for backwards compatibility
+export const useCertificatePrerequisiteManagement = () => {
+  return useCertificateHierarchyManagement();
 };
 
 // Hook to update license level information

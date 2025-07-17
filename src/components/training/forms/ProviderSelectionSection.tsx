@@ -1,24 +1,27 @@
 import { useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useProvidersForCourse, Provider } from "@/hooks/useProviders";
 import { Badge } from "@/components/ui/badge";
-import { Building2, MapPin, Phone, Mail } from "lucide-react";
+import { Building2, MapPin, Phone, Mail, Plus } from "lucide-react";
 
 interface ProviderSelectionSectionProps {
   selectedCourseId: string;
   selectedProviderId: string;
   onProviderChange: (providerId: string) => void;
   onProviderDetailsChange?: (provider: Provider | null) => void;
+  onCreateProvider?: () => void;
 }
 
 export function ProviderSelectionSection({
   selectedCourseId,
   selectedProviderId,
   onProviderChange,
-  onProviderDetailsChange
+  onProviderDetailsChange,
+  onCreateProvider
 }: ProviderSelectionSectionProps) {
   // Fetch providers that offer the selected course
   const { data: providers = [], isLoading, error } = useProvidersForCourse(selectedCourseId) as { data: Provider[] | undefined, isLoading: boolean, error: any };
@@ -75,7 +78,21 @@ export function ProviderSelectionSection({
   if (providers.length === 0) {
     return (
       <div className="space-y-2">
-        <Label>Provider</Label>
+        <div className="flex items-center justify-between">
+          <Label>Provider</Label>
+          {onCreateProvider && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onCreateProvider}
+              className="text-xs h-6"
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              Create Provider
+            </Button>
+          )}
+        </div>
         <div className="text-sm text-orange-600 p-3 border border-orange-200 rounded bg-orange-50">
           No providers found for this course. Please add providers to the course first.
         </div>
@@ -86,7 +103,21 @@ export function ProviderSelectionSection({
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="provider">Course Provider</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="provider">Course Provider</Label>
+          {onCreateProvider && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onCreateProvider}
+              className="text-xs h-6"
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              Create Provider
+            </Button>
+          )}
+        </div>
         <Select 
           value={selectedProviderId} 
           onValueChange={onProviderChange}
@@ -157,8 +188,15 @@ export function ProviderSelectionSection({
               </div>
             )}
           </div>
-          <div className="mt-3 text-xs text-blue-700 bg-blue-100 p-2 rounded">
-            💡 These details will be auto-filled in the training form when available
+          <div className="mt-3 space-y-1">
+            <div className="text-xs text-blue-700 bg-blue-100 p-2 rounded">
+              💡 These details will be auto-filled in the training form when available
+            </div>
+            {providers.length > 1 && (
+              <div className="text-xs text-green-700 bg-green-100 p-2 rounded">
+                ✅ {providers.length} providers available for this course
+              </div>
+            )}
           </div>
         </div>
       )}

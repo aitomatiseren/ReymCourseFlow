@@ -58,7 +58,7 @@ export function useCourseCertificateMappings() {
           grants_level,
           is_required,
           renewal_eligible,
-          courses:courses(id, title, code),
+          courses:courses(id, title),
           licenses:licenses(id, name, category)
         `)
         .order('course_id');
@@ -104,7 +104,7 @@ export function useCoursesForCertificate(licenseId: string) {
           grants_level,
           is_required,
           renewal_eligible,
-          courses:courses(id, title, code, duration_hours)
+          courses:courses(id, title, duration_hours)
         `)
         .eq('license_id', licenseId);
 

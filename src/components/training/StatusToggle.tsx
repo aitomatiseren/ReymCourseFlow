@@ -2,14 +2,16 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Training } from "@/hooks/useTrainings";
+import { Shield, ShieldCheck } from "lucide-react";
 
 interface StatusToggleProps {
   status: Training['status'];
   onStatusChange: (status: Training['status']) => void;
   disabled?: boolean;
+  requiresApproval?: boolean;
 }
 
-export function StatusToggle({ status, onStatusChange, disabled = false }: StatusToggleProps) {
+export function StatusToggle({ status, onStatusChange, disabled = false, requiresApproval = false }: StatusToggleProps) {
   const getStatusColor = (status: Training['status']) => {
     switch (status) {
       case 'scheduled': return 'bg-blue-100 text-blue-800';
@@ -34,6 +36,14 @@ export function StatusToggle({ status, onStatusChange, disabled = false }: Statu
         <Badge variant="outline" className={getStatusColor(status)}>
           {status}
         </Badge>
+        
+        {requiresApproval && (
+          <Badge variant="outline" className="bg-orange-100 text-orange-800 flex items-center gap-1">
+            <Shield className="h-3 w-3" />
+            Requires Approval
+          </Badge>
+        )}
+        
         {!disabled && (
           <Select value={status} onValueChange={onStatusChange}>
             <SelectTrigger className="w-[140px]">

@@ -215,6 +215,20 @@ export function PlanSelectionSection({
                     </div>
                   </div>
                 )}
+                
+                <div className="mt-3 p-3 bg-green-50 border-l-4 border-green-400 rounded-r-lg">
+                  <div className="flex items-start gap-2">
+                    <div className="flex-shrink-0 mt-0.5">
+                      <div className="h-2 w-2 bg-green-400 rounded-full animate-pulse"></div>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-green-900">Auto-population Active</p>
+                      <p className="text-xs text-green-700 mt-1">
+                        Fields like title, location, participants, dates, and costs will be automatically filled from this group's planning data.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 

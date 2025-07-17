@@ -214,11 +214,6 @@ export function ProviderDetailsDialog({
                     >
                       <div className="flex-1">
                         <div className="font-medium">{cpc.courses.title}</div>
-                        {cpc.courses.category && (
-                          <div className="text-xs text-gray-600">
-                            {cpc.courses.category}
-                          </div>
-                        )}
                         {cpc.courses.course_certificates && cpc.courses.course_certificates.length > 0 && (
                           <div className="mt-2">
                             <div className="text-xs font-medium text-gray-900 mb-1 flex items-center space-x-1">

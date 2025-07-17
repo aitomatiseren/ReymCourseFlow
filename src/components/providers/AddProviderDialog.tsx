@@ -57,20 +57,6 @@ const providerSchema = z.object({
   description: z.string().optional(),
   notes: z.string().optional(),
   active: z.boolean().default(true),
-  // Cost and distance fields
-  default_hourly_rate: z.number().min(0, "Rate must be positive").optional(),
-  travel_cost_per_km: z.number().min(0, "Travel cost must be positive").optional(),
-  base_location_lat: z.number().min(-90).max(90).optional(),
-  base_location_lng: z.number().min(-180).max(180).optional(),
-  min_group_size: z.number().min(1, "Min group size must be at least 1").default(1),
-  max_group_size: z.number().min(1, "Max group size must be at least 1").default(20)
-    .refine((val, ctx) => val >= ctx.parent.min_group_size, {
-      message: "Max group size must be greater than or equal to min group size"
-    }),
-  setup_cost: z.number().min(0, "Setup cost must be positive").optional(),
-  cancellation_fee: z.number().min(0, "Cancellation fee must be positive").optional(),
-  advance_booking_days: z.number().min(0, "Advance booking days must be positive").default(14),
-  cost_currency: z.string().length(3, "Currency must be 3 characters").default("EUR"),
   courses: z.array(z.string()).default([]),
   course_pricing: z.record(z.object({
     cost_breakdown: z.array(z.object({
@@ -79,7 +65,8 @@ const providerSchema = z.object({
       description: z.string().optional(),
     })).default([]),
     number_of_sessions: z.number().min(1).max(20).optional(),
-    max_participants: z.number().min(1).max(50).optional(),
+    min_participants: z.number().min(1).max(50).default(1),
+    max_participants: z.number().min(1).max(50).default(20),
     notes: z.string().optional(),
   })).default({}),
 });
@@ -135,17 +122,6 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
       description: "",
       notes: "",
       active: true,
-      // Cost and distance fields
-      default_hourly_rate: undefined,
-      travel_cost_per_km: undefined,
-      base_location_lat: undefined,
-      base_location_lng: undefined,
-      min_group_size: 1,
-      max_group_size: 20,
-      setup_cost: undefined,
-      cancellation_fee: undefined,
-      advance_booking_days: 14,
-      cost_currency: "EUR",
       courses: [],
       course_pricing: {},
     },
@@ -156,7 +132,7 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
     queryFn: async () => {
       const { data, error } = await supabase
         .from("courses")
-        .select("id, title, category")
+        .select("id, title")
         .order("title");
       if (error) throw error;
       return data;
@@ -183,17 +159,6 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
           description: data.description || null,
           notes: data.notes || null,
           active: data.active,
-          // Cost and distance fields
-          default_hourly_rate: data.default_hourly_rate || null,
-          travel_cost_per_km: data.travel_cost_per_km || null,
-          base_location_lat: data.base_location_lat || null,
-          base_location_lng: data.base_location_lng || null,
-          min_group_size: data.min_group_size || 1,
-          max_group_size: data.max_group_size || 20,
-          setup_cost: data.setup_cost || null,
-          cancellation_fee: data.cancellation_fee || null,
-          advance_booking_days: data.advance_booking_days || 14,
-          cost_currency: data.cost_currency || "EUR",
         })
         .select()
         .single();
@@ -216,6 +181,7 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
             price: calculatedPrice > 0 ? calculatedPrice : null,
             cost_breakdown: costBreakdown.length > 0 ? costBreakdown : null,
             number_of_sessions: pricing.number_of_sessions || null,
+            min_participants: pricing.min_participants || null,
             max_participants: pricing.max_participants || null,
             notes: pricing.notes || null,
           };
@@ -302,13 +268,16 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
   const handleLocationSelect = (address: { street: string; city: string; postcode: string; country: string }) => {
     const locationName = `${address.city} Location`; // Default name based on city
     const currentLocations = form.getValues("additional_locations");
-    form.setValue("additional_locations", [...currentLocations, {
+    
+    const newLocation = {
       name: locationName,
       address: address.street,
       postcode: address.postcode,
       city: address.city,
       country: address.country
-    }]);
+    };
+    
+    form.setValue("additional_locations", [...currentLocations, newLocation]);
   };
 
   const removeLocation = (index: number) => {
@@ -392,6 +361,7 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
         </DialogHeader>
 
         <ScrollArea className="max-h-[calc(90vh-120px)] pr-6">
+          <div className="px-2 pb-2 [&_input]:focus-visible:ring-offset-1 [&_textarea]:focus-visible:ring-offset-1">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               {/* Basic Information */}
@@ -635,6 +605,16 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
                             <div className="text-sm text-gray-600 px-3 py-2 bg-white rounded border">
                               <div className="font-medium">Address:</div>
                               <div>{location.address}</div>
+                              <div className="mt-1 text-xs">
+                                {location.postcode && location.city && (
+                                  <span>{location.postcode} {location.city}, {location.country}</span>
+                                )}
+                                {(!location.postcode || !location.city) && (
+                                  <span className="text-gray-400">
+                                    {location.city || 'Unknown city'}, {location.country || 'Netherlands'}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -774,251 +754,6 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
                 />
               </div>
 
-              {/* Cost and Distance Information */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium">Cost and Distance Information</h3>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="default_hourly_rate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Default Hourly Rate (€)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="150.00"
-                            {...field}
-                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Standard hourly rate for training sessions
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="travel_cost_per_km"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Travel Cost per KM (€)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="0.30"
-                            {...field}
-                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Cost per kilometer for travel
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="setup_cost"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Setup Cost (€)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="50.00"
-                            {...field}
-                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          One-time setup cost per session
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="cancellation_fee"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Cancellation Fee (€)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="100.00"
-                            {...field}
-                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Fee for training cancellation
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="min_group_size"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Min Group Size</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min="1"
-                            placeholder="1"
-                            {...field}
-                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 1)}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Minimum participants required
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="max_group_size"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Max Group Size</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min="1"
-                            placeholder="20"
-                            {...field}
-                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 20)}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Maximum participants allowed
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="advance_booking_days"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Advance Booking (Days)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min="0"
-                            placeholder="14"
-                            {...field}
-                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 14)}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Days required for advance booking
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="cost_currency"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Currency</FormLabel>
-                        <FormControl>
-                          <Input
-                            maxLength={3}
-                            placeholder="EUR"
-                            {...field}
-                            onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Currency code (e.g., EUR, USD)
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="base_location_lat"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Base Location Latitude</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.000001"
-                            min="-90"
-                            max="90"
-                            placeholder="52.370216"
-                            {...field}
-                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Latitude for distance calculations
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="base_location_lng"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Base Location Longitude</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.000001"
-                            min="-180"
-                            max="180"
-                            placeholder="4.895168"
-                            {...field}
-                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Longitude for distance calculations
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
 
               {/* Course Selection */}
               <div className="space-y-4">
@@ -1055,7 +790,8 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
                                           form.setValue(`course_pricing.${course.id}`, { 
                                             cost_breakdown: [],
                                             number_of_sessions: undefined,
-                                            max_participants: undefined,
+                                            min_participants: 1,
+                                            max_participants: 20,
                                             notes: ''
                                           });
                                         } else {
@@ -1069,11 +805,6 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
                                   </FormControl>
                                   <FormLabel className="text-sm font-normal cursor-pointer">
                                     {course.title}
-                                    {course.category && (
-                                      <span className="text-xs text-gray-500 ml-1">
-                                        ({course.category})
-                                      </span>
-                                    )}
                                   </FormLabel>
                                 </FormItem>
                               );
@@ -1102,19 +833,10 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
                       <div key={courseId} className="border rounded-lg p-4 space-y-4">
                         <div className="flex items-center justify-between">
                           <h4 className="font-medium text-gray-900">{course.title}</h4>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => addCostComponent(courseId)}
-                          >
-                            <Plus className="h-4 w-4 mr-1" />
-                            Add Cost Component
-                          </Button>
                         </div>
 
                         {/* Provider-specific constraints */}
-                        <div className="grid grid-cols-2 gap-4 p-3 bg-blue-50 rounded-lg">
+                        <div className="grid grid-cols-3 gap-4 p-3 bg-blue-50 rounded-lg">
                           <div>
                             <FormLabel htmlFor={`sessions-${courseId}`}>Number of Sessions</FormLabel>
                             <FormField
@@ -1141,6 +863,31 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
                           </div>
 
                           <div>
+                            <FormLabel htmlFor={`min-participants-${courseId}`}>Min Participants</FormLabel>
+                            <FormField
+                              control={form.control}
+                              name={`course_pricing.${courseId}.min_participants` as any}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input
+                                      id={`min-participants-${courseId}`}
+                                      type="number"
+                                      min="1"
+                                      max="50"
+                                      placeholder="1"
+                                      {...field}
+                                      onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <p className="text-xs text-gray-600 mt-1">Minimum group size</p>
+                          </div>
+
+                          <div>
                             <FormLabel htmlFor={`max-participants-${courseId}`}>Max Participants</FormLabel>
                             <FormField
                               control={form.control}
@@ -1153,7 +900,7 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
                                       type="number"
                                       min="1"
                                       max="50"
-                                      placeholder="15"
+                                      placeholder="20"
                                       {...field}
                                       onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
                                     />
@@ -1165,7 +912,7 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
                             <p className="text-xs text-gray-600 mt-1">Maximum group size</p>
                           </div>
 
-                          <div className="col-span-2">
+                          <div className="col-span-3">
                             <FormLabel htmlFor={`notes-${courseId}`}>Provider Notes</FormLabel>
                             <FormField
                               control={form.control}
@@ -1187,7 +934,18 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
                         </div>
 
                         <div className="space-y-3">
-                          <FormLabel>Cost Breakdown Components</FormLabel>
+                          <div className="flex items-center justify-between">
+                            <FormLabel>Cost Breakdown Components</FormLabel>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => addCostComponent(courseId)}
+                            >
+                              <Plus className="h-4 w-4 mr-1" />
+                              Add Cost Component
+                            </Button>
+                          </div>
                           
                           {/* Existing components */}
                           <FormField
@@ -1297,6 +1055,7 @@ export function AddProviderDialog({ open, onOpenChange }: AddProviderDialogProps
               </div>
             </form>
           </Form>
+          </div>
         </ScrollArea>
       </DialogContent>
     </Dialog>

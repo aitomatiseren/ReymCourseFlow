@@ -95,6 +95,7 @@ export function TrainingDetailsPanel({
           <StatusToggle
             status={training.status}
             onStatusChange={onStatusChange}
+            requiresApproval={training.requiresApproval}
           />
           
           <div className="flex space-x-2">
@@ -141,6 +142,24 @@ export function TrainingDetailsPanel({
                     <div className="flex items-center space-x-2">
                       <EmployeeStatusBadge status={currentEmployeeStatus as EmployeeStatus} />
                       <Badge variant="outline">{participant.status}</Badge>
+                      
+                      {/* Display approval status if training requires approval */}
+                      {training.requiresApproval && participant.approval_status && (
+                        <Badge 
+                          variant="outline" 
+                          className={
+                            participant.approval_status === 'approved' 
+                              ? 'bg-green-100 text-green-800' 
+                              : participant.approval_status === 'rejected'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }
+                        >
+                          {participant.approval_status === 'pending' ? 'Approval Pending' : 
+                           participant.approval_status === 'approved' ? 'Approved' : 'Rejected'}
+                        </Badge>
+                      )}
+                      
                       <Button 
                         size="sm" 
                         variant="outline"

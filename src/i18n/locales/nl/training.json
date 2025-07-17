@@ -35,7 +35,14 @@
         "inProgress": "Bezig",
         "completed": "Voltooid",
         "cancelled": "Geannuleerd",
-        "draft": "Concept"
+        "draft": "Concept",
+        "loadingData": "Gegevens laden...",
+        "calendar": {
+            "title": "Training Kalender",
+            "searchPlaceholder": "Zoek trainingen...",
+            "createTraining": "Nieuwe Training",
+            "legend": "Status Legenda"
+        }
     },
     "participants": {
         "title": "Deelnemers",
@@ -116,6 +123,8 @@
         "instructorPlaceholder": "Naam instructeur",
         "locationLabel": "Locatie",
         "locationPlaceholder": "Trainingslocatie",
+        "minParticipantsLabel": "Min Deelnemers",
+        "minParticipantsPlaceholder": "Minimum aantal deelnemers",
         "maxParticipantsLabel": "Max Deelnemers",
         "maxParticipantsPlaceholder": "Maximum aantal deelnemers",
         "statusLabel": "Status",
@@ -135,7 +144,11 @@
         "failedToCreate": "Aanmaken training mislukt",
         "cancel": "Annuleren",
         "creating": "Aanmaken...",
-        "createTraining": "Training Aanmaken"
+        "createTraining": "Training Aanmaken",
+        "fieldsAutoPopulated": "Velden Automatisch Ingevuld",
+        "fieldsAutoPopulatedDesc": "De volgende velden zijn ingevuld vanuit de potloodplanning: {fields}",
+        "selectCourse": "Selecteer eerst een cursus",
+        "selectProvider": "Selecteer eerst een trainingsaanbieder"
     },
     "scheduler": {
         "loadingData": "Trainingsgegevens laden...",

@@ -76,8 +76,7 @@ export function useProviders(includeRelations = false, enableRealTime = true) {
             course_id,
             courses (
               id,
-              title,
-              category
+              title
             )
           )
         `

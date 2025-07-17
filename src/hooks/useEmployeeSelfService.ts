@@ -202,7 +202,7 @@ export const useAvailableTrainings = () => {
         id: training.id,
         course_id: training.course_id,
         course_title: training.courses?.title || 'Unknown Course',
-        course_category: training.courses?.category || 'General',
+        course_category: 'General',
         course_level: training.courses?.level || 1,
         start_date: training.start_date,
         end_date: training.end_date,
@@ -487,7 +487,7 @@ export const useEmployeeTrainingCalendar = () => {
           location: tp.trainings?.location,
           instructor: tp.trainings?.instructor,
           status: tp.status,
-          category: tp.trainings?.courses?.category,
+          category: 'General',
           duration_hours: tp.trainings?.courses?.duration_hours,
           completion_date: tp.completion_date,
           training_status: tp.trainings?.status

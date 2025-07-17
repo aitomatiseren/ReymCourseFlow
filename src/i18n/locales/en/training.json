@@ -35,7 +35,14 @@
         "inProgress": "In Progress",
         "completed": "Completed",
         "cancelled": "Cancelled",
-        "draft": "Draft"
+        "draft": "Draft",
+        "loadingData": "Loading data...",
+        "calendar": {
+            "title": "Training Calendar",
+            "searchPlaceholder": "Search trainings...",
+            "createTraining": "New Training",
+            "legend": "Status Legend"
+        }
     },
     "participants": {
         "title": "Participants",
@@ -116,6 +123,8 @@
         "instructorPlaceholder": "Instructor name",
         "locationLabel": "Location",
         "locationPlaceholder": "Training location",
+        "minParticipantsLabel": "Min Participants",
+        "minParticipantsPlaceholder": "Minimum participants",
         "maxParticipantsLabel": "Max Participants",
         "maxParticipantsPlaceholder": "Maximum participants",
         "statusLabel": "Status",
@@ -135,7 +144,11 @@
         "failedToCreate": "Failed to create training",
         "cancel": "Cancel",
         "creating": "Creating...",
-        "createTraining": "Create Training"
+        "createTraining": "Create Training",
+        "fieldsAutoPopulated": "Fields Auto-populated",
+        "fieldsAutoPopulatedDesc": "The following fields have been filled from the preliminary plan: {fields}",
+        "selectCourse": "Please select a course first",
+        "selectProvider": "Please select a training provider first"
     },
     "scheduler": {
         "loadingData": "Loading training data...",

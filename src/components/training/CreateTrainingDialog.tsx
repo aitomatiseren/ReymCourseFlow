@@ -12,16 +12,18 @@ import { CourseSelectionSection } from "./forms/CourseSelectionSection";
 import { SmartMultiSessionSection } from "./forms/SmartMultiSessionSection";
 import { ChecklistManagementSection } from "./forms/ChecklistManagementSection";
 import { PlanSelectionSection } from "./forms/PlanSelectionSection";
-import { IntelligentSchedulingRecommendations } from "./IntelligentSchedulingRecommendations";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { useIntelligentScheduler } from "@/hooks/useIntelligentScheduler";
-import { SchedulingRecommendation } from "@/services/scheduling/intelligent-scheduler";
-import { Plus, Trash2, Euro, Brain, Sparkles } from "lucide-react";
+import { Plus, Trash2, Euro, Sparkles, Upload } from "lucide-react";
+import { TrainingContentImportDialog } from "./TrainingContentImportDialog";
+import { ExtractedTrainingData, TrainingContentExtractor } from "@/services/ai/training-content-extractor";
+import { AddCourseDialog } from "@/components/courses/AddCourseDialog";
+import { AddProviderDialog } from "@/components/providers/AddProviderDialog";
+import { CertificateManagementDialog } from "./CertificateManagementDialog";
 
 // Custom DialogContent that prevents outside click and has custom ESC handling
 const CustomDialogContent = forwardRef<
@@ -71,6 +73,7 @@ export function CreateTrainingDialog({
   const [title, setTitle] = useState("");
   const [instructor, setInstructor] = useState("");
   const [location, setLocation] = useState("");
+  const [minParticipants, setMinParticipants] = useState("");
   const [maxParticipants, setMaxParticipants] = useState("");
   const [status, setStatus] = useState<'scheduled' | 'confirmed' | 'cancelled' | 'completed'>('scheduled');
   const [requiresApproval, setRequiresApproval] = useState(false);
@@ -89,36 +92,64 @@ export function CreateTrainingDialog({
   const [sessionTimes, setSessionTimes] = useState<string[]>([]);
   const [sessionEndTimes, setSessionEndTimes] = useState<string[]>([]);
 
+  // Import dialog state
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  
+  // Quick create dialogs state
+  const [showCreateCourseDialog, setShowCreateCourseDialog] = useState(false);
+  const [showCreateProviderDialog, setShowCreateProviderDialog] = useState(false);
+  const [showCertificateManagementDialog, setShowCertificateManagementDialog] = useState(false);
+
   const { data: courses = [] } = useCourses();
+  const createTraining = useCreateTraining();
+  const { toast } = useToast();
   
   // Auto-populate fields when a preliminary plan group is selected
   useEffect(() => {
     if (planDetails && planDetails.group) {
       const group = planDetails.group;
+      let autoPopulatedFields = [];
+      
+      // Auto-populate min participants if not already set
+      if (group.min_participants && !minParticipants) {
+        setMinParticipants(group.min_participants.toString());
+        autoPopulatedFields.push('min participants');
+      }
       
       // Auto-populate max participants if not already set
       if (group.max_participants && !maxParticipants) {
         setMaxParticipants(group.max_participants.toString());
+        autoPopulatedFields.push('max participants');
       }
       
       // Auto-populate location if not already set
       if (group.location && !location) {
         setLocation(group.location);
+        autoPopulatedFields.push('location');
       }
       
       // Auto-populate title if not already set and group has a name
       if (group.name && !title) {
         setTitle(`${group.name} - Training`);
+        autoPopulatedFields.push('title');
       }
       
       // Auto-populate sessions count if available
       if (group.sessions_required && sessions === 1) {
         setSessions(group.sessions_required);
+        autoPopulatedFields.push('sessions count');
       }
       
       // Auto-populate estimated cost if available
       if (group.estimated_cost && !price) {
         setPrice(group.estimated_cost);
+        autoPopulatedFields.push('estimated cost');
+      }
+      
+      // Auto-populate provider if available
+      if (group.provider_id && !selectedProviderId) {
+        setSelectedProviderId(group.provider_id);
+        autoPopulatedFields.push('training provider');
       }
       
       // Auto-populate session dates if available
@@ -150,6 +181,7 @@ export function CreateTrainingDialog({
         const defaultEndTime = '17:00';
         setSessionTimes(Array(sessionsRequired).fill(defaultStartTime));
         setSessionEndTimes(Array(sessionsRequired).fill(defaultEndTime));
+        autoPopulatedFields.push('session dates and times');
       }
       
       // Auto-populate certificate if group has one
@@ -162,39 +194,27 @@ export function CreateTrainingDialog({
         // If only one course available, auto-select it
         if (certificateCourses.length === 1 && !selectedCourseId) {
           setSelectedCourseId(certificateCourses[0].id);
-          
-          // Also try to auto-select the recommended provider if available
-          if (group.provider_recommendation && !selectedProviderId) {
-            // This will be handled by the provider selection logic when the course is selected
-            // We can't directly select the provider here since it depends on the course providers
-          }
+          autoPopulatedFields.push('course selection');
         }
       }
+      
+      // Show toast notification if fields were auto-populated
+      if (autoPopulatedFields.length > 0) {
+        toast({
+          title: t('training:createDialog.fieldsAutoPopulated', 'Fields Auto-populated'),
+          description: t('training:createDialog.fieldsAutoPopulatedDesc', `The following fields have been filled from the preliminary plan: ${autoPopulatedFields.join(', ')}`),
+          duration: 4000,
+        });
+      }
     }
-  }, [planDetails, maxParticipants, location, title, courses, selectedCourseId, preSelectedLicenseId, sessions, price, sessionDates.length]);
-  const createTraining = useCreateTraining();
-  const { toast } = useToast();
+  }, [planDetails, minParticipants, maxParticipants, location, title, courses, selectedCourseId, preSelectedLicenseId, sessions, price, sessionDates.length, selectedProviderId, toast, t]);
+  
   const prevProviderId = useRef<string | null>(null);
   
   // Fetch provider-course specific details (pricing, etc.)
   const { data: providerCourseDetails } = useProviderCourseDetails(selectedProviderId, selectedCourseId);
   
-  // Auto-select provider based on group recommendation when course is selected
-  useEffect(() => {
-    if (planDetails && planDetails.group && planDetails.group.provider_recommendation && selectedCourseId && !selectedProviderId) {
-      // This effect should trigger when course providers are loaded
-      // We need to check if the recommended provider is available for the selected course
-      // This will be handled by the CourseSelectionSection component when providers are loaded
-    }
-  }, [planDetails, selectedCourseId, selectedProviderId]);
   
-  // Intelligent scheduler integration
-  const {
-    isAnalyzing,
-    recommendations,
-    getSchedulingRecommendations,
-    clearRecommendations
-  } = useIntelligentScheduler();
 
   const selectedCourse = courses.find(course => course.id === selectedCourseId);
 
@@ -220,16 +240,25 @@ export function CreateTrainingDialog({
     }
   };
 
-  // Update cost data when provider-course details change
+  // Update cost data and participants when provider-course details change
   useEffect(() => {
     if (providerCourseDetails) {
-      console.log('Updating cost data from provider-course details:', providerCourseDetails);
+      console.log('Updating data from provider-course details:', providerCourseDetails);
       setPrice(providerCourseDetails.price ? Number(providerCourseDetails.price) : undefined);
       setCostBreakdown(providerCourseDetails.cost_breakdown || []);
+      
+      // Update min and max participants from provider course data
+      if (providerCourseDetails.min_participants) {
+        setMinParticipants(providerCourseDetails.min_participants.toString());
+      }
+      if (providerCourseDetails.max_participants) {
+        setMaxParticipants(providerCourseDetails.max_participants.toString());
+      }
     } else {
-      // Clear cost data if no provider-course details
+      // Clear data if no provider-course details
       setPrice(undefined);
       setCostBreakdown([]);
+      // Don't clear participants as they might be set from other sources (course, preliminary plan, etc.)
     }
   }, [providerCourseDetails]);
 
@@ -303,6 +332,9 @@ export function CreateTrainingDialog({
       setTitle(course.title);
       setMaxParticipants(course.max_participants?.toString() || "");
       setSessions(course.sessions_required || 1);
+      
+      // Auto-populate approval requirement from course setting
+      setRequiresApproval(course.requires_approval || false);
 
       // Initialize checklist from course
       if (course.has_checklist && course.checklist_items) {
@@ -444,6 +476,7 @@ export function CreateTrainingDialog({
     setTitle("");
     setInstructor("");
     setLocation("");
+    setMinParticipants("");
     setMaxParticipants("");
     setStatus('scheduled');
     setRequiresApproval(false);
@@ -455,58 +488,8 @@ export function CreateTrainingDialog({
     setSessionDates([]);
     setSessionTimes([]);
     setSessionEndTimes([]);
-    clearRecommendations();
   };
 
-  // Get scheduling recommendations
-  const handleGetRecommendations = async () => {
-    if (!selectedCourseId) {
-      toast({
-        title: "Course Required",
-        description: "Please select a course before getting recommendations",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const constraints = {
-      courseId: selectedCourseId,
-      preferredStartDate: sessionDates[0] ? new Date(sessionDates[0]) : undefined,
-      maxParticipants: maxParticipants ? parseInt(maxParticipants) : undefined,
-      urgencyLevel: 'medium' as const,
-      teamCoverageRequired: true
-    };
-
-    await getSchedulingRecommendations(constraints);
-  };
-
-  // Apply a scheduling recommendation
-  const handleApplyRecommendation = (recommendation: SchedulingRecommendation) => {
-    // Apply provider information
-    setSelectedProviderId(recommendation.provider.id);
-    
-    // Apply scheduling information
-    const suggestedSessions = recommendation.suggestedDates.sessions;
-    if (suggestedSessions.length > 0) {
-      setSessions(suggestedSessions.length);
-      setSessionDates(suggestedSessions.map(s => s.date));
-      setSessionTimes(suggestedSessions.map(s => s.startTime));
-      setSessionEndTimes(suggestedSessions.map(s => s.endTime));
-    }
-
-    // Apply cost information
-    setPrice(recommendation.provider.totalEstimatedCost);
-    
-    // Apply location if available
-    if (recommendation.provider.name) {
-      setLocation("Provider location"); // Default, user can change
-    }
-
-    toast({
-      title: "Recommendation Applied",
-      description: `Applied scheduling recommendation for ${recommendation.provider.name}`,
-    });
-  };
 
   const validateForm = () => {
     if (!selectedCourseId) {
@@ -527,7 +510,7 @@ export function CreateTrainingDialog({
       return false;
     }
 
-    if (!title || !instructor || !location || !maxParticipants) {
+    if (!title || !instructor || !location || !minParticipants || !maxParticipants) {
       toast({
         title: t('training:createDialog.validationError'),
         description: t('training:createDialog.fillRequiredFields'),
@@ -553,6 +536,125 @@ export function CreateTrainingDialog({
     return true;
   };
 
+  // Handle imported training content
+  const handleImportTrainingContent = useCallback((data: ExtractedTrainingData) => {
+    console.log('📥 Importing training content:', data);
+    
+    // Pre-fill form fields with extracted data
+    if (data.title) {
+      console.log('✅ Setting title:', data.title);
+      setTitle(data.title);
+    }
+    
+    if (data.location) {
+      console.log('✅ Setting location:', data.location);
+      setLocation(data.location);
+    }
+    
+    if (data.instructor) {
+      console.log('✅ Setting instructor:', data.instructor);
+      setInstructor(data.instructor);
+    }
+    
+    if (data.maxParticipants) {
+      console.log('✅ Setting max participants:', data.maxParticipants);
+      setMaxParticipants(data.maxParticipants.toString());
+    }
+    
+    // Handle dates and times
+    if (data.startDate) {
+      const formattedDate = TrainingContentExtractor.formatDateForInput(data.startDate);
+      if (formattedDate) {
+        console.log('✅ Setting session date:', formattedDate);
+        setSessionDates([formattedDate]);
+        setSessions(1);
+      }
+    }
+    
+    if (data.startTime) {
+      console.log('✅ Setting session time:', data.startTime);
+      setSessionTimes([data.startTime]);
+    }
+    
+    if (data.endTime) {
+      console.log('✅ Setting session end time:', data.endTime);
+      setSessionEndTimes([data.endTime]);
+    }
+    
+    // Handle cost information
+    if (data.costs?.amount) {
+      console.log('✅ Setting price:', data.costs.amount);
+      setPrice(data.costs.amount);
+      
+      // If there's a cost breakdown, convert it to our format
+      if (data.costs.breakdown && data.costs.breakdown.length > 0) {
+        const breakdown = data.costs.breakdown.map(item => ({
+          name: item.type,
+          description: item.description || item.type,
+          amount: item.amount
+        }));
+        console.log('✅ Setting cost breakdown:', breakdown);
+        setCostBreakdown(breakdown);
+      }
+    }
+    
+    // Handle notes and requirements - add to checklist
+    if (data.requirements && data.requirements.length > 0) {
+      const requirementItems = data.requirements.map(req => ({
+        id: `req-${Date.now()}-${Math.random()}`,
+        text: req,
+        completed: false
+      }));
+      console.log('✅ Adding requirements to checklist:', requirementItems);
+      setChecklist(prev => [...prev, ...requirementItems]);
+    }
+    
+    if (data.materials && data.materials.length > 0) {
+      const materialItems = data.materials.map(mat => ({
+        id: `mat-${Date.now()}-${Math.random()}`,
+        text: `Material: ${mat}`,
+        completed: false
+      }));
+      console.log('✅ Adding materials to checklist:', materialItems);
+      setChecklist(prev => [...prev, ...materialItems]);
+    }
+    
+    // For multi-session training, handle end date
+    if (data.endDate && data.startDate && data.endDate !== data.startDate) {
+      const startDate = new Date(data.startDate);
+      const endDate = new Date(data.endDate);
+      const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysDiff > 0) {
+        const sessionCount = Math.min(daysDiff + 1, 10); // Cap at 10 sessions
+        console.log('✅ Setting multi-session training:', sessionCount, 'sessions');
+        setSessions(sessionCount);
+        
+        // Generate session dates
+        const dates = [];
+        const times = [];
+        const endTimes = [];
+        
+        for (let i = 0; i <= daysDiff; i++) {
+          const sessionDate = new Date(startDate);
+          sessionDate.setDate(startDate.getDate() + i);
+          dates.push(sessionDate.toISOString().split('T')[0]);
+          times.push(data.startTime || '09:00');
+          endTimes.push(data.endTime || '17:00');
+        }
+        
+        setSessionDates(dates);
+        setSessionTimes(times);
+        setSessionEndTimes(endTimes);
+      }
+    }
+    
+    toast({
+      title: "Training Content Imported",
+      description: `Training information has been imported with ${data.confidence || 50}% confidence. Please review and adjust as needed.`,
+    });
+  }, [toast]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -567,6 +669,7 @@ export function CreateTrainingDialog({
         date: sessionDates[0] || "",
         time: sessionTimes[0] || "",
         location,
+        min_participants: parseInt(minParticipants),
         max_participants: parseInt(maxParticipants),
         status,
         requires_approval: requiresApproval,
@@ -600,32 +703,46 @@ export function CreateTrainingDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} modal>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange} modal>
       <CustomDialogContent
         className="sm:max-w-[1000px] max-h-[90vh] overflow-y-auto"
         onOpenChange={onOpenChange}
       >
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {t('training:createDialog.title')}
-            <Sparkles className="h-5 w-5 text-blue-500" />
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <DialogTitle className="flex items-center gap-2">
+                {t('training:createDialog.title')}
+                <Sparkles className="h-5 w-5 text-blue-500" />
+              </DialogTitle>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsImportDialogOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Upload className="h-4 w-4" />
+              Import Content
+            </Button>
+          </div>
           <DialogDescription>
-            {t('training:createDialog.description')} Use AI-powered recommendations for optimal scheduling.
+            {t('training:createDialog.description')}
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="manual" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="manual">Manual Setup</TabsTrigger>
-            <TabsTrigger value="intelligent" className="flex items-center gap-2">
-              <Brain className="h-4 w-4" />
-              AI Recommendations
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="manual" className="space-y-6">
+        <div className="space-y-6">
             <form onSubmit={handleSubmit} className="space-y-6">
+          <PlanSelectionSection
+            selectedPlanId={selectedPlanId}
+            selectedGroupId={selectedGroupId}
+            onPlanChange={setSelectedPlanId}
+            onGroupChange={setSelectedGroupId}
+            onPlanDetailsChange={setPlanDetails}
+            preSelectedLicenseId={preSelectedLicenseId}
+          />
+
           <CourseSelectionSection
             courses={filteredCourses}
             selectedCourseId={selectedCourseId}
@@ -635,15 +752,9 @@ export function CreateTrainingDialog({
             onTitleChange={setTitle}
             onProviderChange={handleProviderChange}
             onProviderDetailsChange={handleProviderDetailsChange}
-          />
-
-          <PlanSelectionSection
-            selectedPlanId={selectedPlanId}
-            selectedGroupId={selectedGroupId}
-            onPlanChange={setSelectedPlanId}
-            onGroupChange={setSelectedGroupId}
-            onPlanDetailsChange={setPlanDetails}
-            preSelectedLicenseId={preSelectedLicenseId}
+            onCreateCourse={() => setShowCreateCourseDialog(true)}
+            onCreateProvider={() => setShowCreateProviderDialog(true)}
+            onManageCertificates={() => setShowCertificateManagementDialog(true)}
           />
 
           <SmartMultiSessionSection
@@ -660,35 +771,6 @@ export function CreateTrainingDialog({
           />
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="instructor">{t('training:createDialog.instructorLabel')}</Label>
-              {selectedProvider && selectedProvider.instructors && Array.isArray(selectedProvider.instructors) && selectedProvider.instructors.length > 0 ? (
-                <Select value={instructor} onValueChange={setInstructor} required disabled={!selectedProviderId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select an instructor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {selectedProvider.instructors
-                      .filter((inst: string) => inst !== selectedProvider.contact_person)
-                      .map((inst: string, index: number) => (
-                        <SelectItem key={index} value={inst}>
-                          {inst}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input
-                  id="instructor"
-                  value={instructor}
-                  onChange={(e) => setInstructor(e.target.value)}
-                  placeholder={!selectedProviderId ? "Select a provider first" : (selectedProvider ? t('training:createDialog.instructorPlaceholder') : "Instructor name")}
-                  disabled={!selectedProviderId}
-                  required
-                />
-              )}
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="location">{t('training:createDialog.locationLabel')}</Label>
               {selectedProvider && selectedProvider.additional_locations && Array.isArray(selectedProvider.additional_locations) && selectedProvider.additional_locations.length > 0 ? (
@@ -726,9 +808,63 @@ export function CreateTrainingDialog({
                 />
               )}
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="instructor">{t('training:createDialog.instructorLabel')}</Label>
+              {selectedProvider && selectedProvider.instructors && Array.isArray(selectedProvider.instructors) && selectedProvider.instructors.length > 0 ? (
+                <Select value={instructor} onValueChange={setInstructor} required disabled={!selectedProviderId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select an instructor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selectedProvider.instructors
+                      .filter((inst: string) => inst !== selectedProvider.contact_person)
+                      .map((inst: string, index: number) => (
+                        <SelectItem key={index} value={inst}>
+                          {inst}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Select value={instructor} onValueChange={setInstructor} required disabled={!selectedProviderId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={!selectedProviderId ? "Select a provider first" : "Select an instructor"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="manual-entry" disabled>
+                      <span className="text-gray-500 italic">No instructors configured - enter manually below</span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+              {(!selectedProvider || !selectedProvider.instructors || !Array.isArray(selectedProvider.instructors) || selectedProvider.instructors.length === 0) && selectedProviderId && (
+                <Input
+                  id="instructor-manual"
+                  value={instructor}
+                  onChange={(e) => setInstructor(e.target.value)}
+                  placeholder={t('training:createDialog.instructorPlaceholder')}
+                  required
+                  className="mt-2"
+                />
+              )}
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="minParticipants">{t('training:createDialog.minParticipantsLabel', 'Min Participants')}</Label>
+              <Input
+                id="minParticipants"
+                type="number"
+                min="1"
+                value={minParticipants}
+                onChange={(e) => setMinParticipants(e.target.value)}
+                placeholder={t('training:createDialog.minParticipantsPlaceholder', 'Minimum participants')}
+                required
+              />
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="maxParticipants">{t('training:createDialog.maxParticipantsLabel')}</Label>
               <Input
@@ -817,139 +953,40 @@ export function CreateTrainingDialog({
                 </Button>
               </div>
             </form>
-          </TabsContent>
-
-          <TabsContent value="intelligent" className="space-y-6">
-            <div className="space-y-4">
-              {/* Course Selection for Recommendations */}
-              <CourseSelectionSection
-                courses={filteredCourses}
-                selectedCourseId={selectedCourseId}
-                title={title}
-                selectedProviderId={selectedProviderId}
-                onCourseChange={handleCourseChange}
-                onTitleChange={setTitle}
-                onProviderChange={handleProviderChange}
-                onProviderDetailsChange={handleProviderDetailsChange}
-              />
-
-              <PlanSelectionSection
-                selectedPlanId={selectedPlanId}
-                selectedGroupId={selectedGroupId}
-                onPlanChange={setSelectedPlanId}
-                onGroupChange={setSelectedGroupId}
-                onPlanDetailsChange={setPlanDetails}
-                preSelectedLicenseId={preSelectedLicenseId}
-              />
-
-              {/* Get Recommendations Button */}
-              <div className="flex justify-center">
-                <Button
-                  onClick={handleGetRecommendations}
-                  disabled={!selectedCourseId || isAnalyzing}
-                  className="flex items-center gap-2"
-                >
-                  <Brain className="h-4 w-4" />
-                  {isAnalyzing ? 'Analyzing...' : 'Get AI Recommendations'}
-                </Button>
-              </div>
-
-              {/* Intelligent Scheduling Recommendations */}
-              <IntelligentSchedulingRecommendations
-                recommendations={recommendations}
-                isAnalyzing={isAnalyzing}
-                onApplyRecommendation={handleApplyRecommendation}
-                onRefreshRecommendations={handleGetRecommendations}
-              />
-
-              {/* Manual form for final adjustments after applying recommendation */}
-              {selectedProviderId && (
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-semibold mb-4">Final Adjustments</h3>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <SmartMultiSessionSection
-                      selectedCourse={selectedCourse}
-                      sessions={sessions}
-                      sessionDates={sessionDates}
-                      sessionTimes={sessionTimes}
-                      sessionEndTimes={sessionEndTimes}
-                      onSessionsChange={setSessions}
-                      onSessionDateChange={handleSessionDateChange}
-                      onSessionTimeChange={handleSessionTimeChange}
-                      onSessionEndTimeChange={handleSessionEndTimeChange}
-                      onCopyTimeToAll={handleCopyTimeToAll}
-                    />
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="instructor-ai">{t('training:createDialog.instructorLabel')}</Label>
-                        <Input
-                          id="instructor-ai"
-                          value={instructor}
-                          onChange={(e) => setInstructor(e.target.value)}
-                          placeholder={t('training:createDialog.instructorPlaceholder')}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="location-ai">{t('training:createDialog.locationLabel')}</Label>
-                        <Input
-                          id="location-ai"
-                          value={location}
-                          onChange={(e) => setLocation(e.target.value)}
-                          placeholder={t('training:createDialog.locationPlaceholder')}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="maxParticipants-ai">{t('training:createDialog.maxParticipantsLabel')}</Label>
-                        <Input
-                          id="maxParticipants-ai"
-                          type="number"
-                          min="1"
-                          value={maxParticipants}
-                          onChange={(e) => setMaxParticipants(e.target.value)}
-                          placeholder={t('training:createDialog.maxParticipantsPlaceholder')}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="status-ai">{t('training:createDialog.statusLabel')}</Label>
-                        <Select value={status} onValueChange={(value: 'scheduled' | 'confirmed' | 'cancelled' | 'completed') => setStatus(value)}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="scheduled">{t('training:status.scheduled')}</SelectItem>
-                            <SelectItem value="confirmed">{t('training:status.confirmed')}</SelectItem>
-                            <SelectItem value="cancelled">{t('training:status.cancelled')}</SelectItem>
-                            <SelectItem value="completed">{t('training:status.completed')}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end space-x-2 pt-4">
-                      <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                        {t('training:createDialog.cancel')}
-                      </Button>
-                      <Button 
-                        type="submit" 
-                        disabled={createTraining.isPending || !selectedProviderId}
-                      >
-                        {createTraining.isPending ? t('training:createDialog.creating') : t('training:createDialog.createTraining')}
-                      </Button>
-                    </div>
-                  </form>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
+        </div>
       </CustomDialogContent>
     </Dialog>
+
+    {/* Import Content Dialog */}
+    <TrainingContentImportDialog
+      open={isImportDialogOpen}
+      onOpenChange={setIsImportDialogOpen}
+      onImport={handleImportTrainingContent}
+      title="Import Training Content"
+    />
+
+    {/* Quick Create Course Dialog */}
+    <AddCourseDialog
+      open={showCreateCourseDialog}
+      onOpenChange={setShowCreateCourseDialog}
+    />
+
+    {/* Quick Create Provider Dialog */}
+    <AddProviderDialog
+      open={showCreateProviderDialog}
+      onOpenChange={setShowCreateProviderDialog}
+    />
+
+    {/* Certificate Management Dialog */}
+    <CertificateManagementDialog
+      open={showCertificateManagementDialog}
+      onOpenChange={setShowCertificateManagementDialog}
+      selectedCourseId={selectedCourseId}
+      onCertificateCreated={() => {
+        // Refresh courses data to show updated certificate information
+        // The query will be invalidated by the CertificateManagementDialog mutations
+      }}
+    />
+    </>
   );
 }

@@ -409,15 +409,27 @@ export function EditProviderDialog({
   };
 
   const handleLocationSelect = (address: { street: string; city: string; postcode: string; country: string }) => {
+    console.log('=== EditProviderDialog handleLocationSelect called ===');
+    console.log('Location selected:', address);
+    console.log('Postcode value:', address.postcode, 'Type:', typeof address.postcode, 'Length:', address.postcode?.length);
+    
     const locationName = `${address.city} Location`; // Default name based on city
     const currentLocations = form.getValues("additional_locations");
-    form.setValue("additional_locations", [...currentLocations, {
+    
+    const newLocation = {
       name: locationName,
       address: address.street,
       postcode: address.postcode,
       city: address.city,
       country: address.country
-    }]);
+    };
+    
+    console.log('New location object:', newLocation);
+    console.log('Current locations before:', currentLocations);
+    
+    form.setValue("additional_locations", [...currentLocations, newLocation]);
+    
+    console.log('Locations after update:', form.getValues("additional_locations"));
   };
 
   const removeLocation = (index: number) => {
@@ -757,6 +769,16 @@ export function EditProviderDialog({
                             <div className="text-sm text-gray-600 px-3 py-2 bg-white rounded border">
                               <div className="font-medium">Address:</div>
                               <div>{location.address}</div>
+                              <div className="mt-1 text-xs">
+                                {location.postcode && location.city && (
+                                  <span>{location.postcode} {location.city}, {location.country}</span>
+                                )}
+                                {(!location.postcode || !location.city) && (
+                                  <span className="text-gray-400">
+                                    {location.city || 'Unknown city'}, {location.country || 'Netherlands'}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         ))}

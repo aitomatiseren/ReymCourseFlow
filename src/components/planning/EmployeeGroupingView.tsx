@@ -21,7 +21,10 @@ import {
   MessageSquare,
   Send,
   MapPin,
-  Filter
+  Filter,
+  Check,
+  Award,
+  Trash2
 } from "lucide-react";
 import { CertificateExpiryAnalysis, usePreliminaryPlanningMutations } from "@/hooks/usePreliminaryPlanning";
 import { useTrainings } from "@/hooks/useTrainings";
@@ -31,7 +34,8 @@ import { OpenAIService } from "@/services/ai";
 import { useProviderPreferencesSummary } from "@/hooks/useProviderPreferences";
 import { useEmployeeAvailabilitySummary, useEmployeeComprehensiveData } from "@/hooks/useEmployeeAvailability";
 import { CreateGroupDialog } from "./CreateGroupDialog";
-import { usePreliminaryPlans } from "@/hooks/usePreliminaryPlanning";
+import { InteractivePlanningDialog } from "./InteractivePlanningDialog";
+import { usePreliminaryPlans, usePreliminaryPlanGroups } from "@/hooks/usePreliminaryPlanning";
 import { useToast } from "@/hooks/use-toast";
 
 interface EmployeeGroupingViewProps {
@@ -41,6 +45,170 @@ interface EmployeeGroupingViewProps {
   onLicenseChange: (licenseId: string) => void;
   selectedPlanId?: string;
   onPlanChange?: (planId: string) => void;
+}
+
+// Component to display existing preliminary planning groups
+function ExistingGroupsView({ 
+  selectedPlanId, 
+  selectedLicenseId, 
+  onGroupEdit 
+}: { 
+  selectedPlanId: string; 
+  selectedLicenseId: string; 
+  onGroupEdit: (groupId: string) => void;
+}) {
+  const { data: groups = [], isLoading } = usePreliminaryPlanGroups(selectedPlanId);
+  const { deletePreliminaryPlanGroup } = usePreliminaryPlanningMutations();
+  const { toast } = useToast();
+
+  const handleDeleteGroup = async (groupId: string, groupName: string) => {
+    if (window.confirm(`Are you sure you want to delete the group "${groupName}"? This action cannot be undone.`)) {
+      try {
+        await deletePreliminaryPlanGroup.mutateAsync(groupId);
+        toast({
+          title: "Group deleted",
+          description: `Group "${groupName}" has been successfully deleted.`,
+        });
+      } catch (error) {
+        console.error('Error deleting group:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete the group. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+  
+  if (isLoading) {
+    return <div className="text-center py-4">Loading existing groups...</div>;
+  }
+
+  const relevantGroups = groups.filter(group => 
+    selectedLicenseId === 'all' || group.certificate_id === selectedLicenseId
+  );
+
+  if (relevantGroups.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+        <p>No existing groups found for this certificate</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {relevantGroups.map((group) => (
+        <Card key={group.id} className="border-l-4 border-l-blue-500">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">{group.name}</CardTitle>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="capitalize">
+                  {group.group_type}
+                </Badge>
+                <Badge variant="secondary">
+                  Priority {group.priority}
+                </Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onGroupEdit(group.id)}
+                >
+                  <Eye className="h-4 w-4 mr-1" />
+                  View
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                  onClick={() => handleDeleteGroup(group.id, group.name)}
+                  disabled={deletePreliminaryPlanGroup.isPending}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Delete
+                </Button>
+              </div>
+            </div>
+            {group.description && (
+              <p className="text-sm text-gray-600 mt-1">{group.description}</p>
+            )}
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <Users className="h-4 w-4 text-blue-500" />
+                  <span className="font-medium">Participants:</span>
+                  <span>{group.preliminary_plan_group_employees?.length || 0}</span>
+                  {group.max_participants && (
+                    <span className="text-gray-500">/ {group.max_participants}</span>
+                  )}
+                </div>
+                {group.target_completion_date && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Calendar className="h-4 w-4 text-green-500" />
+                    <span className="font-medium">Target:</span>
+                    <span>{new Date(group.target_completion_date).toLocaleDateString()}</span>
+                  </div>
+                )}
+                {group.location && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <MapPin className="h-4 w-4 text-orange-500" />
+                    <span className="font-medium">Location:</span>
+                    <span>{group.location}</span>
+                  </div>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                {group.licenses && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Award className="h-4 w-4 text-purple-500" />
+                    <span className="font-medium">Certificate:</span>
+                    <span>{group.licenses.name}</span>
+                  </div>
+                )}
+                {group.estimated_cost && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="font-medium">Cost:</span>
+                    <span>€{group.estimated_cost}</span>
+                  </div>
+                )}
+                {group.sessions_required && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="font-medium">Sessions:</span>
+                    <span>{group.sessions_required}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                {group.preliminary_plan_group_employees?.length > 0 && (
+                  <div className="space-y-1">
+                    <span className="text-sm font-medium">Employees:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {group.preliminary_plan_group_employees.slice(0, 3).map((emp) => (
+                        <Badge key={emp.id} variant="outline" className="text-xs">
+                          {emp.employees?.first_name} {emp.employees?.last_name}
+                        </Badge>
+                      ))}
+                      {group.preliminary_plan_group_employees.length > 3 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{group.preliminary_plan_group_employees.length - 3} more
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
 }
 
 export function EmployeeGroupingView({ 
@@ -58,9 +226,11 @@ export function EmployeeGroupingView({
   const [planningRequest, setPlanningRequest] = useState('');
   const [aiPlanningResult, setAiPlanningResult] = useState<any>(null);
   const [isProcessingRequest, setIsProcessingRequest] = useState(false);
+  const [createdGroups, setCreatedGroups] = useState<Set<string>>(new Set());
   
   // Dialog state
   const [isCreateGroupDialogOpen, setIsCreateGroupDialogOpen] = useState(false);
+  const [isInteractivePlanningDialogOpen, setIsInteractivePlanningDialogOpen] = useState(false);
   const [currentGroupData, setCurrentGroupData] = useState<{
     employeeIds: string[];
     employeeNames: string[];
@@ -96,6 +266,38 @@ export function EmployeeGroupingView({
 
   const { data: existingTrainings = [], isLoading: trainingsLoading } = useTrainings();
   const { data: providers = [], isLoading: providersLoading } = useProviders();
+  
+  // Function to check if an employee is already scheduled for training for the selected certificate
+  const isEmployeeScheduledForCertificate = (employeeId: string) => {
+    // Check existing trainings
+    const scheduledInTrainings = existingTrainings.some(training => {
+      // Check if this training is for the selected certificate
+      if (training.course_id && certificateCourses.some(course => course.id === training.course_id)) {
+        // Check if employee is enrolled in this training
+        return training.training_participants?.some(participant => 
+          participant.employee_id === employeeId && 
+          ['enrolled', 'attended', 'completed'].includes(participant.status)
+        );
+      }
+      return false;
+    });
+    
+    // Check preliminary planning groups for the selected certificate
+    const scheduledInPreliminaryGroups = preliminaryPlans.some(plan => {
+      if (plan.status === 'archived') return false;
+      
+      // Check if any groups in this plan are for the selected certificate and contain this employee
+      return plan.preliminary_plan_groups?.some(group => {
+        if (group.certificate_id !== selectedLicenseId) return false;
+        
+        return group.preliminary_plan_group_employees?.some(emp => 
+          emp.employee_id === employeeId
+        );
+      });
+    });
+    
+    return scheduledInTrainings || scheduledInPreliminaryGroups;
+  };
   
   // Use the new hook to get providers that can deliver training for the selected certificate
   const { data: certificateProviders = [], isLoading: certificateProvidersLoading } = useProvidersForCertificate(
@@ -395,28 +597,41 @@ export function EmployeeGroupingView({
       // First, find or create a preliminary plan to contain the group
       let planId = '';
       
-      // Look for an existing active plan or create a new one
-      const activePlan = preliminaryPlans.find(plan => 
-        plan.status === 'draft' || plan.status === 'review'
-      );
+      // If a specific plan is selected and it's editable, use it
+      if (selectedPlanId && selectedPlanId !== 'all') {
+        const selectedPlan = preliminaryPlans.find(plan => plan.id === selectedPlanId);
+        if (selectedPlan && (selectedPlan.status === 'draft' || selectedPlan.status === 'review')) {
+          planId = selectedPlanId;
+          console.log(`✅ Using selected plan: ${selectedPlan.name} (${selectedPlanId})`);
+        }
+      }
       
-      if (activePlan) {
-        planId = activePlan.id;
-      } else {
-        // Create a new preliminary plan
-        const newPlan = await createPreliminaryPlan.mutateAsync({
-          name: `Training Plan - ${new Date().toLocaleDateString()}`,
-          description: `Preliminary training plan created for ${groupData.name}`,
-          planning_period_start: new Date().toISOString().split('T')[0],
-          planning_period_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 year from now
-          status: 'draft',
-          version: 1,
-          metadata: {
-            created_from: 'employee_grouping_view',
-            license_id: selectedLicenseId !== 'all' ? selectedLicenseId : undefined,
-          }
-        });
-        planId = newPlan.id;
+      // If no suitable plan is selected, find or create one
+      if (!planId) {
+        const activePlan = preliminaryPlans.find(plan => 
+          plan.status === 'draft' || plan.status === 'review'
+        );
+        
+        if (activePlan) {
+          planId = activePlan.id;
+          console.log(`✅ Using existing active plan: ${activePlan.name} (${activePlan.id})`);
+        } else {
+          // Create a new preliminary plan
+          const newPlan = await createPreliminaryPlan.mutateAsync({
+            name: `Training Plan - ${new Date().toLocaleDateString()}`,
+            description: `Preliminary training plan created for ${groupData.name}`,
+            planning_period_start: new Date().toISOString().split('T')[0],
+            planning_period_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 year from now
+            status: 'draft',
+            version: 1,
+            metadata: {
+              created_from: 'employee_grouping_view',
+              license_id: selectedLicenseId !== 'all' ? selectedLicenseId : undefined,
+            }
+          });
+          planId = newPlan.id;
+          console.log(`✅ Created new plan: ${newPlan.name} (${newPlan.id})`);
+        }
       }
 
       // Create the group
@@ -485,6 +700,9 @@ export function EmployeeGroupingView({
         description: `Created group "${groupData.name}" with ${employeeIds.length} employees.`,
       });
 
+      // Track the created group
+      setCreatedGroups(prev => new Set([...prev, groupData.name]));
+
       // Refresh data
       queryClient.invalidateQueries({ queryKey: ['preliminary-plans'] });
       queryClient.invalidateQueries({ queryKey: ['preliminary-plan-groups'] });
@@ -508,32 +726,288 @@ export function EmployeeGroupingView({
   };
 
   const handleRequestModification = () => {
-    // More helpful modification request with examples
-    const modificationPrompt = `Please modify the previous grouping suggestion. Examples of changes you can request:
+    setIsInteractivePlanningDialogOpen(true);
+  };
 
-- Change group sizes (e.g., "make smaller groups of 6 people each")
-- Combine or split groups (e.g., "merge groups 1 and 2" or "split the large group")
-- Adjust timing (e.g., "schedule VCA groups in different months")
-- Change department groupings (e.g., "keep night shift workers together")
-- Modify priorities (e.g., "prioritize the expired certificates first")
-- Add constraints (e.g., "avoid scheduling during summer months")
-
-What changes would you like to make?
-
-Original request: "${planningRequest}"`;
+  const removeEmptyGroups = (result: any) => {
+    if (!result || !result.groups) return;
     
-    setPlanningRequest(modificationPrompt);
+    const originalCount = result.groups.length;
     
-    // Scroll to the input area with a slight delay to ensure DOM is updated
-    setTimeout(() => {
-      const textarea = document.getElementById('planning-request-textarea');
-      if (textarea) {
-        textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        (textarea as HTMLTextAreaElement).focus();
-        // Also highlight the textarea briefly to show where it is
-        (textarea as HTMLTextAreaElement).select();
+    // Filter out groups with no employees or empty employee arrays
+    result.groups = result.groups.filter((group: any) => {
+      const hasEmployees = group.employees && group.employees.length > 0;
+      
+      if (!hasEmployees) {
+        console.log(`🗑️ Removing empty group: ${group.name}`);
+        return false;
       }
-    }, 100);
+      
+      return true;
+    });
+    
+    const removedCount = originalCount - result.groups.length;
+    if (removedCount > 0) {
+      console.log(`✅ Removed ${removedCount} empty group(s) after modifications`);
+    }
+  };
+
+  const applyPlanningModifications = (modifications: any) => {
+    if (!aiPlanningResult || !modifications || modifications.action !== 'modify_existing_plan') {
+      console.error('Invalid modifications or no existing plan to modify');
+      return;
+    }
+
+    console.log('🔄 Applying planning modifications:', modifications);
+    
+    // Create a deep copy of the existing planning result
+    const modifiedResult = JSON.parse(JSON.stringify(aiPlanningResult));
+
+    // Apply each modification
+    modifications.changes.forEach((change: any) => {
+      switch (change.type) {
+        case 'move_employee':
+          moveEmployeeBetweenGroups(modifiedResult, change.employee, change.from_group, change.to_group, change.reason);
+          break;
+        case 'add_employee':
+          addEmployeeToExistingGroup(modifiedResult, change.employee, change.to_group, change.reason);
+          break;
+        case 'dissolve_group':
+          dissolveGroup(modifiedResult, change.group_name, change.reason);
+          break;
+        case 'reschedule_group':
+          rescheduleGroup(modifiedResult, change.group_name, change.new_date, change.reason);
+          break;
+        case 'update_group_details':
+          updateGroupDetails(modifiedResult, change.group_name, change.new_employees, change.reason);
+          break;
+        case 'update_cost_analysis':
+          updateCostAnalysis(modifiedResult, change.group_name, change.new_cost, change.reason);
+          break;
+        case 'modify_group_size':
+          // Future enhancement
+          break;
+        case 'change_provider':
+          // Future enhancement
+          break;
+        case 'provider_adjustment':
+          updateGroupProvider(modifiedResult, change.group_name, change.new_provider, change.reason);
+          break;
+        default:
+          console.warn('Unknown modification type:', change.type);
+      }
+    });
+
+    // Clean up empty groups after modifications
+    removeEmptyGroups(modifiedResult);
+    
+    // Update the planning result state
+    setAiPlanningResult(modifiedResult);
+    
+    console.log('✅ Planning modifications applied successfully');
+  };
+
+  const moveEmployeeBetweenGroups = (result: any, employeeName: string, fromGroup: string, toGroup: string, reason: string) => {
+    const groups = result.groups || [];
+    
+    // Find the target group (more flexible matching)
+    const targetGroup = groups.find((g: any) => 
+      g.name === toGroup || 
+      g.name.includes(toGroup) || 
+      toGroup.includes(g.name)
+    );
+    
+    if (!targetGroup) {
+      console.error(`Target group "${toGroup}" not found`);
+      return;
+    }
+    
+    // Find the employee in any group (not just the specified fromGroup)
+    let sourceGroup = null;
+    let employeeIndex = -1;
+    
+    for (const group of groups) {
+      const index = group.employees?.findIndex((emp: string) => emp === employeeName);
+      if (index !== -1) {
+        sourceGroup = group;
+        employeeIndex = index;
+        break;
+      }
+    }
+    
+    if (!sourceGroup || employeeIndex === -1) {
+      console.error(`Employee "${employeeName}" not found in any group`);
+      return;
+    }
+    
+    // Remove employee from source group
+    sourceGroup.employees.splice(employeeIndex, 1);
+    
+    // Add employee to target group
+    if (!targetGroup.employees) {
+      targetGroup.employees = [];
+    }
+    targetGroup.employees.push(employeeName);
+    
+    // Update reasoning for both groups
+    sourceGroup.reasoning = `${sourceGroup.reasoning || ''} (Updated: ${employeeName} moved to ${toGroup} - ${reason})`.trim();
+    targetGroup.reasoning = `${targetGroup.reasoning || ''} (Updated: ${employeeName} added from ${sourceGroup.name} - ${reason})`.trim();
+    
+    console.log(`✅ Moved ${employeeName} from ${sourceGroup.name} to ${targetGroup.name}`);
+  };
+
+  const dissolveGroup = (result: any, groupName: string, reason: string) => {
+    const groups = result.groups || [];
+    
+    // Find the group to dissolve (flexible matching)
+    const groupIndex = groups.findIndex((g: any) => 
+      g.name === groupName || 
+      g.name.includes(groupName) || 
+      groupName.includes(g.name)
+    );
+    
+    if (groupIndex === -1) {
+      console.error(`Group "${groupName}" not found for dissolution`);
+      return;
+    }
+    
+    const group = groups[groupIndex];
+    console.log(`🗑️ Dissolving group: ${group.name} (${group.employees?.length || 0} employees)`);
+    
+    // Remove the group from the array
+    groups.splice(groupIndex, 1);
+    
+    console.log(`✅ Group ${groupName} dissolved successfully`);
+  };
+
+  const addEmployeeToExistingGroup = (result: any, employeeName: string, toGroup: string, reason: string) => {
+    const groups = result.groups || [];
+    
+    // First, remove the employee from any existing groups to avoid duplicates
+    groups.forEach((group: any) => {
+      if (group.employees && group.employees.includes(employeeName)) {
+        const index = group.employees.indexOf(employeeName);
+        group.employees.splice(index, 1);
+        group.reasoning = `${group.reasoning || ''} (Updated: ${employeeName} removed - ${reason})`.trim();
+        console.log(`🔄 Removed ${employeeName} from ${group.name} before moving`);
+      }
+    });
+    
+    // Find the target group (flexible matching)
+    const targetGroup = groups.find((g: any) => 
+      g.name === toGroup || 
+      g.name.includes(toGroup) || 
+      toGroup.includes(g.name)
+    );
+    
+    if (!targetGroup) {
+      console.error(`Target group "${toGroup}" not found for adding employee`);
+      return;
+    }
+    
+    // Add employee to target group
+    if (!targetGroup.employees) {
+      targetGroup.employees = [];
+    }
+    targetGroup.employees.push(employeeName);
+    
+    // Update reasoning
+    targetGroup.reasoning = `${targetGroup.reasoning || ''} (Updated: ${employeeName} added - ${reason})`.trim();
+    
+    console.log(`✅ Added ${employeeName} to ${targetGroup.name}`);
+  };
+
+  const updateCostAnalysis = (result: any, groupName: string, newCost: string, reason: string) => {
+    const groups = result.groups || [];
+    
+    // Find the group to update (flexible matching)
+    const group = groups.find((g: any) => 
+      g.name === groupName || 
+      g.name.includes(groupName) || 
+      groupName.includes(g.name)
+    );
+    
+    if (!group) {
+      console.error(`Group "${groupName}" not found for cost update`);
+      return;
+    }
+    
+    // Update cost information
+    group.cost = newCost;
+    group.reasoning = `${group.reasoning || ''} (Updated: Cost changed to ${newCost} - ${reason})`.trim();
+    
+    console.log(`✅ Updated cost for ${group.name} to ${newCost}`);
+  };
+
+  const updateGroupProvider = (result: any, groupName: string, newProvider: string, reason: string) => {
+    const groups = result.groups || [];
+    
+    // Find the group to update (flexible matching)
+    const group = groups.find((g: any) => 
+      g.name === groupName || 
+      g.name.includes(groupName) || 
+      groupName.includes(g.name)
+    );
+    
+    if (!group) {
+      console.error(`Group "${groupName}" not found for provider update`);
+      return;
+    }
+    
+    // Update provider information
+    group.provider = newProvider;
+    group.reasoning = `${group.reasoning || ''} (Updated: Provider changed to ${newProvider} - ${reason})`.trim();
+    
+    console.log(`✅ Updated provider for ${group.name} to ${newProvider}`);
+  };
+
+  const rescheduleGroup = (result: any, groupName: string, newDate: string, reason: string) => {
+    const groups = result.groups || [];
+    const group = groups.find((g: any) => g.name === groupName);
+    
+    if (!group) {
+      console.error(`Group "${groupName}" not found`);
+      return;
+    }
+    
+    // Update group dates
+    group.suggested_date = newDate;
+    
+    // If it's a multi-session training, update session schedule
+    if (group.session_schedule && group.session_schedule.length > 1) {
+      const startDate = new Date(newDate);
+      group.session_schedule = group.session_schedule.map((date: string, index: number) => {
+        const sessionDate = new Date(startDate);
+        sessionDate.setDate(startDate.getDate() + (index * 2)); // 2 days apart
+        return sessionDate.toISOString().split('T')[0];
+      });
+      
+      // Update end date
+      group.suggested_end_date = group.session_schedule[group.session_schedule.length - 1];
+    }
+    
+    // Update reasoning
+    group.reasoning = `${group.reasoning || ''} (Updated: Rescheduled to ${newDate} - ${reason})`.trim();
+    
+    console.log(`✅ Rescheduled ${groupName} to ${newDate}`);
+  };
+
+  const updateGroupDetails = (result: any, groupName: string, newEmployees: string[], reason: string) => {
+    const groups = result.groups || [];
+    const group = groups.find((g: any) => g.name === groupName);
+    
+    if (!group) {
+      console.error(`Group "${groupName}" not found`);
+      return;
+    }
+    
+    // Update group employees
+    group.employees = newEmployees;
+    
+    // Update reasoning
+    group.reasoning = `${group.reasoning || ''} (Updated: ${reason})`.trim();
+    
+    console.log(`✅ Updated ${groupName} with new employee list:`, newEmployees);
   };
 
   const handleNaturalLanguagePlanning = async () => {
@@ -541,6 +1015,7 @@ Original request: "${planningRequest}"`;
     
     setIsProcessingRequest(true);
     setAiPlanningResult(null); // Clear previous results
+    setCreatedGroups(new Set()); // Reset created groups tracking
     
     try {
       // Check if OpenAI is available
@@ -735,6 +1210,71 @@ Original request: "${planningRequest}"`;
         ) : 
         generateWeekdayDates(new Date(), new Date(Date.now() + 90 * 24 * 60 * 60 * 1000));
 
+      // Parse availability constraints from the planning request
+      const parseAvailabilityConstraints = (request: string) => {
+        const constraints = [];
+        const lowerRequest = request.toLowerCase();
+        
+        // Look for specific employee availability mentions
+        const employeeNames = expiryData.map(emp => `${emp.first_name} ${emp.last_name}`);
+        
+        for (const fullName of employeeNames) {
+          const firstName = fullName.split(' ')[0].toLowerCase();
+          const lastName = fullName.split(' ')[1]?.toLowerCase() || '';
+          
+          // Check for various availability constraint patterns
+          const patterns = [
+            // "John Doe will be on leave"
+            `${firstName}.*${lastName}.*(?:will be|is|goes).*(?:on leave|unavailable|away|absent)`,
+            // "John will be on leave"
+            `${firstName}.*(?:will be|is|goes).*(?:on leave|unavailable|away|absent)`,
+            // "John Doe on leave"
+            `${firstName}.*${lastName}.*(?:on leave|unavailable|away|absent)`,
+            // "skip John" or "exclude John"
+            `(?:skip|exclude|remove|ignore).*${firstName}`,
+            // "John won't be"
+            `${firstName}.*(?:won't be|will not be|cannot|can't).*(?:with us|available|here)`
+          ];
+          
+          for (const pattern of patterns) {
+            const regex = new RegExp(pattern, 'i');
+            const regexMatch = regex.exec(lowerRequest);
+            if (regexMatch) {
+              // Try to extract date ranges
+              const datePatterns = [
+                /(?:from|starting|beginning).*?(end of \d{4}|\w+ \d{4}|\d{4}).*?(?:to|until|till|through).*?(end of \w+ \d{4}|\w+ \d{4}|\d{4})/i,
+                /(?:during|in|throughout).*?(\d{4}|\w+ \d{4})/i,
+                /(end of \d{4}).*?(?:to|until|till).*?(end of \w+ \d{4}|\w+ \d{4}|\d{4})/i,
+                /(?:starting|from).*?(end of \d{4}).*?(?:till|until|through).*?(end of \w+ \d{4})/i
+              ];
+              
+              let dateRange = 'dates not specified';
+              for (const datePattern of datePatterns) {
+                const dateMatch = lowerRequest.match(datePattern);
+                if (dateMatch) {
+                  dateRange = dateMatch[0];
+                  break;
+                }
+              }
+              
+              constraints.push({
+                employeeName: fullName,
+                constraint: `UNAVAILABLE - ${dateRange}`,
+                originalText: regexMatch[0] || `${firstName} availability constraint`
+              });
+              break;
+            }
+          }
+        }
+        
+        return constraints;
+      };
+      
+      const customAvailabilityConstraints = parseAvailabilityConstraints(planningRequest);
+
+      console.log('🔍 Parsed availability constraints:', customAvailabilityConstraints);
+      console.log('🔍 Original request:', planningRequest);
+
       const prompt = `You are an intelligent training planning assistant. Create employee groups for ${selectedLicenseName} training based on this request: "${planningRequest}"
 
 IMPORTANT: Pay close attention to the specific group size requested in the user's request above. 
@@ -880,12 +1420,33 @@ ${customAvailabilityConstraints.length > 0 ?
   'No custom availability constraints specified in user request'
 }
 
-**MANDATORY SCHEDULING RULES:**
-1. **NEVER schedule employees who are explicitly mentioned as unavailable in the user request**
-2. **ALWAYS respect date ranges specified for employee availability**
-3. **If an employee is mentioned as "on leave" or "unavailable" during specific dates, exclude them from training during those periods**
-4. **Double-check each employee assignment against the custom constraints above**
-5. **When in doubt about availability, exclude the employee rather than risk scheduling conflicts**
+**🚨 MANDATORY SCHEDULING RULES - STRICTLY ENFORCED:**
+
+1. **MULTI-SESSION TRAINING REQUIREMENTS (CRITICAL):**
+   - ⚠️ NEVER SUGGEST "sessions_required": 1 WHEN PROVIDERS SPECIFY MORE SESSIONS
+   - Check provider summary above: if it says "2 sessions" or "3 sessions", use that EXACT number
+   - VCA training typically requires 2-3 sessions per provider - RESPECT THIS REQUIREMENT
+   - Example: If provider summary shows "VCA Provider: 3 sessions", then "sessions_required": 3
+   - VALIDATION: Double-check your sessions_required matches the provider's session count before responding
+   
+2. **AVAILABILITY CONSTRAINT HANDLING (CRITICAL):**
+   - ⚠️ NEVER EXCLUDE EMPLOYEES DUE TO AVAILABILITY CONSTRAINTS
+   - If John Doe is on leave until Feb 2026, schedule his training for March 2026 or later
+   - Create separate groups for employees with different availability windows
+   - RESCHEDULING STRATEGY: Move the employee to a later group, don't remove them entirely
+   - Example response: "John Doe will be scheduled in Group 3 for March 2026 after his leave ends"
+   
+3. **AVAILABILITY RESCHEDULING PRIORITY:**
+   - Schedule immediately available employees in early groups (January-February 2025)
+   - Schedule availability-constrained employees in later groups when they return
+   - Create multiple groups with different timelines to accommodate all employees
+   - MAINTAIN INCLUSION: Every employee in the expiry data must appear in at least one group
+   
+4. **SESSION VALIDATION CHECKLIST:**
+   - ✅ Check provider summary for exact session count
+   - ✅ Ensure sessions_required matches provider session count
+   - ✅ Create session_schedule array with proper dates
+   - ✅ Verify no employee is excluded due to availability constraints
 
 DETAILED EMPLOYEE PROFILES (first 15):
 ${employeeProfiles}
@@ -1021,88 +1582,32 @@ RESPONSE FORMAT (JSON only):
   "timeline": "Expected completion timeframe with risk mitigation strategies and renewal timing optimization"
 }
 
-IMPORTANT SESSION SCHEDULING RULES:
-- ALWAYS check the provider summary above for the exact number of sessions each provider offers
-- The "sessions_required" field must match the provider's session count exactly
-- If a provider shows "3 sessions" in the summary, use "sessions_required": 3
-- Create session_schedule array with exact dates for each session
-- Use suggested_end_date only if sessions_required > 1
-- CONFLICT PREVENTION: Check existing training dates and ensure no overlapping sessions
-- SPACE GROUPS: Schedule different groups on different dates with at least 1 day gap
-- VALIDATE DATES: Each group's session dates must not conflict with existing trainings or other groups`;
+🚨 CRITICAL SESSION SCHEDULING RULES - MUST FOLLOW EXACTLY:
+1. **SESSION COUNT VALIDATION** (ZERO TOLERANCE FOR ERRORS):
+   - STEP 1: Find the provider in the provider summary section above
+   - STEP 2: Note the EXACT session count shown (e.g., "2 sessions", "3 sessions") 
+   - STEP 3: Use that EXACT number in "sessions_required" field
+   - STEP 4: Create session_schedule array with that many dates
+   - ⚠️ COMMON ERROR: Using "sessions_required": 1 when provider requires 2-3 sessions
+   
+2. **AVAILABILITY CONSTRAINT VALIDATION** (ZERO TOLERANCE FOR EXCLUSIONS):
+   - STEP 1: Check for any employee availability constraints in the data above
+   - STEP 2: If employee is unavailable (e.g., on leave), schedule them in a LATER group
+   - STEP 3: NEVER exclude employees - always reschedule to after their availability period
+   - ⚠️ COMMON ERROR: Completely removing employees instead of rescheduling them
+   
+3. **TECHNICAL REQUIREMENTS:**
+   - Create session_schedule array with exact dates for each session
+   - Use suggested_end_date only if sessions_required > 1
+   - CONFLICT PREVENTION: Check existing training dates and ensure no overlapping sessions
+   - SPACE GROUPS: Schedule different groups on different dates with at least 1 day gap
+   - VALIDATE DATES: Each group's session dates must not conflict with existing trainings or other groups
+
+FINAL VALIDATION BEFORE RESPONDING:
+✅ Does sessions_required match the provider's session count from the summary?
+✅ Are ALL employees from the expiry data included in at least one group?
+✅ Are availability-constrained employees scheduled for AFTER their constraint period?`;
       
-      // Parse custom availability constraints from user request
-      const parseAvailabilityConstraints = (request: string) => {
-        const constraints = [];
-        const lowerRequest = request.toLowerCase();
-        
-        // Look for specific employee availability mentions
-        const employeeNames = expiryData.map(emp => `${emp.first_name} ${emp.last_name}`);
-        
-        for (const fullName of employeeNames) {
-          const firstName = fullName.split(' ')[0].toLowerCase();
-          const lastName = fullName.split(' ')[1]?.toLowerCase() || '';
-          
-          // Check for various availability constraint patterns
-          const patterns = [
-            // "John Doe will be on leave"
-            `${firstName}.*${lastName}.*(?:will be|is|goes).*(?:on leave|unavailable|away|absent)`,
-            // "John will be on leave"
-            `${firstName}.*(?:will be|is|goes).*(?:on leave|unavailable|away|absent)`,
-            // "John Doe on leave"
-            `${firstName}.*${lastName}.*(?:on leave|unavailable|away|absent)`,
-            // "skip John" or "exclude John"
-            `(?:skip|exclude|remove|ignore).*${firstName}`,
-            // "John won't be"
-            `${firstName}.*(?:won't be|will not be|cannot|can't).*(?:with us|available|here)`
-          ];
-          
-          for (const pattern of patterns) {
-            const regex = new RegExp(pattern, 'i');
-            const regexMatch = regex.exec(lowerRequest);
-            if (regexMatch) {
-              // Try to extract date ranges
-              const datePatterns = [
-                /(?:from|starting|beginning).*?(end of \d{4}|\w+ \d{4}|\d{4}).*?(?:to|until|till|through).*?(end of \w+ \d{4}|\w+ \d{4}|\d{4})/i,
-                /(?:during|in|throughout).*?(\d{4}|\w+ \d{4})/i,
-                /(end of \d{4}).*?(?:to|until|till).*?(end of \w+ \d{4}|\w+ \d{4}|\d{4})/i,
-                /(?:starting|from).*?(end of \d{4}).*?(?:till|until|through).*?(end of \w+ \d{4})/i
-              ];
-              
-              let dateRange = 'dates not specified';
-              for (const datePattern of datePatterns) {
-                const dateMatch = lowerRequest.match(datePattern);
-                if (dateMatch) {
-                  dateRange = dateMatch[0];
-                  break;
-                }
-              }
-              
-              constraints.push({
-                employeeName: fullName,
-                constraint: `UNAVAILABLE - ${dateRange}`,
-                originalText: regexMatch[0] || `${firstName} availability constraint`
-              });
-              break;
-            }
-          }
-        }
-        
-        return constraints;
-      };
-      
-      const customAvailabilityConstraints = parseAvailabilityConstraints(planningRequest);
-
-      console.log('🔍 Parsed availability constraints:', customAvailabilityConstraints);
-      console.log('🔍 Original request:', planningRequest);
-
-      // Test the parser with the exact user example
-      const testRequest = "Create 3 groups for VCA and schedule them as soon as possible. Emma will not be working for us anymore and John Doe will be on leave starting end of 2025 till end of feb 2026.";
-      console.log('🧪 Testing availability parser with:', testRequest);
-      console.log('🧪 Available employee names:', expiryData.map(emp => `${emp.first_name} ${emp.last_name}`));
-      const testConstraints = parseAvailabilityConstraints(testRequest);
-      console.log('🧪 Test constraints result:', testConstraints);
-
       console.log('🤖 Sending planning request to AI service...');
       console.log('📋 Planning prompt length:', prompt.length);
       console.log('📋 Employee count for planning:', expiryData.length);
@@ -1417,12 +1922,22 @@ IMPORTANT SESSION SCHEDULING RULES:
                               </Badge>
                               <Button
                                 size="sm"
-                                variant="outline"
+                                variant={createdGroups.has(group.name) ? "default" : "outline"}
                                 onClick={() => handleCreateAIGroup(group)}
                                 className="h-7 px-2 text-xs"
+                                disabled={createdGroups.has(group.name)}
                               >
-                                <Plus className="h-3 w-3 mr-1" />
-                                Create Group
+                                {createdGroups.has(group.name) ? (
+                                  <>
+                                    <Check className="h-3 w-3 mr-1" />
+                                    Group Created
+                                  </>
+                                ) : (
+                                  <>
+                                    <Plus className="h-3 w-3 mr-1" />
+                                    Create Group
+                                  </>
+                                )}
                               </Button>
                             </div>
                           </div>
@@ -1614,8 +2129,8 @@ IMPORTANT SESSION SCHEDULING RULES:
                       onClick={handleRequestModification}
                       className="flex items-center gap-2"
                     >
-                      <RefreshCw className="h-4 w-4" />
-                      Request Modification
+                      <MessageSquare className="h-4 w-4" />
+                      Refine with AI
                     </Button>
                     {aiPlanningResult.groups && aiPlanningResult.groups.length > 0 && (
                       <Button
@@ -1733,12 +2248,30 @@ IMPORTANT SESSION SCHEDULING RULES:
                     <span className="text-sm text-gray-500">
                       {employee.days_until_expiry ? `${employee.days_until_expiry}d` : 'New'}
                     </span>
+                    {isEmployeeScheduledForCertificate(employee.employee_id) && (
+                      <Badge variant="outline" className="text-green-600 border-green-300 bg-green-50">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        Scheduled
+                      </Badge>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Existing Preliminary Planning Groups */}
+      {selectedPlanId && selectedPlanId !== 'all' && (
+        <ExistingGroupsView 
+          selectedPlanId={selectedPlanId} 
+          selectedLicenseId={selectedLicenseId}
+          onGroupEdit={(groupId) => {
+            // TODO: Implement group editing
+            console.log('Edit group:', groupId);
+          }}
+        />
       )}
 
       {/* Create Group Dialog */}
@@ -1762,6 +2295,33 @@ IMPORTANT SESSION SCHEDULING RULES:
         suggestedProviderRecommendation={currentGroupData.suggestedProviderRecommendation}
         suggestedSessionsRequired={currentGroupData.suggestedSessionsRequired}
         suggestedSchedulingNotes={currentGroupData.suggestedSchedulingNotes}
+      />
+
+      {/* Interactive Planning Dialog */}
+      <InteractivePlanningDialog
+        open={isInteractivePlanningDialogOpen}
+        onOpenChange={setIsInteractivePlanningDialogOpen}
+        onPlanningUpdate={(newRequest) => {
+          setPlanningRequest(newRequest);
+          // Automatically trigger re-planning after a short delay
+          setTimeout(() => {
+            handleNaturalLanguagePlanning();
+          }, 500);
+        }}
+        onPlanningModifications={(modifications) => {
+          // Apply targeted modifications to existing planning results
+          applyPlanningModifications(modifications);
+        }}
+        currentPlanningRequest={planningRequest}
+        aiPlanningResult={aiPlanningResult}
+        expiryData={expiryData}
+        selectedLicenseId={selectedLicenseId}
+        licenses={licenses}
+        providers={providers}
+        existingTrainings={existingTrainings}
+        certificateProviders={certificateProviders}
+        providerPreferences={providerPreferences}
+        employeeAvailability={employeeAvailability}
       />
     </div>
   );

@@ -260,12 +260,64 @@ export function useCertificateExpiryAnalysis(filters?: {
   });
 }
 
+// Hook for fetching trainings in a preliminary plan
+export function usePreliminaryPlanTrainings(planId: string) {
+  return useQuery({
+    queryKey: ['preliminary-plan-trainings', planId],
+    queryFn: async () => {
+      if (!planId || planId === '') return [];
+
+      const { data, error } = await supabase
+        .from('preliminary_plan_trainings')
+        .select(`
+          *,
+          preliminary_plan_groups (
+            id,
+            name,
+            group_type,
+            preliminary_plan_group_employees (
+              employees (
+                id,
+                first_name,
+                last_name,
+                email,
+                department
+              )
+            )
+          )
+        `)
+        .eq('plan_id', planId)
+        .order('priority', { ascending: false });
+
+      if (error) throw error;
+      return data as (PreliminaryPlanTraining & {
+        preliminary_plan_groups?: {
+          id: string;
+          name: string;
+          group_type: string;
+          preliminary_plan_group_employees: Array<{
+            employees: {
+              id: string;
+              first_name: string;
+              last_name: string;
+              email: string;
+              department?: string;
+            };
+          }>;
+        };
+      })[];
+    },
+    enabled: !!planId && planId !== '',
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
 // Hook for fetching groups in a preliminary plan
 export function usePreliminaryPlanGroups(planId: string) {
   return useQuery({
     queryKey: ['preliminary-plan-groups', planId],
     queryFn: async () => {
-      if (!planId) return [];
+      if (!planId || planId === '' || planId === 'none') return [];
 
       const { data, error } = await supabase
         .from('preliminary_plan_groups')
@@ -305,7 +357,7 @@ export function usePreliminaryPlanGroups(planId: string) {
         })[];
       })[];
     },
-    enabled: !!planId,
+    enabled: !!planId && planId !== '' && planId !== 'none',
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }
@@ -426,6 +478,32 @@ export function usePreliminaryPlanningMutations() {
     }
   });
 
+  const deletePreliminaryPlanGroup = useMutation({
+    mutationFn: async (groupId: string) => {
+      // First, delete all employees from the group
+      const { error: employeesError } = await supabase
+        .from('preliminary_plan_group_employees')
+        .delete()
+        .eq('group_id', groupId);
+
+      if (employeesError) throw employeesError;
+
+      // Then, delete the group itself
+      const { error: groupError } = await supabase
+        .from('preliminary_plan_groups')
+        .delete()
+        .eq('id', groupId);
+
+      if (groupError) throw groupError;
+
+      return groupId;
+    },
+    onSuccess: (groupId) => {
+      queryClient.invalidateQueries({ queryKey: ['preliminary-plan-groups'] });
+      queryClient.invalidateQueries({ queryKey: ['preliminary-plan'] });
+    }
+  });
+
   const convertPlanToDefinitive = useMutation({
     mutationFn: async ({ planId, convertOptions }: { 
       planId: string; 
@@ -535,6 +613,7 @@ export function usePreliminaryPlanningMutations() {
     createPreliminaryPlanGroup,
     addEmployeeToGroup,
     removeEmployeeFromGroup,
+    deletePreliminaryPlanGroup,
     createPreliminaryTraining,
     convertPlanToDefinitive
   };
@@ -619,9 +698,40 @@ export function useEmployeeGroupingSuggestions(
           .gte('date', new Date().toISOString().split('T')[0])
           .order('date', { ascending: true });
 
+        // Get preliminary planning groups for the same license/certificate
+        const { data: preliminaryPlanGroups, error: groupsError } = await supabase
+          .from('preliminary_plan_groups')
+          .select(`
+            id,
+            name,
+            certificate_id,
+            max_participants,
+            target_completion_date,
+            planned_start_date,
+            planned_end_date,
+            location,
+            preliminary_plan_group_employees (
+              employee_id
+            ),
+            preliminary_plans (
+              id,
+              name,
+              status,
+              planning_period_start,
+              planning_period_end
+            )
+          `)
+          .eq('certificate_id', licenseId)
+          .in('preliminary_plans.status', ['draft', 'review', 'approved']);
+
         if (trainingsError) {
           console.error("Error fetching existing trainings:", trainingsError);
           throw trainingsError;
+        }
+
+        if (groupsError) {
+          console.error("Error fetching preliminary planning groups:", groupsError);
+          throw groupsError;
         }
 
         // Get current participant counts
@@ -654,9 +764,21 @@ export function useEmployeeGroupingSuggestions(
           return hasCapacity && courseRelevant;
         }) || [];
 
-        // Group employees by location and expiry timeframe, considering existing trainings
+        // Get list of employees already in preliminary planning groups
+        const employeesInPreliminaryGroups = new Set(
+          preliminaryPlanGroups?.flatMap(group => 
+            group.preliminary_plan_group_employees?.map(emp => emp.employee_id) || []
+          ) || []
+        );
+
+        // Filter out employees who are already in preliminary planning groups
+        const availableEmployees = expiryData.filter(emp => 
+          !employeesInPreliminaryGroups.has(emp.employee_id)
+        );
+
+        // Group employees by location and expiry timeframe, considering existing trainings and preliminary planning
         const suggestions = groupEmployeesIntelligently(
-          expiryData, 
+          availableEmployees, 
           maxGroupSize, 
           timeWindowDays, 
           relevantTrainings,

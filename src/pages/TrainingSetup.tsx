@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Building2, Settings } from "lucide-react";
+import { BookOpen, Building2, Settings, Award } from "lucide-react";
 
 // Import original course components
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +23,9 @@ import { useViewMode } from "@/hooks/useViewMode";
 import { CourseProviderList } from "@/components/providers/CourseProviderList";
 import { CourseProviderGrid } from "@/components/providers/CourseProviderGrid";
 import { AddProviderDialog } from "@/components/providers/AddProviderDialog";
+
+// Import certificate management components
+import { CertificateTemplatesTab } from "@/components/certificates/CertificateTemplatesTab";
 
 type SortField = 'title' | 'created_at';
 type SortDirection = 'asc' | 'desc';
@@ -50,6 +53,7 @@ export default function TrainingSetup() {
   // Providers state (exact copy from original Providers.tsx)
   const [showAddProviderDialog, setShowAddProviderDialog] = useState(false);
   const [providerViewMode, setProviderViewMode] = useViewMode('providers');
+  const [providerSearchTerm, setProviderSearchTerm] = useState("");
 
   // Data hooks
   const { data: courses = [], isLoading, error } = useCourses();
@@ -159,7 +163,7 @@ export default function TrainingSetup() {
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="courses" className="flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
               {t('common:navigation.courses')}
@@ -167,6 +171,10 @@ export default function TrainingSetup() {
             <TabsTrigger value="providers" className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
               {t('common:navigation.providers')}
+            </TabsTrigger>
+            <TabsTrigger value="certificates" className="flex items-center gap-2">
+              <Award className="h-4 w-4" />
+              Certificates
             </TabsTrigger>
           </TabsList>
 
@@ -376,7 +384,7 @@ export default function TrainingSetup() {
             )}
           </TabsContent>
 
-          {/* Providers Tab - Exact copy from original Providers.tsx */}
+          {/* Providers Tab - Standardized to match Courses pattern */}
           <TabsContent value="providers" className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
@@ -385,7 +393,7 @@ export default function TrainingSetup() {
                   {t('providers:page.subtitle')}
                 </p>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center space-x-2">
                 <ViewToggle value={providerViewMode} onValueChange={setProviderViewMode} />
                 <Button onClick={() => setShowAddProviderDialog(true)}>
                   <Plus className="h-4 w-4 mr-2" />
@@ -394,7 +402,29 @@ export default function TrainingSetup() {
               </div>
             </div>
 
-            {providerViewMode === 'grid' ? <CourseProviderGrid /> : <CourseProviderList />}
+            {/* Search and Filter Bar - Match Courses pattern */}
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      placeholder="Search providers by name, city, or contact person..."
+                      className="pl-10"
+                      value={providerSearchTerm}
+                      onChange={(e) => setProviderSearchTerm(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {providerViewMode === 'grid' ? <CourseProviderGrid searchTerm={providerSearchTerm} /> : <CourseProviderList searchTerm={providerSearchTerm} />}
+          </TabsContent>
+
+          {/* Certificates Tab */}
+          <TabsContent value="certificates" className="space-y-6">
+            <CertificateTemplatesTab />
           </TabsContent>
         </Tabs>
 

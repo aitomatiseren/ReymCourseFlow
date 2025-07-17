@@ -39,7 +39,6 @@ export function ProviderProfileTabs({ providerId }: ProviderProfileTabsProps) {
             courses (
               id,
               title,
-              category,
               duration_hours,
               course_certificates (
                 id,
@@ -49,7 +48,6 @@ export function ProviderProfileTabs({ providerId }: ProviderProfileTabsProps) {
                 licenses (
                   id,
                   name,
-                  category,
                   description,
                   validity_period_months
                 )
@@ -84,8 +82,7 @@ export function ProviderProfileTabs({ providerId }: ProviderProfileTabsProps) {
           max_participants,
           cost_breakdown,
           courses (
-            title,
-            category
+            title
           )
         `)
         .eq("provider_id", providerId)
@@ -140,11 +137,6 @@ export function ProviderProfileTabs({ providerId }: ProviderProfileTabsProps) {
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
                         <h3 className="font-medium">{cpc.courses.title}</h3>
-                        {cpc.courses.category && (
-                          <Badge variant="outline" className="text-xs">
-                            {cpc.courses.category}
-                          </Badge>
-                        )}
                       </div>
                       
                       {/* Certificate information */}
@@ -165,11 +157,6 @@ export function ProviderProfileTabs({ providerId }: ProviderProfileTabsProps) {
                                         {cert.licenses?.name || 'Unknown Certificate'}
                                       </h5>
                                       <div className="flex items-center space-x-2 mt-1">
-                                        {cert.licenses?.category && (
-                                          <Badge variant="outline" className="text-xs">
-                                            {cert.licenses.category}
-                                          </Badge>
-                                        )}
                                         {cert.licenses?.description && (
                                           <span className="text-xs text-gray-600">
                                             {cert.licenses.description}

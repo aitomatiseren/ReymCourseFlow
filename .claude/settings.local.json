@@ -24,7 +24,9 @@
       "mcp__supabase__generate_typescript_types",
       "Bash(curl:*)",
       "mcp__supabase__list_migrations",
-      "Bash(env)"
+      "Bash(env)",
+      "Bash(npx eslint:*)",
+      "Bash(npx tsc:*)"
     ],
     "deny": []
   }

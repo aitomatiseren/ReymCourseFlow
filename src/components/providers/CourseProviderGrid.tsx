@@ -45,13 +45,15 @@ interface CourseProvider {
     courses: {
       id: string;
       title: string;
-      category: string | null;
     };
   }[];
 }
 
-export function CourseProviderGrid() {
-  const [searchTerm, setSearchTerm] = useState("");
+interface CourseProviderGridProps {
+  searchTerm?: string;
+}
+
+export function CourseProviderGrid({ searchTerm = "" }: CourseProviderGridProps) {
   const navigate = useNavigate();
 
   const { data: providers, isLoading } = useQuery({
@@ -66,7 +68,6 @@ export function CourseProviderGrid() {
             courses (
               id,
               title,
-              category,
               course_certificates (
                 id,
                 grants_level,
@@ -75,7 +76,6 @@ export function CourseProviderGrid() {
                 licenses (
                   id,
                   name,
-                  category,
                   description,
                   validity_period_months
                 )
@@ -121,27 +121,6 @@ export function CourseProviderGrid() {
 
   return (
     <div className="space-y-6">
-      {/* Search and Filter Bar */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center space-x-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search providers..."
-                className="pl-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <Button variant="outline">
-              <Filter className="h-4 w-4 mr-2" />
-              More Filters
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Provider Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredProviders?.map((provider) => (

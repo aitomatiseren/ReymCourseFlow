@@ -24,7 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Users, Award, MapPin } from "lucide-react";
+import { CalendarIcon, Users, Award, MapPin, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useLicenses } from "@/hooks/useCertificates";
@@ -92,6 +92,7 @@ export function CreateGroupDialog({
   suggestedSchedulingNotes,
 }: CreateGroupDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const [targetDate, setTargetDate] = useState<Date | undefined>();
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
@@ -117,6 +118,7 @@ export function CreateGroupDialog({
   // Update form values when suggested values change
   useEffect(() => {
     if (open) {
+      setIsSuccess(false);
       form.reset({
         name: suggestedName || "",
         description: suggestedDescription || `Training group with ${employeeIds.length} employees`,
@@ -145,11 +147,17 @@ export function CreateGroupDialog({
         planned_end_date: endDate,
       };
       await onCreateGroup(submissionData, employeeIds);
-      onOpenChange(false);
-      form.reset();
-      setTargetDate(undefined);
-      setStartDate(undefined);
-      setEndDate(undefined);
+      setIsSuccess(true);
+      
+      // Show success state for 2 seconds before closing
+      setTimeout(() => {
+        onOpenChange(false);
+        form.reset();
+        setTargetDate(undefined);
+        setStartDate(undefined);
+        setEndDate(undefined);
+        setIsSuccess(false);
+      }, 2000);
     } catch (error) {
       console.error("Error creating group:", error);
     } finally {
@@ -529,8 +537,17 @@ export function CreateGroupDialog({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Creating Group..." : "Create Group"}
+              <Button type="submit" disabled={isSubmitting || isSuccess}>
+                {isSubmitting ? (
+                  "Creating Group..."
+                ) : isSuccess ? (
+                  <span className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    Group Created!
+                  </span>
+                ) : (
+                  "Create Group"
+                )}
               </Button>
             </div>
           </form>

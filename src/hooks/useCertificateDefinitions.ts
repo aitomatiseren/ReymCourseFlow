@@ -46,8 +46,6 @@ export const useLicenseDefinitions = () => {
             courses (
               id,
               title,
-              category,
-              level,
               duration_hours,
               code95_points
             )
@@ -82,7 +80,6 @@ export const useCourseDefinitions = () => {
             )
           )
         `)
-        .order('category', { ascending: true })
         .order('title', { ascending: true });
 
       if (error) throw error;
@@ -137,7 +134,6 @@ export const useCourseCertificateMappings = () => {
           courses (
             id,
             title,
-            category,
             level
           ),
           licenses (
@@ -317,8 +313,8 @@ export const getCertificateCategories = (licenses: License[]): string[] => {
 };
 
 export const getCourseCategories = (courses: Course[]): string[] => {
-  const categories = [...new Set(courses.map(c => c.category).filter(Boolean))];
-  return categories.sort();
+  // Courses don't have categories in the current schema
+  return [];
 };
 
 export const getLevelColor = (level: number): string => {

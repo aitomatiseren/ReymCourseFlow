@@ -27,7 +27,8 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
     title: "",
     description: "",
     sessions_required: "1",
-    is_code95: false
+    is_code95: false,
+    requires_approval: false
   });
 
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
@@ -63,7 +64,8 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
         code95_points: formData.is_code95 ? 7 : null,
         sessions_required: Number(formData.sessions_required),
         has_checklist: checklistItems.length > 0,
-        checklist_items: checklistItems.filter(item => item.text.trim())
+        checklist_items: checklistItems.filter(item => item.text.trim()),
+        requires_approval: formData.requires_approval
       });
 
       toast({
@@ -75,7 +77,8 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
         title: "",
         description: "",
         sessions_required: "1",
-        is_code95: false
+        is_code95: false,
+        requires_approval: false
       });
       setChecklistItems([]);
 
@@ -130,13 +133,6 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
               <p className="text-xs text-gray-500 mt-1">{t('courses:addDialog.sessionsRequiredHelp')}</p>
             </div>
           </div>
-          
-          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-            <p className="text-sm text-amber-800">
-              <strong>Note:</strong> Session duration and maximum participants are now configured per provider in the Provider section. 
-              This allows different providers to offer the same course with varying constraints.
-            </p>
-          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="flex items-center space-x-2">
@@ -148,6 +144,17 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
               <Label htmlFor="is_code95">{t('courses:addDialog.code95Course')}</Label>
             </div>
 
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="requires_approval"
+                checked={formData.requires_approval}
+                onCheckedChange={(checked) => setFormData({ ...formData, requires_approval: !!checked })}
+              />
+              <Label htmlFor="requires_approval">{t('courses:addDialog.requiresApproval', 'Requires Manager Approval')}</Label>
+            </div>
+          </div>
+
+          <div className="flex justify-start">
             {checklistItems.length === 0 && (
               <div className="flex items-center">
                 <Button

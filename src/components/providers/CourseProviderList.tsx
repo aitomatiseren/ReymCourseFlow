@@ -57,13 +57,15 @@ interface CourseProvider {
     courses: {
       id: string;
       title: string;
-      category: string | null;
     };
   }[];
 }
 
-export function CourseProviderList() {
-  const [searchTerm, setSearchTerm] = useState("");
+interface CourseProviderListProps {
+  searchTerm?: string;
+}
+
+export function CourseProviderList({ searchTerm = "" }: CourseProviderListProps) {
   const navigate = useNavigate();
 
   const { data: providers, isLoading } = useProviders(true) as { data: CourseProvider[] | undefined, isLoading: boolean };
@@ -91,111 +93,92 @@ export function CourseProviderList() {
   }
 
   return (
-    <>
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>All Providers</CardTitle>
-              <CardDescription>
-                {filteredProviders?.length || 0} providers registered
-              </CardDescription>
-            </div>
-            <div className="relative w-72">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search providers..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Provider</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Website</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+    <Card>
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Provider</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Website</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredProviders?.map((provider) => (
+              <TableRow key={provider.id} className="hover:bg-gray-50">
+                <TableCell>
+                  <div className="font-medium flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-gray-400" />
+                    {provider.name}
+                  </div>
+                  {provider.city && (
+                    <div className="text-sm text-gray-500">{provider.city}</div>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {provider.phone ? (
+                    <a href={`tel:${provider.phone}`} className="text-blue-600 hover:underline text-sm">
+                      {provider.phone}
+                    </a>
+                  ) : (
+                    <span className="text-gray-400 text-sm">-</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {provider.email ? (
+                    <a href={`mailto:${provider.email}`} className="text-blue-600 hover:underline text-sm">
+                      {provider.email}
+                    </a>
+                  ) : (
+                    <span className="text-gray-400 text-sm">-</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {provider.website ? (
+                    <a 
+                      href={provider.website} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline text-sm"
+                    >
+                      {provider.website}
+                    </a>
+                  ) : (
+                    <span className="text-gray-400 text-sm">-</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Badge
+                    variant={provider.active ? "default" : "secondary"}
+                    className={provider.active ? "bg-green-100 text-green-800" : ""}
+                  >
+                    {provider.active ? "Active" : "Inactive"}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    size="sm"
+                    className="bg-slate-800 text-white hover:bg-slate-900"
+                    onClick={() => handleView(provider)}
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                    View
+                  </Button>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProviders?.map((provider) => (
-                <TableRow key={provider.id}>
-                  <TableCell>
-                    <div className="font-medium flex items-center gap-2">
-                      <Building2 className="h-4 w-4 text-gray-400" />
-                      {provider.name}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {provider.phone ? (
-                      <a href={`tel:${provider.phone}`} className="text-blue-600 hover:underline text-sm">
-                        {provider.phone}
-                      </a>
-                    ) : (
-                      <span className="text-gray-400 text-sm">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {provider.email ? (
-                      <a href={`mailto:${provider.email}`} className="text-blue-600 hover:underline text-sm">
-                        {provider.email}
-                      </a>
-                    ) : (
-                      <span className="text-gray-400 text-sm">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {provider.website ? (
-                      <a 
-                        href={provider.website} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline text-sm"
-                      >
-                        {provider.website}
-                      </a>
-                    ) : (
-                      <span className="text-gray-400 text-sm">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={provider.active ? "default" : "secondary"}
-                      className={provider.active ? "bg-green-100 text-green-800" : ""}
-                    >
-                      {provider.active ? "Active" : "Inactive"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      size="sm"
-                      className="flex items-center justify-center"
-                      onClick={() => handleView(provider)}
-                    >
-                      <Eye className="h-4 w-4 mr-1" />
-                      View
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+            ))}
+          </TableBody>
+        </Table>
 
-          {filteredProviders?.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              No providers found matching your search
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-    </>
+        {filteredProviders?.length === 0 && (
+          <div className="text-center py-12 text-gray-500">
+            No providers found matching your search
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

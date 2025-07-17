@@ -12,7 +12,9 @@ import { Training, CostComponent } from "@/hooks/useTrainings";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Minus, Calendar, Copy, DollarSign, X } from "lucide-react";
+import { Plus, Minus, Calendar, Copy, DollarSign, X, Upload } from "lucide-react";
+import { TrainingContentImportDialog } from "./TrainingContentImportDialog";
+import { ExtractedTrainingData, TrainingContentExtractor } from "@/services/ai/training-content-extractor";
 
 // Custom DialogContent component - defined outside to prevent re-renders
 const CustomDialogContent = forwardRef<
@@ -65,6 +67,8 @@ export function EditTrainingDialog({ open, onOpenChange, training }: EditTrainin
     costBreakdown: [] as CostComponent[]
   });
 
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  
   const updateTraining = useUpdateTraining();
   const { toast } = useToast();
 
@@ -362,6 +366,118 @@ export function EditTrainingDialog({ open, onOpenChange, training }: EditTrainin
     return true;
   };
 
+  // Handle imported training content
+  const handleImportTrainingContent = (data: ExtractedTrainingData) => {
+    console.log('📥 [EditTrainingDialog] Importing training content:', data);
+    
+    // Update form data with extracted data
+    setFormData(prev => {
+      const updated = { ...prev };
+      
+      // Basic information
+      if (data.title) {
+        console.log('✅ [EditTrainingDialog] Setting title:', data.title);
+        updated.title = data.title;
+      }
+      
+      if (data.location) {
+        console.log('✅ [EditTrainingDialog] Setting location:', data.location);
+        updated.location = data.location;
+      }
+      
+      if (data.instructor) {
+        console.log('✅ [EditTrainingDialog] Setting instructor:', data.instructor);
+        updated.instructor = data.instructor;
+      }
+      
+      if (data.maxParticipants) {
+        console.log('✅ [EditTrainingDialog] Setting max participants:', data.maxParticipants);
+        updated.maxParticipants = data.maxParticipants.toString();
+      }
+      
+      // Handle dates and times
+      if (data.startDate) {
+        const formattedDate = TrainingContentExtractor.formatDateForInput(data.startDate);
+        if (formattedDate) {
+          updated.date = formattedDate;
+          updated.sessionDates = [formattedDate];
+          updated.sessions = 1;
+        }
+      }
+      
+      if (data.startTime) {
+        updated.time = data.startTime;
+        updated.sessionTimes = [data.startTime];
+      }
+      
+      if (data.endTime) {
+        updated.sessionEndTimes = [data.endTime];
+      }
+      
+      // Handle notes and requirements
+      let notes = updated.notes || '';
+      if (data.notes) {
+        notes = data.notes;
+      }
+      if (data.requirements && data.requirements.length > 0) {
+        notes += notes ? '\n\nRequirements:\n' : 'Requirements:\n';
+        notes += data.requirements.map(req => `• ${req}`).join('\n');
+      }
+      if (data.materials && data.materials.length > 0) {
+        notes += notes ? '\n\nMaterials:\n' : 'Materials:\n';
+        notes += data.materials.map(mat => `• ${mat}`).join('\n');
+      }
+      updated.notes = notes;
+      
+      // Handle cost breakdown
+      if (data.costs?.breakdown && data.costs.breakdown.length > 0) {
+        const costBreakdown = data.costs.breakdown.map(item => ({
+          id: Math.random().toString(36).substr(2, 9),
+          type: item.type,
+          description: item.description || item.type,
+          amount: item.amount,
+          currency: data.costs?.currency || 'EUR'
+        }));
+        updated.costBreakdown = costBreakdown;
+      }
+      
+      // For multi-session training, handle end date
+      if (data.endDate && data.startDate && data.endDate !== data.startDate) {
+        const startDate = new Date(data.startDate);
+        const endDate = new Date(data.endDate);
+        const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (daysDiff > 0) {
+          updated.sessions = Math.min(daysDiff + 1, 10); // Cap at 10 sessions
+          
+          // Generate session dates
+          const dates = [];
+          const times = [];
+          const endTimes = [];
+          
+          for (let i = 0; i <= daysDiff; i++) {
+            const sessionDate = new Date(startDate);
+            sessionDate.setDate(startDate.getDate() + i);
+            dates.push(sessionDate.toISOString().split('T')[0]);
+            times.push(data.startTime || '09:00');
+            endTimes.push(data.endTime || '17:00');
+          }
+          
+          updated.sessionDates = dates;
+          updated.sessionTimes = times;
+          updated.sessionEndTimes = endTimes;
+        }
+      }
+      
+      return updated;
+    });
+    
+    toast({
+      title: "Training Content Imported",
+      description: `Training information has been imported with ${data.confidence || 50}% confidence. Please review and adjust as needed.`,
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -411,13 +527,28 @@ export function EditTrainingDialog({ open, onOpenChange, training }: EditTrainin
   if (!training) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} modal>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange} modal>
       <CustomDialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto" onOpenChange={onOpenChange}>
         <DialogHeader>
-          <DialogTitle>Edit Training</DialogTitle>
-          <DialogDescription>
-            Update the training session details.
-          </DialogDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle>Edit Training</DialogTitle>
+              <DialogDescription>
+                Update the training session details.
+              </DialogDescription>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsImportDialogOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Upload className="h-4 w-4" />
+              Import Content
+            </Button>
+          </div>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -732,5 +863,14 @@ export function EditTrainingDialog({ open, onOpenChange, training }: EditTrainin
         </form>
       </CustomDialogContent>
     </Dialog>
+
+    {/* Import Content Dialog */}
+    <TrainingContentImportDialog
+      open={isImportDialogOpen}
+      onOpenChange={setIsImportDialogOpen}
+      onImport={handleImportTrainingContent}
+      title="Import Training Content"
+    />
+    </>
   );
 }
