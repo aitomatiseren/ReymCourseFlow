@@ -12,7 +12,9 @@ import {
   Calendar,
   FileText,
   Bell,
-  User
+  User,
+  Clock,
+  Shield
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,7 +22,8 @@ const menuItems = [
   { title: "Dashboard", url: "/", icon: Home },
   { title: "Courses", url: "/courses", icon: BookOpen },
   { title: "Participants", url: "/participants", icon: Users },
-  { title: "Certifications", url: "/certifications", icon: Award },
+  { title: "Certificate Definitions", url: "/certificate-definitions", icon: Award },
+  { title: "Certificate Expiry", url: "/certificate-expiry", icon: Clock },
   { title: "Training Scheduler", url: "/scheduling", icon: Calendar },
   { title: "Employee Portal", url: "/employee-dashboard", icon: User },
   { title: "Providers", url: "/providers", icon: Building2 },

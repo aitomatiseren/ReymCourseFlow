@@ -200,11 +200,11 @@ export function VoiceChat({
     const employeeName = parameters.employeeName || '';
     const response = employeeName 
       ? `I'll show you the certificates for ${employeeName}.`
-      : 'I can show you certificate information. Let me take you to the certifications page.';
+      : 'I can show you certificate information. Let me take you to the certificate definitions page.';
     
-    // Navigate to certifications page
+    // Navigate to certificate definitions page
     if (onNavigate) {
-      onNavigate('/certifications');
+      onNavigate('/certificate-definitions');
     }
     
     await handleAIResponse(response);

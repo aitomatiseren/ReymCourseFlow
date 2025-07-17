@@ -36,7 +36,6 @@ const getMenuItems = (t: (key: string) => string) => [
   { titleKey: "navigation.dashboard", url: "/", icon: Home, permissions: [] },
   { titleKey: "navigation.trainingSetup", url: "/training-setup", icon: Wrench, permissions: ["view_courses"] },
   { titleKey: "navigation.participants", url: "/participants", icon: Users, permissions: ["view_employees"] },
-  { titleKey: "navigation.certifications", url: "/certifications", icon: Award, permissions: ["view_own_certificates"] },
   { titleKey: "navigation.trainingScheduler", url: "/scheduling", icon: Calendar, permissions: ["view_schedules"] },
   { titleKey: "navigation.preliminaryPlanning", url: "/preliminary-planning", icon: PenTool, permissions: ["view_schedules"] },
   { titleKey: "navigation.employeePortal", url: "/employee-dashboard", icon: User, permissions: ["view_own_profile"] },

@@ -148,11 +148,11 @@ export const ROLE_FEATURES: Record<RoleName, {
         features: ['user', 'course_planning', 'course_approval', 'course_scheduling', 'reports']
     },
     hr: {
-        navigation: ['dashboard', 'courses', 'participants', 'scheduling', 'reports', 'certifications'],
+        navigation: ['dashboard', 'courses', 'participants', 'scheduling', 'reports', 'certificate-definitions', 'certificate-expiry'],
         features: ['user', 'user_management', 'course_management', 'course_planning', 'course_approval', 'course_scheduling', 'reports']
     },
     admin: {
-        navigation: ['dashboard', 'courses', 'participants', 'scheduling', 'reports', 'certifications', 'settings'],
+        navigation: ['dashboard', 'courses', 'participants', 'scheduling', 'reports', 'certificate-definitions', 'certificate-expiry', 'settings'],
         features: ['user', 'user_management', 'course_management', 'course_planning', 'course_approval', 'course_scheduling', 'reports', 'admin']
     }
 };

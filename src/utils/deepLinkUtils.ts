@@ -42,7 +42,7 @@ export function generateDeepLink(options: DeepLinkOptions): string {
             baseUrl = entityId ? `/providers/${entityId}` : '/providers';
             break;
         case 'certificate':
-            baseUrl = '/certifications';
+            baseUrl = '/certificate-definitions';
             break;
         case 'notification':
             baseUrl = '/communications';
@@ -205,7 +205,7 @@ export function parseDeepLink(url: string): { entityType: EntityType | null; ent
     } else if (pathname.startsWith('/providers/')) {
         entityType = 'provider';
         entityId = pathname.split('/providers/')[1];
-    } else if (pathname.startsWith('/certifications')) {
+    } else if (pathname.startsWith('/certificate-definitions') || pathname.startsWith('/certificate-expiry')) {
         entityType = 'certificate';
     } else if (pathname.startsWith('/communications')) {
         entityType = 'notification';

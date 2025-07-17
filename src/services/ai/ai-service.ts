@@ -165,7 +165,7 @@ export class AIService {
         type: 'navigate',
         description: 'Go to Certificate Expiry',
         function: 'navigate',
-        parameters: { path: '/certifications' },
+        parameters: { path: '/certificate-expiry' },
         requiresConfirmation: false
       }]
     };
@@ -211,7 +211,7 @@ export class AIService {
       'Training Scheduler menu': '/scheduling',
       'Participants menu': '/participants', 
       'Courses menu': '/courses',
-      'Certificate Expiry menu': '/certifications',
+      'Certificate Expiry menu': '/certificate-expiry',
       'Reports menu': '/reports'
     };
     

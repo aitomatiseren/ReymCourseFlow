@@ -60,7 +60,8 @@ export const PLATFORM_KNOWLEDGE = {
     "Training Scheduler": "/scheduling", 
     "Participants": "/participants",
     "Courses": "/courses",
-    "Certifications": "/certifications",
+    "Certificate Definitions": "/certificate-definitions",
+    "Certificate Expiry": "/certificate-expiry",
     "Reports": "/reports",
     "Notifications": "/communications"
   },

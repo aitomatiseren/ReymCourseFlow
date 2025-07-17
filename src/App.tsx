@@ -13,7 +13,6 @@ import Dashboard from "./pages/Dashboard";
 import Courses from "./pages/Courses";
 import CourseDetail from "./pages/CourseDetail";
 import CourseProviders from "./pages/CourseProviders";
-import Certifications from "./pages/Certifications";
 import TrainingSchedulerPage from "./pages/TrainingScheduler";
 import TrainingDetail from "./pages/TrainingDetail";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
@@ -29,6 +28,7 @@ import TrainingSetup from "./pages/TrainingSetup";
 import CertificateDefinitions from "./pages/CertificateDefinitions";
 import { CoursesRedirect } from "./components/redirects/CoursesRedirect";
 import { ProvidersRedirect } from "./components/redirects/ProvidersRedirect";
+import { CertificationsRedirect } from "./components/redirects/CertificationsRedirect";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import CertificateExpiry from "./pages/CertificateExpiry";
@@ -84,8 +84,10 @@ const App = () => (
                       
                       <Route path="/participants" element={<AuthGuard><Participants /></AuthGuard>} />
                       <Route path="/participants/:id" element={<AuthGuard><UserProfile /></AuthGuard>} />
-                      <Route path="/certifications" element={<AuthGuard><Certifications /></AuthGuard>} />
+                      {/* Backward compatibility redirect */}
+                      <Route path="/certifications" element={<AuthGuard><CertificationsRedirect /></AuthGuard>} />
                       <Route path="/certificate-definitions" element={<AuthGuard><CertificateDefinitions /></AuthGuard>} />
+                      <Route path="/certificate-expiry" element={<AuthGuard><CertificateExpiry /></AuthGuard>} />
                       <Route path="/scheduling" element={<AuthGuard><TrainingSchedulerPage /></AuthGuard>} />
                       <Route path="/scheduling/:id" element={<AuthGuard><TrainingDetail /></AuthGuard>} />
                       <Route path="/preliminary-planning" element={<AuthGuard><PreliminaryPlanning /></AuthGuard>} />

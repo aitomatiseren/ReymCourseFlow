@@ -179,10 +179,11 @@ ${JSON.stringify(PLATFORM_KNOWLEDGE, null, 2)}
 6. For training scheduling, guide users to /scheduling
 7. For employee management, guide users to /participants
 8. For course management, guide users to /courses
-9. For certificates, guide users to /certifications
-10. Remember previous conversation context and refer to it naturally
-11. When asked about specific data (employees, courses, trainings), use the real data provided
-12. If asked about counts or statistics, calculate from the real data
+9. For certificate definitions, guide users to /certificate-definitions
+10. For certificate expiry tracking, guide users to /certificate-expiry
+11. Remember previous conversation context and refer to it naturally
+12. When asked about specific data (employees, courses, trainings), use the real data provided
+13. If asked about counts or statistics, calculate from the real data
 
 **Enhanced Capabilities:**
 - Use find_newest_hires() for questions about newest employees, recent hires, or who was hired recently

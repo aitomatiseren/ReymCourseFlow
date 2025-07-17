@@ -6,7 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CertificateExpiryReport } from "./CertificateExpiryReport";
 import { TrainingCostReport } from "./TrainingCostReport";
 import { ComplianceReport } from "./ComplianceReport";
-import { FileText, AlertTriangle, DollarSign, CheckCircle, Loader2 } from "lucide-react";
+import { Code95Dashboard } from "@/components/certificates/Code95Dashboard";
+import { ExemptionManagementDashboard } from "@/components/certificates/ExemptionManagementDashboard";
+import { FileText, AlertTriangle, DollarSign, CheckCircle, Loader2, Truck, Shield } from "lucide-react";
 import { useCertificates } from "@/hooks/useCertificates";
 import { useTrainings } from "@/hooks/useTrainings";
 
@@ -118,7 +120,7 @@ export function ReportsScreen() {
 
       {/* Reports Tabs */}
       <Tabs defaultValue="expiry" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="expiry" className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4" />
             {t('reports:screen.certificateExpiry')}
@@ -130,6 +132,14 @@ export function ReportsScreen() {
           <TabsTrigger value="compliance" className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4" />
             {t('reports:screen.compliance')}
+          </TabsTrigger>
+          <TabsTrigger value="code95" className="flex items-center gap-2">
+            <Truck className="h-4 w-4" />
+            Code 95
+          </TabsTrigger>
+          <TabsTrigger value="exemptions" className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            Exemptions
           </TabsTrigger>
           <TabsTrigger value="utilization" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
@@ -147,6 +157,14 @@ export function ReportsScreen() {
 
         <TabsContent value="compliance">
           <ComplianceReport />
+        </TabsContent>
+
+        <TabsContent value="code95">
+          <Code95Dashboard />
+        </TabsContent>
+
+        <TabsContent value="exemptions">
+          <ExemptionManagementDashboard />
         </TabsContent>
 
         <TabsContent value="utilization">

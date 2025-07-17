@@ -7,8 +7,10 @@ import { UserListTable } from "@/components/users/UserListTable";
 import { AddUserDialog } from "@/components/users/AddUserDialog";
 import { ViewToggle } from "@/components/ui/view-toggle";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Users, Shield } from "lucide-react";
 import { useViewMode } from "@/hooks/useViewMode";
+import { ExemptionManagementDashboard } from "@/components/certificates/ExemptionManagementDashboard";
 
 export default function Participants() {
   const { t } = useTranslation(['employees']);
@@ -23,16 +25,35 @@ export default function Participants() {
             <h1 className="text-3xl font-bold text-gray-900">{t('employees:management.title')}</h1>
             <p className="text-gray-600 mt-1">{t('employees:management.subtitle')}</p>
           </div>
-          <div className="flex items-center space-x-2">
-            <ViewToggle value={viewMode} onValueChange={setViewMode} />
-            <Button onClick={() => setShowAddDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              {t('employees:management.addEmployee')}
-            </Button>
-          </div>
+          <Button onClick={() => setShowAddDialog(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t('employees:management.addEmployee')}
+          </Button>
         </div>
 
-        {viewMode === 'grid' ? <UserList /> : <UserListTable />}
+        <Tabs defaultValue="employees" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="employees" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              {t('employees:management.title')}
+            </TabsTrigger>
+            <TabsTrigger value="exemptions" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Certificate Exemptions
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="employees" className="space-y-6">
+            <div className="flex items-center justify-end">
+              <ViewToggle value={viewMode} onValueChange={setViewMode} />
+            </div>
+            {viewMode === 'grid' ? <UserList /> : <UserListTable />}
+          </TabsContent>
+
+          <TabsContent value="exemptions">
+            <ExemptionManagementDashboard />
+          </TabsContent>
+        </Tabs>
 
         <AddUserDialog
           open={showAddDialog}
