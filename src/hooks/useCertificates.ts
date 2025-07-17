@@ -13,7 +13,6 @@ export interface Certificate {
   issueDate: string;
   expiryDate: string;
   status: 'valid' | 'expiring' | 'expired';
-  category: string;
 }
 
 // Hook to fetch license definitions
@@ -26,16 +25,15 @@ export function useLicenses() {
         .select(`
           id,
           name,
-          category,
           description,
           validity_period_months,
           renewal_notice_months,
-          renewal_grace_period_months,
           level,
           level_description,
+          is_base_level,
+          supersedes_license_id,
           created_at
         `)
-        .order('category', { ascending: true })
         .order('name', { ascending: true });
 
       if (error) throw error;
@@ -55,11 +53,11 @@ export function useCourseCertificateMappings() {
           id,
           course_id,
           license_id,
-          grants_level,
+          directly_grants,
           is_required,
           renewal_eligible,
           courses:courses(id, title),
-          licenses:licenses(id, name, category)
+          licenses:licenses(id, name)
         `)
         .order('course_id');
 
@@ -78,10 +76,10 @@ export function useCertificatesForCourse(courseId: string) {
         .from('course_certificates')
         .select(`
           id,
-          grants_level,
+          directly_grants,
           is_required,
           renewal_eligible,
-          licenses:licenses(id, name, category, description, validity_period_months)
+          licenses:licenses(id, name, description, validity_period_months)
         `)
         .eq('course_id', courseId);
 
@@ -101,7 +99,7 @@ export function useCoursesForCertificate(licenseId: string) {
         .from('course_certificates')
         .select(`
           id,
-          grants_level,
+          directly_grants,
           is_required,
           renewal_eligible,
           courses:courses(id, title, duration_hours)
@@ -189,8 +187,7 @@ export function useCertificates(enableRealTime = true) {
             employee_number
           ),
           licenses (
-            name,
-            category
+            name
           )
         `)
         .order('expiry_date');
@@ -211,8 +208,7 @@ export function useCertificates(enableRealTime = true) {
         certificateNumber: cert.certificate_number || '',
         issueDate: cert.issue_date || '',
         expiryDate: cert.expiry_date || '',
-        status: cert.status as Certificate['status'] || 'valid',
-        category: cert.licenses?.category || 'Other'
+        status: cert.status as Certificate['status'] || 'valid'
       }));
       
       return certificates;
@@ -228,7 +224,7 @@ export function useCertificateManagement() {
     mutationFn: async (mapping: {
       course_id: string;
       license_id: string;
-      grants_level?: number;
+      directly_grants?: boolean;
       is_required?: boolean;
       renewal_eligible?: boolean;
     }) => {
@@ -255,7 +251,7 @@ export function useCertificateManagement() {
     }: { 
       id: string; 
       updates: Partial<{
-        grants_level: number;
+        directly_grants: boolean;
         is_required: boolean;
         renewal_eligible: boolean;
       }>;
@@ -296,11 +292,11 @@ export function useCertificateManagement() {
   const createLicense = useMutation({
     mutationFn: async (license: {
       name: string;
-      category: string;
       description?: string;
       validity_period_months?: number;
       renewal_notice_months?: number;
-      renewal_grace_period_months?: number;
+      is_base_level?: boolean;
+      supersedes_license_id?: string;
     }) => {
       const { data, error } = await supabase
         .from('licenses')
@@ -325,11 +321,11 @@ export function useCertificateManagement() {
       id: string; 
       updates: Partial<{
         name: string;
-        category: string;
         description: string;
         validity_period_months: number;
         renewal_notice_months: number;
-        renewal_grace_period_months: number;
+        is_base_level: boolean;
+        supersedes_license_id: string;
       }>;
     }) => {
       const { data, error } = await supabase

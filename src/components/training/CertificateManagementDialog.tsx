@@ -54,7 +54,7 @@ export function CertificateManagementDialog({
   const [newMapping, setNewMapping] = useState<Partial<CourseCertificateMapping>>({
     course_id: selectedCourseId || '',
     license_id: '',
-    grants_level: 1,
+    directly_grants: true,
     is_required: true,
     renewal_eligible: true,
     min_score_required: 70,
@@ -123,7 +123,7 @@ export function CertificateManagementDialog({
       setNewMapping({
         course_id: selectedCourseId || '',
         license_id: '',
-        grants_level: 1,
+        directly_grants: true,
         is_required: true,
         renewal_eligible: true,
         min_score_required: 70,
@@ -348,20 +348,17 @@ export function CertificateManagementDialog({
 
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="grants_level">Grants Level</Label>
+                    <Label htmlFor="directly_grants">Directly Grants Certificate</Label>
                     <Select 
-                      value={newMapping.grants_level?.toString()} 
-                      onValueChange={(value) => setNewMapping({ ...newMapping, grants_level: parseInt(value) })}
+                      value={newMapping.directly_grants?.toString()} 
+                      onValueChange={(value) => setNewMapping({ ...newMapping, directly_grants: value === 'true' })}
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {[1, 2, 3, 4, 5].map(level => (
-                          <SelectItem key={level} value={level.toString()}>
-                            Level {level}
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="true">Yes - Directly Grants</SelectItem>
+                        <SelectItem value="false">No - Prerequisite Only</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

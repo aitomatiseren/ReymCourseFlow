@@ -223,11 +223,6 @@ export function TrainingDetailsView({
                             {cert.licenses?.name || 'Unknown Certificate'}
                           </h3>
                           <div className="flex items-center space-x-2 mt-1">
-                            {cert.licenses?.category && (
-                              <Badge variant="outline">
-                                {cert.licenses.category}
-                              </Badge>
-                            )}
                             {cert.licenses?.description && (
                               <span className="text-sm text-gray-600">
                                 {cert.licenses.description}
@@ -237,11 +232,13 @@ export function TrainingDetailsView({
                         </div>
                       </div>
                       <div className="text-right">
-                        {cert.grants_level && (
-                          <div className="text-sm font-medium text-gray-900">
-                            Grants Level {cert.grants_level}
-                          </div>
-                        )}
+                        <div className="flex space-x-1 justify-end mb-1">
+                          {cert.directly_grants && (
+                            <Badge variant="default" className="text-xs">
+                              Directly Grants
+                            </Badge>
+                          )}
+                        </div>
                         <div className="flex space-x-2 mt-1">
                           {cert.is_required && (
                             <Badge variant="destructive" className="text-xs">

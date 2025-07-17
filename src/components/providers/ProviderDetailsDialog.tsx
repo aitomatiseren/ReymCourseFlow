@@ -228,8 +228,8 @@ export function ProviderDetailsDialog({
                                     <span className="font-medium">{cert.licenses.name}</span>
                                   </div>
                                   <div className="flex space-x-1">
-                                    {cert.grants_level && (
-                                      <span className="text-gray-600">({cert.grants_level})</span>
+                                    {cert.directly_grants && (
+                                      <span className="text-gray-600">(Directly Grants)</span>
                                     )}
                                     {cert.is_required && (
                                       <Badge variant="destructive" className="text-xs">Required</Badge>

@@ -48,7 +48,7 @@ export interface RenewalCourseOption {
   course_category: string;
   duration_hours: number;
   code95_points?: number;
-  grants_level: number;
+  directly_grants: boolean;
   is_required: boolean;
   renewal_eligible: boolean;
   upcoming_training_id?: string;
@@ -240,7 +240,7 @@ export const useEmployeeDocuments = () => {
         .from('certificate_documents')
         .select(`
           *,
-          license:licenses(id, name, category),
+          license:licenses(id, name, description),
           uploaded_by_employee:employees!certificate_documents_uploaded_by_fkey(id, name),
           verified_by_employee:employees!certificate_documents_verified_by_fkey(id, name)
         `)

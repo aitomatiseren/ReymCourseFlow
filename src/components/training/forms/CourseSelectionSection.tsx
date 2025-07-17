@@ -137,7 +137,7 @@ export function CourseSelectionSection({
                       >
                         <Award className="h-3 w-3 mr-1" />
                         {cert.licenses?.name}
-                        {cert.grants_level && ` (Level ${cert.grants_level})`}
+                        {cert.directly_grants && <span className="ml-1 text-xs">Direct</span>}
                         {cert.is_required && <span className="ml-1 text-xs">*Required</span>}
                       </Badge>
                     ))}

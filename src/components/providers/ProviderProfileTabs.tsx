@@ -42,7 +42,7 @@ export function ProviderProfileTabs({ providerId }: ProviderProfileTabsProps) {
               duration_hours,
               course_certificates (
                 id,
-                grants_level,
+                directly_grants,
                 is_required,
                 renewal_eligible,
                 licenses (
@@ -166,12 +166,12 @@ export function ProviderProfileTabs({ providerId }: ProviderProfileTabsProps) {
                                     </div>
                                   </div>
                                   <div className="text-right">
-                                    {cert.grants_level && (
-                                      <div className="text-xs font-medium text-gray-900">
-                                        Grants Level: {cert.grants_level}
-                                      </div>
-                                    )}
                                     <div className="flex space-x-1 mt-1">
+                                      {cert.directly_grants && (
+                                        <Badge variant="default" className="text-xs">
+                                          Directly Grants
+                                        </Badge>
+                                      )}
                                       {cert.is_required && (
                                         <Badge variant="destructive" className="text-xs">
                                           Required

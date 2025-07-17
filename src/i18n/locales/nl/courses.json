@@ -1,6 +1,6 @@
 {
     "addDialog": {
-        "title": "Nieuwe Cursus Toevoegen",
+        "title": "Cursus Toevoegen",
         "courseTitle": "Cursustitel",
         "courseTitleRequired": "Cursustitel is verplicht",
         "description": "Beschrijving",
@@ -47,7 +47,7 @@
     },
     "list": {
         "title": "Cursussen",
-        "addNewCourse": "Nieuwe Cursus Toevoegen",
+        "addNewCourse": "Cursus Toevoegen",
         "editCourse": "Cursus Bewerken",
         "deleteCourse": "Cursus Verwijderen",
         "courseDetails": "Cursusdetails",

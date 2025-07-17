@@ -5,6 +5,7 @@ import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ArrowLeft, Edit, Calendar, Clock, Users, CheckSquare, BookOpen, Award, Trophy } from "lucide-react";
 import { useCourses } from "@/hooks/useCourses";
 import { useCertificatesForCourse } from "@/hooks/useCertificates";
@@ -93,11 +94,6 @@ export default function CourseDetail() {
 
             <div className="grid grid-cols-2 gap-6">
               <div className="flex items-center space-x-2">
-                <Clock className="h-4 w-4 text-gray-500" />
-                <span className="font-medium">{t('common:courseDetail.duration')}:</span>
-                <span>{course.duration_hours ? `${course.duration_hours} ${t('common:courseDetail.hours')}` : t('common:courseDetail.notSpecified')}</span>
-              </div>
-              <div className="flex items-center space-x-2">
                 <Users className="h-4 w-4 text-gray-500" />
                 <span className="font-medium">{t('common:courses.maxParticipants')}:</span>
                 <span>{course.max_participants || t('common:courseDetail.unlimited')}</span>
@@ -140,11 +136,6 @@ export default function CourseDetail() {
                             {cert.licenses?.name || 'Unknown Certificate'}
                           </h3>
                           <div className="flex items-center space-x-2 mt-1">
-                            {cert.licenses?.category && (
-                              <Badge variant="outline">
-                                {cert.licenses.category}
-                              </Badge>
-                            )}
                             {cert.licenses?.description && (
                               <span className="text-sm text-gray-600">
                                 {cert.licenses.description}
@@ -154,23 +145,6 @@ export default function CourseDetail() {
                         </div>
                       </div>
                       <div className="text-right">
-                        {cert.grants_level && (
-                          <div className="text-sm font-medium text-gray-900">
-                            {t('common:courseDetail.grantsLevel')} {cert.grants_level}
-                          </div>
-                        )}
-                        <div className="flex space-x-2 mt-1">
-                          {cert.is_required && (
-                            <Badge variant="destructive" className="text-xs">
-                              {t('common:courseDetail.required')}
-                            </Badge>
-                          )}
-                          {cert.renewal_eligible && (
-                            <Badge variant="secondary" className="text-xs">
-                              {t('common:courseDetail.renewalEligible')}
-                            </Badge>
-                          )}
-                        </div>
                         {cert.licenses?.validity_period_months && (
                           <div className="text-xs text-gray-500 mt-1">
                             {t('common:courseDetail.validFor')} {cert.licenses.validity_period_months} {t('common:courseDetail.months')}

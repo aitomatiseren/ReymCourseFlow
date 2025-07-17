@@ -139,7 +139,7 @@ export const useEmployeeExemptionStatus = (employeeId: string, licenseId: string
         .from('certificate_exemptions')
         .select(`
           *,
-          license:licenses!certificate_exemptions_license_id_fkey(name, category)
+          license:licenses!certificate_exemptions_license_id_fkey(name, description)
         `)
         .eq('employee_id', employeeId)
         .eq('license_id', licenseId)

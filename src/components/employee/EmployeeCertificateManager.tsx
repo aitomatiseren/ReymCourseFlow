@@ -170,7 +170,7 @@ export const EmployeeCertificateManager: React.FC = () => {
                     <div className="flex items-start justify-between">
                       <div>
                         <CardTitle className="text-lg">{cert.licenses?.name}</CardTitle>
-                        <CardDescription>{cert.licenses?.category}</CardDescription>
+                        <CardDescription>{cert.licenses?.description}</CardDescription>
                       </div>
                       <Badge className={getStatusColor(cert.status)}>
                         {cert.status}
@@ -319,7 +319,9 @@ export const EmployeeCertificateManager: React.FC = () => {
                             {course.code95_points && (
                               <span>{course.code95_points} Code 95 pts</span>
                             )}
-                            <Badge variant="outline">Level {course.grants_level}</Badge>
+                            {course.directly_grants && (
+                              <Badge variant="outline">Directly Grants</Badge>
+                            )}
                             {course.is_required && (
                               <Badge variant="outline" className="text-red-600 border-red-200">
                                 Required

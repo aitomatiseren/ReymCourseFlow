@@ -218,7 +218,7 @@
     "courses": {
         "title": "Course Management",
         "subtitle": "Manage courses, schedules, and training programs.",
-        "addNewCourse": "Add New Course",
+        "addNewCourse": "Add Course",
         "searchPlaceholder": "Search courses...",
         "code95Only": "Code 95 only",
         "active": "Active",
@@ -262,6 +262,7 @@
         "checklistAvailable": "Checklist items available",
         "certificatesGranted": "Certificates Granted",
         "grantsLevel": "Grants Level",
+        "directlyGrants": "Directly Grants",
         "required": "Required",
         "renewalEligible": "Renewal Eligible",
         "validFor": "Valid for",

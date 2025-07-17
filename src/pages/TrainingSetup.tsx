@@ -186,11 +186,11 @@ export default function TrainingSetup() {
                 <p className="text-gray-600 mt-1">{t('common:courses.subtitle')}</p>
               </div>
               <div className="flex items-center space-x-2">
-                <ViewToggle value={courseViewMode} onValueChange={setCourseViewMode} />
                 <Button onClick={() => setShowAddCourseDialog(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   {t('common:courses.addNewCourse')}
                 </Button>
+                <ViewToggle value={courseViewMode} onValueChange={setCourseViewMode} />
               </div>
             </div>
 
@@ -394,11 +394,11 @@ export default function TrainingSetup() {
                 </p>
               </div>
               <div className="flex items-center space-x-2">
-                <ViewToggle value={providerViewMode} onValueChange={setProviderViewMode} />
                 <Button onClick={() => setShowAddProviderDialog(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   {t('providers:page.addProvider')}
                 </Button>
+                <ViewToggle value={providerViewMode} onValueChange={setProviderViewMode} />
               </div>
             </div>
 

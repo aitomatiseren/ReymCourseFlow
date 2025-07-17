@@ -726,39 +726,42 @@ export type Database = {
       }
       licenses: {
         Row: {
-          category: string | null
           created_at: string
           description: string | null
+          hierarchy_order: number | null
           id: string
+          is_base_level: boolean | null
           level: number | null
           level_description: string | null
           name: string
-          renewal_grace_period_months: number | null
           renewal_notice_months: number | null
+          supersedes_license_id: string | null
           validity_period_months: number | null
         }
         Insert: {
-          category?: string | null
           created_at?: string
           description?: string | null
+          hierarchy_order?: number | null
           id?: string
+          is_base_level?: boolean | null
           level?: number | null
           level_description?: string | null
           name: string
-          renewal_grace_period_months?: number | null
           renewal_notice_months?: number | null
+          supersedes_license_id?: string | null
           validity_period_months?: number | null
         }
         Update: {
-          category?: string | null
           created_at?: string
           description?: string | null
+          hierarchy_order?: number | null
           id?: string
+          is_base_level?: boolean | null
           level?: number | null
           level_description?: string | null
           name?: string
-          renewal_grace_period_months?: number | null
           renewal_notice_months?: number | null
+          supersedes_license_id?: string | null
           validity_period_months?: number | null
         }
         Relationships: []

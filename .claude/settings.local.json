@@ -26,7 +26,8 @@
       "mcp__supabase__list_migrations",
       "Bash(env)",
       "Bash(npx eslint:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "mcp__supabase__get_logs"
     ],
     "deny": []
   }

@@ -11,7 +11,6 @@ export interface LicenseWithHierarchy extends License {
   dependents?: License[];
   supersedes?: License;
   superseded_by?: License[];
-  hierarchy_order?: number;
   is_base_level?: boolean;
 }
 
@@ -32,10 +31,10 @@ export const useCertificatePrerequisites = () => {
         .select(`
           *,
           certificate:licenses!certificate_prerequisites_certificate_id_fkey(
-            id, name, level, level_description, category
+            id, name, level, level_description
           ),
           prerequisite:licenses!certificate_prerequisites_prerequisite_id_fkey(
-            id, name, level, level_description, category
+            id, name, level, level_description
           )
         `);
 
@@ -67,37 +66,53 @@ export const useLicensesWithHierarchy = () => {
       const { data: licenses, error: licensesError } = await supabase
         .from('licenses')
         .select(`
-          *,
-          supersedes:licenses!licenses_supersedes_license_id_fkey(*)
+          *
         `)
-        .order('hierarchy_order', { ascending: true });
+        .order('name', { ascending: true });
 
       if (licensesError) throw licensesError;
 
+      // Get all superseded licenses in a separate query
+      const supersededIds = licenses.filter(l => l.supersedes_license_id).map(l => l.supersedes_license_id!);
+      let supersededLicenses: License[] = [];
+      
+      if (supersededIds.length > 0) {
+        const { data, error: supersededError } = await supabase
+          .from('licenses')
+          .select('id, name')
+          .in('id', supersededIds);
+
+        if (supersededError) throw supersededError;
+        supersededLicenses = data || [];
+      }
+
       const { data: prerequisites, error: prereqError } = await supabase
         .from('certificate_prerequisites')
-        .select(`
-          *,
-          certificate:licenses!certificate_prerequisites_certificate_id_fkey(*),
-          prerequisite:licenses!certificate_prerequisites_prerequisite_id_fkey(*)
-        `);
+        .select('*');
 
       if (prereqError) throw prereqError;
 
       // Build hierarchy map
       const licenseMap = new Map<string, LicenseWithHierarchy>();
+      const supersededMap = new Map<string, License>();
+      
+      // Create map of superseded licenses
+      supersededLicenses.forEach(license => {
+        supersededMap.set(license.id, license);
+      });
       
       licenses.forEach(license => {
         licenseMap.set(license.id, {
           ...license,
           prerequisites: [],
           dependents: [],
-          superseded_by: []
+          superseded_by: [],
+          supersedes: license.supersedes_license_id ? supersededMap.get(license.supersedes_license_id) : undefined
         });
       });
 
       // Add prerequisite relationships
-      prerequisites.forEach(prereq => {
+      prerequisites?.forEach(prereq => {
         const certificate = licenseMap.get(prereq.certificate_id);
         const prerequisite = licenseMap.get(prereq.prerequisite_id);
         
@@ -107,14 +122,13 @@ export const useLicensesWithHierarchy = () => {
         }
       });
 
-      // Add superseding relationships
+      // Add superseding relationships (reverse direction)
       licenses.forEach(license => {
         if (license.supersedes_license_id) {
           const superseded = licenseMap.get(license.supersedes_license_id);
           const current = licenseMap.get(license.id);
           
           if (superseded && current) {
-            current.supersedes = superseded;
             superseded.superseded_by?.push(current);
           }
         }
@@ -316,19 +330,16 @@ export const useCertificateHierarchyManagement = () => {
     mutationFn: async ({ 
       certificateId, 
       supersedesId, 
-      hierarchyOrder,
       isBaseLevel 
     }: { 
       certificateId: string; 
       supersedesId?: string | null;
-      hierarchyOrder?: number;
       isBaseLevel?: boolean;
     }) => {
       const { data, error } = await supabase
         .from('licenses')
         .update({
           supersedes_license_id: supersedesId,
-          hierarchy_order: hierarchyOrder,
           is_base_level: isBaseLevel,
         })
         .eq('id', certificateId)

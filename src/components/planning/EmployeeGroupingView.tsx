@@ -41,7 +41,7 @@ import { useToast } from "@/hooks/use-toast";
 interface EmployeeGroupingViewProps {
   selectedLicenseId: string;
   expiryData: CertificateExpiryAnalysis[];
-  licenses: Array<{ id: string; name: string; category?: string }>;
+  licenses: Array<{ id: string; name: string; description?: string }>;
   onLicenseChange: (licenseId: string) => void;
   selectedPlanId?: string;
   onPlanChange?: (planId: string) => void;

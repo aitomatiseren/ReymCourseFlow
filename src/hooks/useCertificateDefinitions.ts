@@ -24,7 +24,7 @@ export interface CourseCertificateMapping {
   id?: string;
   course_id: string;
   license_id: string;
-  grants_level: number;
+  directly_grants: boolean;
   is_required: boolean;
   renewal_eligible: boolean;
   min_score_required?: number;
@@ -51,7 +51,6 @@ export const useLicenseDefinitions = () => {
             )
           )
         `)
-        .order('category', { ascending: true })
         .order('name', { ascending: true });
 
       if (error) throw error;
@@ -74,7 +73,6 @@ export const useCourseDefinitions = () => {
             licenses (
               id,
               name,
-              category,
               level,
               validity_period_months
             )
@@ -139,7 +137,6 @@ export const useCourseCertificateMappings = () => {
           licenses (
             id,
             name,
-            category,
             level
           )
         `)
@@ -165,7 +162,7 @@ export const useCertificateDefinitionManagement = () => {
         .insert({
           course_id: mapping.course_id,
           license_id: mapping.license_id,
-          grants_level: mapping.grants_level,
+          directly_grants: mapping.directly_grants,
           is_required: mapping.is_required,
           renewal_eligible: mapping.renewal_eligible,
           min_score_required: mapping.min_score_required,
@@ -308,8 +305,8 @@ export const useRenewalCoursesForEmployee = (employeeId: string) => {
 
 // Utility functions
 export const getCertificateCategories = (licenses: License[]): string[] => {
-  const categories = [...new Set(licenses.map(l => l.category).filter(Boolean))];
-  return categories.sort();
+  // Categories removed from schema - return empty array
+  return [];
 };
 
 export const getCourseCategories = (courses: Course[]): string[] => {
@@ -333,9 +330,6 @@ export const validateCourseCertificateMapping = (mapping: CourseCertificateMappi
 
   if (!mapping.course_id) errors.push('Course is required');
   if (!mapping.license_id) errors.push('Certificate is required');
-  if (!mapping.grants_level || mapping.grants_level < 1 || mapping.grants_level > 5) {
-    errors.push('Grants level must be between 1 and 5');
-  }
   if (mapping.min_score_required && (mapping.min_score_required < 0 || mapping.min_score_required > 100)) {
     errors.push('Minimum score must be between 0 and 100');
   }

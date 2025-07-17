@@ -70,7 +70,7 @@ export function CourseProviderGrid({ searchTerm = "" }: CourseProviderGridProps)
               title,
               course_certificates (
                 id,
-                grants_level,
+                directly_grants,
                 is_required,
                 renewal_eligible,
                 licenses (
@@ -201,7 +201,7 @@ export function CourseProviderGrid({ searchTerm = "" }: CourseProviderGridProps)
                         className="text-xs"
                         title={cpc.courses.course_certificates && cpc.courses.course_certificates.length > 0 
                           ? `Certificates Granted: ${cpc.courses.course_certificates.map((cert: any) => 
-                              `${cert.licenses.name}${cert.grants_level ? ` (${cert.grants_level})` : ''}${cert.is_required ? ' - Required' : ''}${cert.renewal_eligible ? ' - Renewal Eligible' : ''}`
+                              `${cert.licenses.name}${cert.directly_grants ? ' - Directly Grants' : ''}${cert.is_required ? ' - Required' : ''}${cert.renewal_eligible ? ' - Renewal Eligible' : ''}`
                             ).join(', ')}`
                           : 'No certificates linked to this course'
                         }

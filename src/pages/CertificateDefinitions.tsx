@@ -65,7 +65,7 @@ export default function CertificateDefinitions() {
   const [mappingForm, setMappingForm] = useState<CourseCertificateMapping>({
     course_id: '',
     license_id: '',
-    grants_level: 1,
+    directly_grants: true,
     is_required: true,
     renewal_eligible: true,
     min_score_required: undefined,
@@ -184,7 +184,7 @@ export default function CertificateDefinitions() {
     setMappingForm({
       course_id: '',
       license_id: '',
-      grants_level: 1,
+      directly_grants: true,
       is_required: true,
       renewal_eligible: true,
       min_score_required: undefined,
@@ -213,7 +213,7 @@ export default function CertificateDefinitions() {
     setMappingForm({
       course_id: mapping.course_id,
       license_id: mapping.license_id,
-      grants_level: mapping.grants_level,
+      directly_grants: mapping.directly_grants,
       is_required: mapping.is_required,
       renewal_eligible: mapping.renewal_eligible,
       min_score_required: mapping.min_score_required,
@@ -226,12 +226,12 @@ export default function CertificateDefinitions() {
 
   const filteredLicenses = licenses?.filter(license => {
     const matchesSearch = license.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      license.category?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || license.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+      license.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    // Categories are no longer used in the schema
+    return matchesSearch;
   }) || [];
 
-  const categories = [...new Set(licenses?.map(l => l.category).filter(Boolean))] || [];
+  const categories: string[] = []; // Categories removed from schema
 
   if (licensesLoading || coursesLoading || mappingsLoading) {
     return (
@@ -399,9 +399,11 @@ export default function CertificateDefinitions() {
                           {license.course_certificates.slice(0, 3).map(cc => (
                             <div key={cc.id} className="text-xs bg-muted p-2 rounded flex items-center justify-between">
                               <span>{cc.courses?.title}</span>
-                              <Badge variant="outline" className="text-xs">
-                                L{cc.grants_level}
-                              </Badge>
+                              {cc.directly_grants && (
+                                <Badge variant="outline" className="text-xs">
+                                  Direct
+                                </Badge>
+                              )}
                             </div>
                           ))}
                           {license.course_certificates.length > 3 && (
@@ -440,15 +442,17 @@ export default function CertificateDefinitions() {
                           <Award className="h-5 w-5 text-green-600" />
                           <div>
                             <p className="font-medium">{mapping.licenses?.name}</p>
-                            <p className="text-sm text-muted-foreground">{mapping.licenses?.category}</p>
+                            <p className="text-sm text-muted-foreground">{mapping.licenses?.description}</p>
                           </div>
                         </div>
                       </div>
                       
                       <div className="flex items-center space-x-2">
-                        <Badge className={getLevelColor(mapping.grants_level)}>
-                          Grants Level {mapping.grants_level}
-                        </Badge>
+                        {mapping.directly_grants && (
+                          <Badge variant="default">
+                            Directly Grants
+                          </Badge>
+                        )}
                         {mapping.is_required && (
                           <Badge variant="outline">Required</Badge>
                         )}
@@ -551,20 +555,17 @@ export default function CertificateDefinitions() {
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label>Grants Level</Label>
+                  <Label>Directly Grants Certificate</Label>
                   <Select 
-                    value={mappingForm.grants_level.toString()} 
-                    onValueChange={(value) => setMappingForm(prev => ({ ...prev, grants_level: parseInt(value) }))}
+                    value={mappingForm.directly_grants.toString()} 
+                    onValueChange={(value) => setMappingForm(prev => ({ ...prev, directly_grants: value === 'true' }))}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {[1, 2, 3, 4, 5].map(level => (
-                        <SelectItem key={level} value={level.toString()}>
-                          Level {level}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="true">Yes - Directly Grants</SelectItem>
+                      <SelectItem value="false">No - Prerequisite Only</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

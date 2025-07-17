@@ -218,7 +218,7 @@
     "courses": {
         "title": "Cursussen Beheer",
         "subtitle": "Beheer cursussen, roosters en trainingsprogramma's.",
-        "addNewCourse": "Nieuwe Cursus Toevoegen",
+        "addNewCourse": "Cursus Toevoegen",
         "searchPlaceholder": "Zoek cursussen...",
         "code95Only": "Alleen Code 95",
         "active": "Actief",
@@ -259,6 +259,7 @@
         "checklistAvailable": "Checklist items beschikbaar",
         "certificatesGranted": "Toegekende Certificaten",
         "grantsLevel": "Kent Niveau Toe",
+        "directlyGrants": "Kent Direct Toe",
         "required": "Verplicht",
         "renewalEligible": "Verlengbaar",
         "validFor": "Geldig voor",

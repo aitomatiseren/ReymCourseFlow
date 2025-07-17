@@ -1,6 +1,6 @@
 {
     "addDialog": {
-        "title": "Add New Course",
+        "title": "Add Course",
         "courseTitle": "Course Title",
         "courseTitleRequired": "Course title is required",
         "description": "Description",
@@ -47,7 +47,7 @@
     },
     "list": {
         "title": "Courses",
-        "addNewCourse": "Add New Course",
+        "addNewCourse": "Add Course",
         "editCourse": "Edit Course",
         "deleteCourse": "Delete Course",
         "courseDetails": "Course Details",

@@ -53,7 +53,7 @@ export function ProviderProfileHeader({ providerId }: ProviderProfileHeaderProps
               title,
               course_certificates (
                 id,
-                grants_level,
+                directly_grants,
                 is_required,
                 renewal_eligible,
                 licenses (
