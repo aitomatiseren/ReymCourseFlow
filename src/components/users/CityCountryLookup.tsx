@@ -11,11 +11,12 @@ interface CityCountryResult {
 
 interface CityCountryLookupProps {
   onSelect: (result: CityCountryResult) => void;
+  onValueChange?: (value: string) => void;
   placeholder?: string;
   value?: string;
 }
 
-export function CityCountryLookup({ onSelect, placeholder = "Enter city name...", value = "" }: CityCountryLookupProps) {
+export function CityCountryLookup({ onSelect, onValueChange, placeholder = "Enter city name...", value = "" }: CityCountryLookupProps) {
   const [query, setQuery] = useState(value);
   const [suggestions, setSuggestions] = useState<CityCountryResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -169,6 +170,9 @@ export function CityCountryLookup({ onSelect, placeholder = "Enter city name..."
   const handleInputChange = (value: string) => {
     setQuery(value);
     debouncedSearch(value);
+    if (onValueChange) {
+      onValueChange(value);
+    }
   };
 
   const handleSelect = (result: CityCountryResult) => {

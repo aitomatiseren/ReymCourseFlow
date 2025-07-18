@@ -71,10 +71,11 @@ export function TrainingCalendar({ onTrainingSelect }: TrainingCalendarProps) {
   };
 
   const formatTime = (time: string, endTime?: string) => {
+    const formattedTime = time ? time.slice(0, 5) : '';
     if (endTime) {
-      return `${time} - ${endTime}`;
+      return `${formattedTime} - ${endTime.slice(0, 5)}`;
     }
-    return time;
+    return formattedTime;
   };
 
   return (

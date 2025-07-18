@@ -323,17 +323,17 @@ export function UserProfileHeader({ userId }: UserProfileHeaderProps) {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
                 {employee.idProofType && (
                   <div>
-                    <span className="font-medium">ID Proof Type:</span> {employee.idProofType}
+                    <span className="font-medium">ID Proof Type: </span>{employee.idProofType}
                   </div>
                 )}
                 {employee.idProofNumber && (
                   <div>
-                    <span className="font-medium">ID Number:</span> {employee.idProofNumber}
+                    <span className="font-medium">ID Number: </span>{employee.idProofNumber}
                   </div>
                 )}
                 {employee.idProofExpiryDate && (
                   <div>
-                    <span className="font-medium">Expiry Date:</span> 
+                    <span className="font-medium">Expiry Date: </span>
                     <span className={`${new Date(employee.idProofExpiryDate) < new Date() ? 'text-red-600' : 'text-gray-600'}`}>
                       {new Date(employee.idProofExpiryDate).toLocaleDateString()}
                     </span>
@@ -495,18 +495,18 @@ export function UserProfileHeader({ userId }: UserProfileHeaderProps) {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
                 {employee.emergencyContact.name && (
                   <div>
-                    <span className="font-medium">Name:</span> {employee.emergencyContact.name}
+                    <span className="font-medium">Name: </span>{employee.emergencyContact.name}
                   </div>
                 )}
                 {employee.emergencyContact.relationship && (
                   <div>
-                    <span className="font-medium">Relationship:</span> {employee.emergencyContact.relationship}
+                    <span className="font-medium">Relationship: </span>{employee.emergencyContact.relationship}
                   </div>
                 )}
                 {employee.emergencyContact.phone && (
                   <div className={`flex items-center ${isValidPhone(employee.emergencyContact.phone) ? 'text-gray-600' : 'text-red-600'}`}>
                     <Phone className="h-3 w-3 mr-2" />
-                    <span className="font-medium">Phone:</span> {employee.emergencyContact.phone}
+                    <span className="font-medium">Phone: </span>{employee.emergencyContact.phone}
                     {!isValidPhone(employee.emergencyContact.phone) && (
                       <AlertTriangle className="h-3 w-3 ml-2 text-red-500" title="Invalid phone format" />
                     )}

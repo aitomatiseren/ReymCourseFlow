@@ -143,8 +143,8 @@ export function UserList() {
       {/* Employee Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredEmployees.map((employee) => (
-          <Card key={employee.id} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
+          <Card key={employee.id} className="hover:shadow-md transition-shadow flex flex-col h-full">
+            <CardContent className="p-6 flex-1 flex flex-col">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-3">
                   <Avatar className="h-12 w-12">
@@ -163,7 +163,7 @@ export function UserList() {
                 <EmployeeStatusBadge status={employee.status as EmployeeStatus} />
               </div>
 
-              <div className="space-y-2 mb-4">
+              <div className="space-y-2 mb-4 flex-1">
                 <div className="flex items-center text-sm text-gray-600">
                   <Building2 className="h-4 w-4 mr-2" />
                   {employee.jobTitle} • {employee.department}
@@ -205,7 +205,7 @@ export function UserList() {
                 </div>
               )}
 
-              <div className="flex space-x-2">
+              <div className="flex space-x-2 mt-auto">
                 <Button
                   size="sm"
                   className="flex-1 bg-slate-800 text-white hover:bg-slate-900"

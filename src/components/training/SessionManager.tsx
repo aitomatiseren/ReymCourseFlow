@@ -173,7 +173,7 @@ export function SessionManager({ training }: SessionManagerProps) {
                 <Calendar className="h-4 w-4" />
                 <span>{training.date}</span>
                 <Clock className="h-4 w-4 ml-4" />
-                <span>{training.time}</span>
+                <span>{training.time ? training.time.slice(0, 5) : ''}</span>
               </div>
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
@@ -284,7 +284,7 @@ export function SessionManager({ training }: SessionManagerProps) {
                         <Calendar className="h-4 w-4" />
                         <span>{sessionDates[index] || training.date}</span>
                         <Clock className="h-4 w-4 ml-4" />
-                        <span>{sessionTimes[index] || training.time}</span>
+                        <span>{(sessionTimes[index] || training.time) ? (sessionTimes[index] || training.time).slice(0, 5) : ''}</span>
                         {sessionEndTimes[index] && (
                           <>
                             <span>-</span>

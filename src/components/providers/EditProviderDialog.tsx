@@ -2,13 +2,13 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -26,22 +26,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Trash2, Sparkles } from "lucide-react";
 import { EnhancedPhoneInput } from "@/components/users/EnhancedPhoneInput";
 import { AddressLookup } from "@/components/users/AddressLookup";
 
-const providerSchema = z.object({
-  name: z.string().min(1, "Provider name is required"),
+// Comprehensive schema matching add dialog pattern
+const editProviderSchema = (t: any) => z.object({
+  name: z.string().min(1, t('providers:editDialog.nameRequired')),
   contact_person: z.string().default(""),
-  email: z.string().email("Invalid email").default("").or(z.literal("")),
+  email: z.string().email(t('providers:editDialog.invalidEmail')).default("").or(z.literal("")),
   phone: z.string().default(""),
   website: z.string().default("").or(z.literal("")).refine(val => {
     if (!val || val === "") return true;
-    // Allow URLs with or without protocol
     const urlPattern = /^(https?:\/\/)?(www\.)?[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}([\/?#][^\s]*)?$/;
     return urlPattern.test(val);
-  }, { message: "Invalid URL format" }),
+  }, { message: t('providers:editDialog.invalidWebsite') }),
   address: z.string().default(""),
   postcode: z.string().default(""),
   city: z.string().default(""),
@@ -65,12 +65,13 @@ const providerSchema = z.object({
       description: z.string().default(""),
     })).default([]),
     number_of_sessions: z.number().min(1).max(20).optional(),
+    min_participants: z.number().min(1).max(50).optional(),
     max_participants: z.number().min(1).max(50).optional(),
     notes: z.string().default(""),
   })).default({}),
 });
 
-type ProviderFormData = z.infer<typeof providerSchema>;
+type ProviderFormData = z.infer<ReturnType<typeof editProviderSchema>>;
 
 interface EditProviderDialogProps {
   provider: any;
@@ -83,6 +84,11 @@ export function EditProviderDialog({
   open,
   onOpenChange,
 }: EditProviderDialogProps) {
+  const { t } = useTranslation(['providers', 'common']);
+  
+  // Create schema with translations
+  const providerSchema = editProviderSchema(t);
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [addressQuery, setAddressQuery] = useState("");
   const [emailError, setEmailError] = useState("");
@@ -91,23 +97,6 @@ export function EditProviderDialog({
   const [newLocation, setNewLocation] = useState("");
   const [newInstructor, setNewInstructor] = useState("");
   const queryClient = useQueryClient();
-
-  // Handle Escape key
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && open && !isSubmitting) {
-        onOpenChange(false);
-      }
-    };
-
-    if (open) {
-      document.addEventListener('keydown', handleKeyDown);
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [open, onOpenChange, isSubmitting]);
 
   const form = useForm<ProviderFormData>({
     resolver: zodResolver(providerSchema),
@@ -130,6 +119,9 @@ export function EditProviderDialog({
       course_pricing: {},
     },
   });
+
+  // Watch provider name for dynamic display
+  const watchedName = form.watch('name');
 
   // Helper function to convert locations from different formats
   const normalizeLocations = (locations: any) => {
@@ -171,36 +163,22 @@ export function EditProviderDialog({
     });
   };
 
-  // Helper function to convert structured locations back to simple strings for database storage
-  const locationsToStrings = (locations: any[]) => {
-    if (!locations || !Array.isArray(locations)) return [];
-    
-    return locations.map((location: any) => {
-      if (typeof location === 'object' && location.name) {
-        // Just use the location name for TEXT[] storage
-        return location.name;
-      }
-      return String(location);
-    });
-  };
-
   // Load provider data when dialog opens
   useEffect(() => {
     if (provider && open) {
       // Build course pricing object from existing course_provider_courses data
       const coursePricing: Record<string, any> = {};
       if (provider.course_provider_courses) {
-        console.log("Loading provider course pricing data:", provider.course_provider_courses);
         provider.course_provider_courses.forEach((cpc: any) => {
           coursePricing[cpc.course_id] = {
             cost_breakdown: Array.isArray(cpc.cost_breakdown) ? cpc.cost_breakdown : [],
             number_of_sessions: cpc.number_of_sessions || undefined,
+            min_participants: cpc.min_participants || undefined,
             max_participants: cpc.max_participants || undefined,
             notes: cpc.notes || '',
           };
         });
       }
-      console.log("Built course pricing object:", coursePricing);
 
       form.reset({
         name: provider.name ?? "",
@@ -228,7 +206,7 @@ export function EditProviderDialog({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("courses")
-        .select("id, title, price")
+        .select("id, title")
         .order("title");
       if (error) throw error;
       return data;
@@ -237,8 +215,6 @@ export function EditProviderDialog({
 
   const updateProviderMutation = useMutation({
     mutationFn: async (data: ProviderFormData) => {
-      console.log("Starting provider update with data:", data);
-      
       // First, update the provider
       const { error: providerError } = await supabase
         .from("course_providers")
@@ -260,30 +236,18 @@ export function EditProviderDialog({
         })
         .eq("id", provider.id);
 
-      if (providerError) {
-        console.error("Provider update error:", providerError);
-        throw providerError;
-      }
-      
-      console.log("Provider updated successfully");
+      if (providerError) throw providerError;
 
       // Delete existing course associations
-      console.log("Deleting existing course associations for provider:", provider.id);
       const { error: deleteError } = await supabase
         .from("course_provider_courses")
         .delete()
         .eq("provider_id", provider.id);
 
-      if (deleteError) {
-        console.error("Error deleting existing course associations:", deleteError);
-        throw deleteError;
-      }
-      
-      console.log("Successfully deleted existing course associations");
+      if (deleteError) throw deleteError;
 
       // Create new course associations with pricing
       if (data.courses.length > 0) {
-        console.log("Creating new course associations for courses:", data.courses);
         const courseProviderData = data.courses.map((courseId) => {
           const pricing = data.course_pricing[courseId] || {};
           const costBreakdown = pricing.cost_breakdown || [];
@@ -291,42 +255,36 @@ export function EditProviderDialog({
           // Calculate total price from cost breakdown components
           const calculatedPrice = costBreakdown.reduce((sum: number, comp: any) => sum + (comp.amount || 0), 0);
           
-          const courseData = {
+          return {
             provider_id: provider.id,
             course_id: courseId,
             active: true,
             price: calculatedPrice > 0 ? calculatedPrice : null,
             cost_breakdown: costBreakdown.length > 0 ? costBreakdown : null,
             number_of_sessions: pricing.number_of_sessions || null,
+            min_participants: pricing.min_participants || null,
             max_participants: pricing.max_participants || null,
             notes: pricing.notes || null,
           };
-          
-          console.log(`Course ${courseId} data:`, courseData);
-          return courseData;
         });
 
-        console.log("Saving course provider data:", courseProviderData);
         const { error: coursesError } = await supabase
           .from("course_provider_courses")
           .insert(courseProviderData);
 
-        if (coursesError) {
-          console.error("Error saving course provider data:", coursesError);
-          throw coursesError;
-        }
-        console.log("Successfully saved course provider data");
+        if (coursesError) throw coursesError;
       }
 
       return true;
     },
     onSuccess: () => {
-      console.log("Provider update completed successfully");
-      toast.success("Provider updated successfully");
+      toast({
+        title: t('providers:editDialog.success'),
+        description: t('providers:editDialog.providerUpdated'),
+      });
       
       // Small delay to ensure database consistency
       setTimeout(() => {
-        // Invalidate all related queries to ensure UI updates
         queryClient.invalidateQueries({ queryKey: ["course-providers"] });
         queryClient.invalidateQueries({ queryKey: ["provider", provider.id] });
         queryClient.invalidateQueries({ queryKey: ["provider-trainings", provider.id] });
@@ -339,15 +297,17 @@ export function EditProviderDialog({
         
         // Force a refetch of the provider data
         queryClient.refetchQueries({ queryKey: ["provider", provider.id] });
-        
-        console.log("Cache invalidation completed");
       }, 100);
       
       onOpenChange(false);
     },
     onError: (error) => {
+      toast({
+        title: t('providers:editDialog.error'),
+        description: t('providers:editDialog.updateFailed'),
+        variant: "destructive",
+      });
       console.error("Error updating provider:", error);
-      toast.error(`Failed to update provider: ${error.message || error}`);
     },
   });
 
@@ -399,20 +359,7 @@ export function EditProviderDialog({
     setAddressQuery(`${address.street}, ${address.city}`);
   };
 
-  // Location management functions
-  const addLocation = () => {
-    if (newLocation.trim()) {
-      const currentLocations = form.getValues("additional_locations");
-      form.setValue("additional_locations", [...currentLocations, newLocation.trim()]);
-      setNewLocation("");
-    }
-  };
-
   const handleLocationSelect = (address: { street: string; city: string; postcode: string; country: string }) => {
-    console.log('=== EditProviderDialog handleLocationSelect called ===');
-    console.log('Location selected:', address);
-    console.log('Postcode value:', address.postcode, 'Type:', typeof address.postcode, 'Length:', address.postcode?.length);
-    
     const locationName = `${address.city} Location`; // Default name based on city
     const currentLocations = form.getValues("additional_locations");
     
@@ -424,12 +371,7 @@ export function EditProviderDialog({
       country: address.country
     };
     
-    console.log('New location object:', newLocation);
-    console.log('Current locations before:', currentLocations);
-    
     form.setValue("additional_locations", [...currentLocations, newLocation]);
-    
-    console.log('Locations after update:', form.getValues("additional_locations"));
   };
 
   const removeLocation = (index: number) => {
@@ -468,16 +410,6 @@ export function EditProviderDialog({
   };
 
   const onSubmit = async (data: ProviderFormData) => {
-    console.log("Form submitted with data:", data);
-    console.log("Form validation state:", form.formState.errors);
-    
-    // Check for validation errors
-    if (Object.keys(form.formState.errors).length > 0) {
-      console.error("Form has validation errors:", form.formState.errors);
-      toast.error("Please fix the form errors before submitting");
-      return;
-    }
-    
     setIsSubmitting(true);
     try {
       // Process website URL to ensure it has a protocol
@@ -501,44 +433,43 @@ export function EditProviderDialog({
         });
       }
       
-      console.log("Processed data for mutation:", processedData);
       await updateProviderMutation.mutateAsync(processedData);
-    } catch (error) {
-      console.error("Error in onSubmit:", error);
-      toast.error(`Update failed: ${error.message || 'Unknown error'}`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={isSubmitting ? undefined : onOpenChange}>
-      <DialogContent 
-        className="max-w-2xl max-h-[90vh]" 
-        hideCloseButton={true}
-        onPointerDownOutside={(e) => e.preventDefault()} 
-        onEscapeKeyDown={(e) => e.preventDefault()}
-      >
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit Course Provider</DialogTitle>
-          <DialogDescription>
-            Update provider information and course offerings
-          </DialogDescription>
+          <DialogTitle>{t('providers:editDialog.title')}</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(90vh-120px)] pr-1">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 px-1">
-              {/* Basic Information */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium">Basic Information</h3>
-                
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <Tabs defaultValue="basic" className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="basic">Basic Info</TabsTrigger>
+                <TabsTrigger value="location">Location & Instructors</TabsTrigger>
+                <TabsTrigger value="courses">Courses & Pricing</TabsTrigger>
+                <TabsTrigger value="advanced">Advanced</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="basic" className="space-y-4">
+                {/* Provider name display */}
+                <div className="text-center py-4 border-b">
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    {watchedName || t('providers:editDialog.editingProvider')}
+                  </h2>
+                </div>
+
                 <FormField
                   control={form.control}
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Provider Name *</FormLabel>
+                      <FormLabel>{t('providers:editDialog.providerName')} *</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -553,7 +484,7 @@ export function EditProviderDialog({
                     name="contact_person"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Contact Person</FormLabel>
+                        <FormLabel>{t('providers:editDialog.contactPerson')}</FormLabel>
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
@@ -567,7 +498,7 @@ export function EditProviderDialog({
                     name="phone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Phone</FormLabel>
+                        <FormLabel>{t('providers:editDialog.phone')}</FormLabel>
                         <FormControl>
                           <EnhancedPhoneInput
                             value={field.value || ""}
@@ -595,7 +526,7 @@ export function EditProviderDialog({
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email</FormLabel>
+                        <FormLabel>{t('providers:editDialog.email')}</FormLabel>
                         <FormControl>
                           <Input
                             type="email"
@@ -621,7 +552,7 @@ export function EditProviderDialog({
                     name="website"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Website</FormLabel>
+                        <FormLabel>{t('providers:editDialog.website')}</FormLabel>
                         <FormControl>
                           <Input 
                             type="text" 
@@ -643,14 +574,11 @@ export function EditProviderDialog({
                     )}
                   />
                 </div>
-              </div>
+              </TabsContent>
 
-              {/* Location Information */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium">Location</h3>
-                
+              <TabsContent value="location" className="space-y-4">
                 <div className="space-y-2">
-                  <FormLabel>Address Lookup</FormLabel>
+                  <FormLabel>{t('providers:editDialog.addressLookup')}</FormLabel>
                   <AddressLookup
                     onAddressSelect={handleAddressSelect}
                     placeholder="Search for provider address..."
@@ -666,7 +594,7 @@ export function EditProviderDialog({
                     name="postcode"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Postcode</FormLabel>
+                        <FormLabel>{t('providers:editDialog.postcode')}</FormLabel>
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
@@ -680,7 +608,7 @@ export function EditProviderDialog({
                     name="city"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>City</FormLabel>
+                        <FormLabel>{t('providers:editDialog.city')}</FormLabel>
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
@@ -694,7 +622,7 @@ export function EditProviderDialog({
                     name="country"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Country</FormLabel>
+                        <FormLabel>{t('providers:editDialog.country')}</FormLabel>
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
@@ -704,13 +632,12 @@ export function EditProviderDialog({
                   />
                 </div>
 
-                {/* Display the currently entered address for reference */}
                 <FormField
                   control={form.control}
                   name="address"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Street Address</FormLabel>
+                      <FormLabel>{t('providers:editDialog.streetAddress')}</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -722,12 +649,10 @@ export function EditProviderDialog({
                   )}
                 />
 
-
                 {/* Training Locations */}
                 <div className="space-y-3">
-                  <FormLabel>Training Locations</FormLabel>
+                  <FormLabel>{t('providers:editDialog.trainingLocations')}</FormLabel>
                   
-                  {/* Add new location */}
                   <div className="space-y-2">
                     <AddressLookup
                       onAddressSelect={handleLocationSelect}
@@ -738,7 +663,6 @@ export function EditProviderDialog({
                     </p>
                   </div>
 
-                  {/* Existing locations */}
                   <FormField
                     control={form.control}
                     name="additional_locations"
@@ -785,17 +709,12 @@ export function EditProviderDialog({
                       </div>
                     )}
                   />
-                  
-                  <FormDescription>
-                    Add training locations for this provider
-                  </FormDescription>
                 </div>
 
                 {/* Instructors */}
                 <div className="space-y-3">
-                  <FormLabel>Instructors</FormLabel>
+                  <FormLabel>{t('providers:editDialog.instructors')}</FormLabel>
                   
-                  {/* Add new instructor */}
                   <div className="flex gap-2">
                     <Input
                       placeholder="Add instructor name..."
@@ -819,7 +738,6 @@ export function EditProviderDialog({
                     </Button>
                   </div>
 
-                  {/* Existing instructors */}
                   <FormField
                     control={form.control}
                     name="instructors"
@@ -849,23 +767,288 @@ export function EditProviderDialog({
                       </div>
                     )}
                   />
-                  
-                  <FormDescription>
-                    Add instructors associated with this provider
-                  </FormDescription>
                 </div>
-              </div>
+              </TabsContent>
 
-              {/* Additional Information */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium">Additional Information</h3>
-                
+              <TabsContent value="courses" className="space-y-4">
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium">{t('providers:editDialog.offeredCourses')}</h3>
+                  <FormField
+                    control={form.control}
+                    name="courses"
+                    render={() => (
+                      <FormItem>
+                        <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-md p-2">
+                          {courses?.map((course) => (
+                            <FormField
+                              key={course.id}
+                              control={form.control}
+                              name="courses"
+                              render={({ field }) => {
+                                return (
+                                  <FormItem
+                                    key={course.id}
+                                    className="flex flex-row items-start space-x-3 space-y-0"
+                                  >
+                                    <FormControl>
+                                      <Checkbox
+                                        checked={field.value?.includes(course.id)}
+                                        onCheckedChange={(checked) => {
+                                          const newCourses = checked
+                                            ? [...field.value, course.id]
+                                            : field.value?.filter((value) => value !== course.id);
+                                          
+                                          field.onChange(newCourses);
+                                          
+                                          // Initialize pricing for new courses
+                                          if (checked) {
+                                            form.setValue(`course_pricing.${course.id}`, { 
+                                              cost_breakdown: [],
+                                              number_of_sessions: undefined,
+                                              min_participants: 1,
+                                              max_participants: 20,
+                                              notes: ''
+                                            });
+                                          } else {
+                                            // Remove pricing when unchecking
+                                            const currentPricing = form.getValues("course_pricing");
+                                            delete currentPricing[course.id];
+                                            form.setValue("course_pricing", currentPricing);
+                                          }
+                                        }}
+                                      />
+                                    </FormControl>
+                                    <FormLabel className="text-sm font-normal cursor-pointer">
+                                      {course.title}
+                                    </FormLabel>
+                                  </FormItem>
+                                );
+                              }}
+                            />
+                          ))}
+                        </div>
+                        <FormDescription>
+                          Select the courses this provider offers
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Course Pricing */}
+                {form.watch("courses").length > 0 && (
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium">{t('providers:editDialog.coursePricing')}</h3>
+                    <p className="text-sm text-gray-600">
+                      Set pricing for each selected course. These will be used as templates when creating trainings.
+                    </p>
+                    
+                    {form.watch("courses").map((courseId) => {
+                      const course = courses?.find(c => c.id === courseId);
+                      if (!course) return null;
+                      
+                      return (
+                        <div key={courseId} className="border rounded-lg p-4 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-medium">{course.title}</h4>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => addCostComponent(courseId)}
+                            >
+                              <Plus className="h-4 w-4 mr-1" />
+                              Add Cost Component
+                            </Button>
+                          </div>
+
+                          {/* Provider-specific constraints */}
+                          <div className="grid grid-cols-2 gap-4 p-3 bg-blue-50 rounded-lg">
+                            <div>
+                              <FormLabel htmlFor={`sessions-${courseId}`}>Number of Sessions</FormLabel>
+                              <FormField
+                                control={form.control}
+                                name={`course_pricing.${courseId}.number_of_sessions` as any}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormControl>
+                                      <Input
+                                        id={`sessions-${courseId}`}
+                                        type="number"
+                                        min="1"
+                                        max="20"
+                                        placeholder="1"
+                                        value={field.value !== undefined ? field.value.toString() : ""}
+                                        onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <p className="text-xs text-gray-600 mt-1">Number of sessions required</p>
+                            </div>
+
+                            <div>
+                              <FormLabel htmlFor={`max-participants-${courseId}`}>Max Participants</FormLabel>
+                              <FormField
+                                control={form.control}
+                                name={`course_pricing.${courseId}.max_participants` as any}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormControl>
+                                      <Input
+                                        id={`max-participants-${courseId}`}
+                                        type="number"
+                                        min="1"
+                                        max="50"
+                                        placeholder="15"
+                                        value={field.value !== undefined ? field.value.toString() : ""}
+                                        onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <p className="text-xs text-gray-600 mt-1">Maximum group size</p>
+                            </div>
+
+                            <div className="col-span-2">
+                              <FormLabel htmlFor={`notes-${courseId}`}>Provider Notes</FormLabel>
+                              <FormField
+                                control={form.control}
+                                name={`course_pricing.${courseId}.notes` as any}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormControl>
+                                      <Input
+                                        id={`notes-${courseId}`}
+                                        placeholder="Special requirements or notes"
+                                        value={field.value || ""}
+                                        onChange={field.onChange}
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                          </div>
+                          
+                          {/* Cost Breakdown */}
+                          <div className="space-y-3">
+                            <FormLabel>Cost Breakdown Components</FormLabel>
+                            
+                            {/* Existing components */}
+                            <FormField
+                              control={form.control}
+                              name={`course_pricing.${courseId}.cost_breakdown` as any}
+                              render={({ field }) => (
+                                <div className="space-y-2">
+                                  {field.value && field.value.length > 0 && field.value.map((component: any, index: number) => (
+                                    <div key={index} className="grid grid-cols-3 gap-2 p-3 border rounded bg-gray-50">
+                                      <Input
+                                        placeholder="Component name"
+                                        value={component.name || ""}
+                                        onChange={(e) => {
+                                          const newComponents = [...field.value];
+                                          newComponents[index] = { ...newComponents[index], name: e.target.value };
+                                          field.onChange(newComponents);
+                                        }}
+                                      />
+                                      <Input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        placeholder="Amount"
+                                        value={component.amount !== undefined ? component.amount.toString() : ""}
+                                        onChange={(e) => {
+                                          const value = e.target.value;
+                                          const newComponents = [...field.value];
+                                          // Only allow numbers and decimal points
+                                          if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                                            newComponents[index] = { ...newComponents[index], amount: value ? parseFloat(value) : undefined };
+                                            field.onChange(newComponents);
+                                          }
+                                        }}
+                                      />
+                                      <div className="flex gap-1">
+                                        <Input
+                                          placeholder="Description (optional)"
+                                          value={component.description || ""}
+                                          onChange={(e) => {
+                                            const newComponents = [...field.value];
+                                            newComponents[index] = { ...newComponents[index], description: e.target.value };
+                                            field.onChange(newComponents);
+                                          }}
+                                        />
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => {
+                                            const newComponents = field.value.filter((_: any, i: number) => i !== index);
+                                            field.onChange(newComponents);
+                                          }}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                  
+                                  {/* Add component button */}
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      const currentComponents = field.value || [];
+                                      field.onChange([...currentComponents, { name: "", amount: 0, description: "" }]);
+                                    }}
+                                    className="w-full"
+                                  >
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Add Cost Component
+                                  </Button>
+                                </div>
+                              )}
+                            />
+                            
+                            {/* Total calculation */}
+                            {(() => {
+                              const pricing = form.watch(`course_pricing.${courseId}`);
+                              const total = pricing?.cost_breakdown?.reduce((sum: number, comp: any) => sum + (comp.amount || 0), 0) || 0;
+                              
+                              if (total > 0) {
+                                return (
+                                  <div className="pt-3 border-t border-gray-200">
+                                    <div className="flex justify-between items-center text-lg font-semibold text-gray-900">
+                                      <span>Total Course Price:</span>
+                                      <span>€{total.toFixed(2)}</span>
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })()}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="advanced" className="space-y-4">
                 <FormField
                   control={form.control}
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description</FormLabel>
+                      <FormLabel>{t('providers:editDialog.description')}</FormLabel>
                       <FormControl>
                         <Textarea rows={3} {...field} />
                       </FormControl>
@@ -879,7 +1062,7 @@ export function EditProviderDialog({
                   name="notes"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Internal Notes</FormLabel>
+                      <FormLabel>{t('providers:editDialog.internalNotes')}</FormLabel>
                       <FormControl>
                         <Textarea rows={2} {...field} />
                       </FormControl>
@@ -894,7 +1077,7 @@ export function EditProviderDialog({
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
                       <div className="space-y-0.5">
-                        <FormLabel>Active</FormLabel>
+                        <FormLabel>{t('providers:editDialog.active')}</FormLabel>
                         <FormDescription>
                           Active providers can be selected when scheduling trainings
                         </FormDescription>
@@ -908,285 +1091,42 @@ export function EditProviderDialog({
                     </FormItem>
                   )}
                 />
-              </div>
 
-              {/* Course Selection */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium">Offered Courses</h3>
-                <FormField
-                  control={form.control}
-                  name="courses"
-                  render={() => (
-                    <FormItem>
-                      <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-md p-2">
-                        {courses?.map((course) => (
-                          <FormField
-                            key={course.id}
-                            control={form.control}
-                            name="courses"
-                            render={({ field }) => {
-                              return (
-                                <FormItem
-                                  key={course.id}
-                                  className="flex flex-row items-start space-x-3 space-y-0"
-                                >
-                                  <FormControl>
-                                    <Checkbox
-                                      checked={field.value?.includes(course.id)}
-                                      onCheckedChange={(checked) => {
-                                        return checked
-                                          ? field.onChange([...field.value, course.id])
-                                          : field.onChange(
-                                              field.value?.filter(
-                                                (value) => value !== course.id
-                                              )
-                                            );
-                                      }}
-                                    />
-                                  </FormControl>
-                                  <FormLabel className="text-sm font-normal cursor-pointer">
-                                    {course.title}
-                                  </FormLabel>
-                                </FormItem>
-                              );
-                            }}
-                          />
-                        ))}
-                      </div>
-                      <FormDescription>
-                        Select the courses this provider offers
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* Course Pricing */}
-              {form.watch("courses").length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium">Course Pricing</h3>
-                  <p className="text-sm text-gray-600">
-                    Set pricing for each selected course. These will be used as templates when creating trainings.
-                  </p>
-                  
-                  {form.watch("courses").map((courseId) => {
-                    const course = courses?.find(c => c.id === courseId);
-                    if (!course) return null;
-                    
-                    return (
-                      <div key={courseId} className="border rounded-lg p-4 space-y-4">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-medium">{course.title}</h4>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => addCostComponent(courseId)}
-                          >
-                            <Plus className="h-4 w-4 mr-1" />
-                            Add Cost Component
-                          </Button>
-                        </div>
-
-                        {/* Provider-specific constraints */}
-                        <div className="grid grid-cols-2 gap-4 p-3 bg-blue-50 rounded-lg">
-                          <div>
-                            <FormLabel htmlFor={`sessions-${courseId}`}>Number of Sessions</FormLabel>
-                            <FormField
-                              control={form.control}
-                              name={`course_pricing.${courseId}.number_of_sessions` as any}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormControl>
-                                    <Input
-                                      id={`sessions-${courseId}`}
-                                      type="number"
-                                      min="1"
-                                      max="20"
-                                      placeholder="1"
-                                      value={field.value !== undefined ? field.value.toString() : ""}
-                                      onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <p className="text-xs text-gray-600 mt-1">Number of sessions required</p>
-                          </div>
-
-                          <div>
-                            <FormLabel htmlFor={`max-participants-${courseId}`}>Max Participants</FormLabel>
-                            <FormField
-                              control={form.control}
-                              name={`course_pricing.${courseId}.max_participants` as any}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormControl>
-                                    <Input
-                                      id={`max-participants-${courseId}`}
-                                      type="number"
-                                      min="1"
-                                      max="50"
-                                      placeholder="15"
-                                      value={field.value !== undefined ? field.value.toString() : ""}
-                                      onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <p className="text-xs text-gray-600 mt-1">Maximum group size</p>
-                          </div>
-
-                          <div className="col-span-2">
-                            <FormLabel htmlFor={`notes-${courseId}`}>Provider Notes</FormLabel>
-                            <FormField
-                              control={form.control}
-                              name={`course_pricing.${courseId}.notes` as any}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormControl>
-                                    <Input
-                                      id={`notes-${courseId}`}
-                                      placeholder="Special requirements or notes"
-                                      value={field.value || ""}
-                                      onChange={field.onChange}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-                        </div>
-                        
-                        {/* Cost Breakdown */}
-                        <div className="space-y-3">
-                          <FormLabel>Cost Breakdown Components</FormLabel>
-                          
-                          {/* Existing components */}
-                          <FormField
-                            control={form.control}
-                            name={`course_pricing.${courseId}.cost_breakdown` as any}
-                            render={({ field }) => (
-                              <div className="space-y-2">
-                                {field.value && field.value.length > 0 && field.value.map((component: any, index: number) => (
-                                  <div key={index} className="grid grid-cols-3 gap-2 p-3 border rounded bg-gray-50">
-                                    <Input
-                                      placeholder="Component name"
-                                      value={component.name || ""}
-                                      onChange={(e) => {
-                                        const newComponents = [...field.value];
-                                        newComponents[index] = { ...newComponents[index], name: e.target.value };
-                                        field.onChange(newComponents);
-                                      }}
-                                    />
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      step="0.01"
-                                      placeholder="Amount"
-                                      value={component.amount !== undefined ? component.amount.toString() : ""}
-                                      onChange={(e) => {
-                                        const value = e.target.value;
-                                        const newComponents = [...field.value];
-                                        // Only allow numbers and decimal points
-                                        if (value === "" || /^\d*\.?\d*$/.test(value)) {
-                                          newComponents[index] = { ...newComponents[index], amount: value ? parseFloat(value) : undefined };
-                                          field.onChange(newComponents);
-                                        }
-                                      }}
-                                    />
-                                    <div className="flex gap-1">
-                                      <Input
-                                        placeholder="Description (optional)"
-                                        value={component.description || ""}
-                                        onChange={(e) => {
-                                          const newComponents = [...field.value];
-                                          newComponents[index] = { ...newComponents[index], description: e.target.value };
-                                          field.onChange(newComponents);
-                                        }}
-                                      />
-                                      <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                          const newComponents = field.value.filter((_: any, i: number) => i !== index);
-                                          field.onChange(newComponents);
-                                        }}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                ))}
-                                
-                                {/* Add component button */}
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    const currentComponents = field.value || [];
-                                    field.onChange([...currentComponents, { name: "", amount: 0, description: "" }]);
-                                  }}
-                                  className="w-full"
-                                >
-                                  <Plus className="h-4 w-4 mr-2" />
-                                  Add Cost Component
-                                </Button>
-                              </div>
-                            )}
-                          />
-                          
-                          {/* Total calculation */}
-                          {(() => {
-                            const pricing = form.watch(`course_pricing.${courseId}`);
-                            const total = pricing?.cost_breakdown?.reduce((sum: number, comp: any) => sum + (comp.amount || 0), 0) || 0;
-                            
-                            if (total > 0) {
-                              return (
-                                <div className="pt-3 border-t border-gray-200">
-                                  <div className="flex justify-between items-center text-lg font-semibold text-gray-900">
-                                    <span>Total Course Price:</span>
-                                    <span>€{total.toFixed(2)}</span>
-                                  </div>
-                                </div>
-                              );
-                            }
-                            return null;
-                          })()}
-                        </div>
-                      </div>
-                    );
-                  })}
+                {/* AI Enhancement Button */}
+                <div className="flex justify-center pt-4">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => {
+                      toast({
+                        title: "AI Enhancement",
+                        description: "AI-powered provider optimization coming soon!",
+                      });
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    Enhance with AI
+                  </Button>
                 </div>
-              )}
+              </TabsContent>
+            </Tabs>
 
-              {/* Form Actions */}
-              <div className="flex justify-end gap-3 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" variant="default" disabled={isSubmitting}>
-                  {isSubmitting && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  Update Provider
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </ScrollArea>
+            <div className="flex justify-end space-x-2 pt-4 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isSubmitting}
+              >
+                {t('providers:editDialog.cancel')}
+              </Button>
+              <Button type="submit" variant="default" disabled={isSubmitting}>
+                {isSubmitting ? t('providers:editDialog.updating') : t('providers:editDialog.updateProvider')}
+              </Button>
+            </div>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

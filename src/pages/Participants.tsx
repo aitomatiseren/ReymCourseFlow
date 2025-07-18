@@ -8,9 +8,10 @@ import { AddUserDialog } from "@/components/users/AddUserDialog";
 import { ViewToggle } from "@/components/ui/view-toggle";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Users, Shield } from "lucide-react";
+import { Plus, Users, Shield, Upload } from "lucide-react";
 import { useViewMode } from "@/hooks/useViewMode";
 import { ExemptionManagementDashboard } from "@/components/certificates/ExemptionManagementDashboard";
+import { DocumentUpload } from "@/components/certificates/DocumentUpload";
 
 export default function Participants() {
   const { t } = useTranslation(['employees']);
@@ -32,7 +33,7 @@ export default function Participants() {
         </div>
 
         <Tabs defaultValue="employees" className="space-y-4">
-          <TabsList>
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="employees" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               {t('employees:management.title')}
@@ -40,6 +41,10 @@ export default function Participants() {
             <TabsTrigger value="exemptions" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
               Certificate Exemptions
+            </TabsTrigger>
+            <TabsTrigger value="certificates" className="flex items-center gap-2">
+              <Upload className="h-4 w-4" />
+              Certificate Upload
             </TabsTrigger>
           </TabsList>
 
@@ -52,6 +57,16 @@ export default function Participants() {
 
           <TabsContent value="exemptions">
             <ExemptionManagementDashboard />
+          </TabsContent>
+
+          <TabsContent value="certificates">
+            <DocumentUpload
+              showEmployeeSelection={true}
+              showLicenseSelection={true}
+              onUploadComplete={(documentId) => {
+                // Handle upload completion if needed
+              }}
+            />
           </TabsContent>
         </Tabs>
 

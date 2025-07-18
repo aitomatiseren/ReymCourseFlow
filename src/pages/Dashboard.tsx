@@ -86,7 +86,7 @@ export default function Dashboard() {
             }}
             color="purple"
             isLoading={certificatesLoading}
-            href="/certificate-definitions"
+            href="/participants?tab=certificates"
           />
           <StatsCard
             title={t('common:dashboard.scheduledTrainings')}

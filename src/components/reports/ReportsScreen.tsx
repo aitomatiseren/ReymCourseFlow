@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CertificateExpiryReport } from "./CertificateExpiryReport";
@@ -8,12 +9,15 @@ import { TrainingCostReport } from "./TrainingCostReport";
 import { ComplianceReport } from "./ComplianceReport";
 import { Code95Dashboard } from "@/components/certificates/Code95Dashboard";
 import { ExemptionManagementDashboard } from "@/components/certificates/ExemptionManagementDashboard";
-import { FileText, AlertTriangle, DollarSign, CheckCircle, Loader2, Truck, Shield } from "lucide-react";
+import { BulkCertificateProcessor } from "@/components/certificates/BulkCertificateProcessor";
+import { FileText, AlertTriangle, DollarSign, CheckCircle, Loader2, Truck, Shield, Upload } from "lucide-react";
 import { useCertificates } from "@/hooks/useCertificates";
 import { useTrainings } from "@/hooks/useTrainings";
 
 export function ReportsScreen() {
   const { t } = useTranslation(['reports']);
+  const [searchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'expiry';
   const { data: certificates = [], isLoading: certificatesLoading } = useCertificates();
   const { data: trainings = [], isLoading: trainingsLoading } = useTrainings();
 
@@ -119,7 +123,7 @@ export function ReportsScreen() {
       </div>
 
       {/* Reports Tabs */}
-      <Tabs defaultValue="expiry" className="space-y-4">
+      <Tabs defaultValue={activeTab} className="space-y-4">
         <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="expiry" className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4" />
@@ -141,9 +145,9 @@ export function ReportsScreen() {
             <Shield className="h-4 w-4" />
             Exemptions
           </TabsTrigger>
-          <TabsTrigger value="utilization" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            {t('reports:screen.utilization')}
+          <TabsTrigger value="processing" className="flex items-center gap-2">
+            <Upload className="h-4 w-4" />
+            Certificate Processing
           </TabsTrigger>
         </TabsList>
 
@@ -167,15 +171,8 @@ export function ReportsScreen() {
           <ExemptionManagementDashboard />
         </TabsContent>
 
-        <TabsContent value="utilization">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('reports:screen.utilizationTitle')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">{t('reports:screen.comingSoon')}</p>
-            </CardContent>
-          </Card>
+        <TabsContent value="processing">
+          <BulkCertificateProcessor />
         </TabsContent>
       </Tabs>
     </div>

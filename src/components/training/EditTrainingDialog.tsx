@@ -1,46 +1,86 @@
-
-import { useState, useEffect, forwardRef } from "react";
-import { Dialog, DialogDescription, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from "@/components/ui/dialog";
-import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useTranslation } from "react-i18next";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useUpdateTraining } from "@/hooks/useUpdateTraining";
-import { useToast } from "@/hooks/use-toast";
-import { Training, CostComponent } from "@/hooks/useTrainings";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Minus, Calendar, Copy, DollarSign, X, Upload } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { toast } from "@/hooks/use-toast";
+import { useUpdateTraining } from "@/hooks/useUpdateTraining";
+import { useCourses } from "@/hooks/useCourses";
+import { useProviders } from "@/hooks/useProviders";
+import { Training, CostComponent } from "@/hooks/useTrainings";
+import { CourseSelectionSection } from "./forms/CourseSelectionSection";
+import { SmartMultiSessionSection } from "./forms/SmartMultiSessionSection";
+import { ChecklistManagementSection } from "./forms/ChecklistManagementSection";
+import { PlanSelectionSection } from "./forms/PlanSelectionSection";
 import { TrainingContentImportDialog } from "./TrainingContentImportDialog";
-import { ExtractedTrainingData, TrainingContentExtractor } from "@/services/ai/training-content-extractor";
+import { ExtractedTrainingData } from "@/services/ai/training-content-extractor";
+import { AddCourseDialog } from "@/components/courses/AddCourseDialog";
+import { AddProviderDialog } from "@/components/providers/AddProviderDialog";
+import { CertificateManagementDialog } from "./CertificateManagementDialog";
+import { Plus, Upload, Sparkles, Euro } from "lucide-react";
 
-// Custom DialogContent component - defined outside to prevent re-renders
-const CustomDialogContent = forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
-    onOpenChange?: (open: boolean) => void;
-  }
->(({ className, children, onOpenChange, ...props }, ref) => (
-  <DialogPortal>
-    <DialogOverlay />
-    <DialogPrimitive.Content
-      ref={ref}
-      className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
-        className
-      )}
-      onPointerDownOutside={(e) => e.preventDefault()}
-      onEscapeKeyDown={() => onOpenChange?.(false)}
-      {...props}
-    >
-      {children}
-    </DialogPrimitive.Content>
-  </DialogPortal>
-));
+// Comprehensive schema matching create dialog pattern
+const editTrainingSchema = (t: any) => z.object({
+  title: z.string().min(1, t('training:editDialog.titleRequired')),
+  courseId: z.string().optional(),
+  providerId: z.string().optional(),
+  instructor: z.string().optional(),
+  location: z.string().optional(),
+  minParticipants: z.string().optional(),
+  maxParticipants: z.string().optional(),
+  status: z.enum(['scheduled', 'confirmed', 'cancelled', 'completed']).default('scheduled'),
+  requiresApproval: z.boolean().default(false),
+  sessions: z.number().min(1).default(1),
+  sessionDates: z.array(z.string()).default([]),
+  sessionTimes: z.array(z.string()).default([]),
+  sessionEndTimes: z.array(z.string()).default([]),
+  checklist: z.array(z.object({
+    id: z.string(),
+    text: z.string(),
+    completed: z.boolean()
+  })).default([]),
+  price: z.number().optional(),
+  costBreakdown: z.array(z.any()).default([]),
+  selectedPlanId: z.string().optional(),
+  selectedGroupId: z.string().optional(),
+  notes: z.string().optional(),
+  // Advanced settings
+  automaticReminders: z.boolean().default(false),
+  participantLimit: z.string().optional(),
+  waitingListEnabled: z.boolean().default(false),
+  certificateRequired: z.boolean().default(false),
+  prerequisites: z.string().optional(),
+  // Cost breakdown
+  baseCost: z.number().optional(),
+  additionalCosts: z.array(z.object({
+    name: z.string(),
+    amount: z.number(),
+    type: z.enum(['fixed', 'per_participant'])
+  })).default([]),
+});
 
-CustomDialogContent.displayName = "CustomDialogContent";
+type TrainingFormData = z.infer<ReturnType<typeof editTrainingSchema>>;
 
 interface EditTrainingDialogProps {
   open: boolean;
@@ -49,29 +89,68 @@ interface EditTrainingDialogProps {
 }
 
 export function EditTrainingDialog({ open, onOpenChange, training }: EditTrainingDialogProps) {
-  const [formData, setFormData] = useState({
-    title: "",
-    instructor: "",
-    date: "",
-    time: "",
-    location: "",
-    maxParticipants: "",
-    status: "scheduled" as 'scheduled' | 'confirmed' | 'cancelled' | 'completed',
-    requiresApproval: false,
-    sessions: 1,
-    sessionDates: [] as string[],
-    sessionTimes: [] as string[],
-    sessionEndTimes: [] as string[],
-    checklist: [] as Array<{ id: string; text: string; completed: boolean }>,
-    notes: "",
-    costBreakdown: [] as CostComponent[]
+  const { t } = useTranslation(['training', 'common']);
+
+  // Create schema with translations
+  const trainingSchema = editTrainingSchema(t);
+
+  // State for dialogs
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [showCreateCourseDialog, setShowCreateCourseDialog] = useState(false);
+  const [showCreateProviderDialog, setShowCreateProviderDialog] = useState(false);
+  const [showCertificateDialog, setShowCertificateDialog] = useState(false);
+  
+  // Plan selection state
+  const [selectedPlanId, setSelectedPlanId] = useState("");
+  const [selectedGroupId, setSelectedGroupId] = useState("");
+  const [planDetails, setPlanDetails] = useState<any>(null);
+  
+  // Selected provider state
+  const [selectedProvider, setSelectedProvider] = useState<any>(null);
+
+  // Hooks
+  const { data: courses = [] } = useCourses();
+  const { data: providers = [] } = useProviders();
+  const updateTraining = useUpdateTraining();
+
+  const form = useForm<TrainingFormData>({
+    resolver: zodResolver(trainingSchema),
+    defaultValues: {
+      title: "",
+      courseId: "",
+      providerId: "",
+      instructor: "",
+      location: "",
+      minParticipants: "",
+      maxParticipants: "",
+      status: 'scheduled',
+      requiresApproval: false,
+      sessions: 1,
+      sessionDates: [],
+      sessionTimes: [],
+      sessionEndTimes: [],
+      checklist: [],
+      price: undefined,
+      costBreakdown: [],
+      selectedPlanId: "",
+      selectedGroupId: "",
+      notes: "",
+      automaticReminders: false,
+      participantLimit: "",
+      waitingListEnabled: false,
+      certificateRequired: false,
+      prerequisites: "",
+      baseCost: undefined,
+      additionalCosts: [],
+    },
   });
 
-  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
-  
-  const updateTraining = useUpdateTraining();
-  const { toast } = useToast();
+  // Watch title for dynamic display
+  const watchedTitle = form.watch('title');
+  const watchedCourseId = form.watch('courseId');
+  const watchedSessions = form.watch('sessions');
 
+  // Populate form when training data is available
   useEffect(() => {
     if (training) {
       const sessionDates = training.session_dates ? 
@@ -80,797 +159,579 @@ export function EditTrainingDialog({ open, onOpenChange, training }: EditTrainin
         (Array.isArray(training.session_times) ? training.session_times : []) : [];
       const sessionEndTimes = training.session_end_times ? 
         (Array.isArray(training.session_end_times) ? training.session_end_times : []) : [];
+      
+      // Parse checklist data
+      const checklist = training.checklist ? 
+        (Array.isArray(training.checklist) ? training.checklist : []) : [];
+      
+      // Parse cost breakdown
+      const costBreakdown = training.cost_breakdown ? 
+        (Array.isArray(training.cost_breakdown) ? training.cost_breakdown : []) : [];
 
-      setFormData({
-        title: training.title,
+      form.reset({
+        title: training.title || "",
+        courseId: training.course_id || "",
+        providerId: training.provider_id || "",
         instructor: training.instructor || "",
-        date: training.date,
-        time: training.time?.slice(0, 5) || "",
-        location: training.location,
-        maxParticipants: training.maxParticipants.toString(),
-        status: training.status,
-        requiresApproval: training.requiresApproval,
+        location: training.location || "",
+        minParticipants: training.min_participants?.toString() || "",
+        maxParticipants: training.maxParticipants?.toString() || "",
+        status: training.status || 'scheduled',
+        requiresApproval: training.requiresApproval || false,
         sessions: training.sessions_count || 1,
         sessionDates: sessionDates,
-        sessionTimes: sessionTimes.map((time: string) => time?.slice(0, 5) || ""),
-        sessionEndTimes: sessionEndTimes.map((time: string) => time?.slice(0, 5) || ""),
-        checklist: training.checklist || [],
+        sessionTimes: sessionTimes,
+        sessionEndTimes: sessionEndTimes,
+        checklist: checklist,
+        price: training.price || undefined,
+        costBreakdown: costBreakdown,
+        selectedPlanId: training.plan_id || "",
+        selectedGroupId: training.group_id || "",
         notes: training.notes || "",
-        costBreakdown: training.cost_breakdown || []
+        automaticReminders: training.automatic_reminders || false,
+        participantLimit: training.participant_limit?.toString() || "",
+        waitingListEnabled: training.waiting_list_enabled || false,
+        certificateRequired: training.certificate_required || false,
+        prerequisites: training.prerequisites || "",
+        baseCost: training.base_cost || undefined,
+        additionalCosts: training.additional_costs || [],
       });
+
+      // Set plan state
+      if (training.plan_id) {
+        setSelectedPlanId(training.plan_id);
+      }
+      if (training.group_id) {
+        setSelectedGroupId(training.group_id);
+      }
     }
-  }, [training]);
+  }, [training, form]);
 
-
-  const isMultiSession = formData.sessions > 1;
-
-  const handleAddSession = () => {
-    const newSessions = formData.sessions + 1;
-    
-    // If converting from single session to multi-session, preserve existing data
-    let newSessionDates = [...formData.sessionDates];
-    let newSessionTimes = [...formData.sessionTimes];
-    let newSessionEndTimes = [...formData.sessionEndTimes];
-    
-    // If this is the first time converting to multi-session and we have single session data
-    if (formData.sessions === 1 && formData.sessionDates.length === 0 && formData.date && formData.time) {
-      newSessionDates = [formData.date];
-      newSessionTimes = [formData.time];
-      newSessionEndTimes = [formData.sessionEndTimes[0] || ''];
-    }
-    
-    // Add empty slots for new sessions
-    while (newSessionDates.length < newSessions) {
-      newSessionDates.push('');
-      newSessionTimes.push('');
-      newSessionEndTimes.push('');
-    }
-    
-    setFormData(prev => ({
-      ...prev,
-      sessions: newSessions,
-      sessionDates: newSessionDates,
-      sessionTimes: newSessionTimes,
-      sessionEndTimes: newSessionEndTimes
-    }));
-  };
-
-  const handleRemoveSession = () => {
-    if (formData.sessions > 1) {
-      const newSessions = formData.sessions - 1;
-      setFormData(prev => ({
-        ...prev,
-        sessions: newSessions,
-        sessionDates: prev.sessionDates.slice(0, newSessions),
-        sessionTimes: prev.sessionTimes.slice(0, newSessions),
-        sessionEndTimes: prev.sessionEndTimes.slice(0, newSessions)
+  const handleAIImport = (data: ExtractedTrainingData) => {
+    if (data.title) form.setValue('title', data.title);
+    if (data.instructor) form.setValue('instructor', data.instructor);
+    if (data.location) form.setValue('location', data.location);
+    if (data.maxParticipants) form.setValue('maxParticipants', data.maxParticipants.toString());
+    if (data.checklist?.length > 0) {
+      const formattedChecklist = data.checklist.map((item, index) => ({
+        id: `imported-${index}`,
+        text: item,
+        completed: false
       }));
+      form.setValue('checklist', formattedChecklist);
     }
-  };
-
-  const updateSessionDate = (index: number, date: string) => {
-    const newDates = [...formData.sessionDates];
-    newDates[index] = date;
-    setFormData(prev => ({ ...prev, sessionDates: newDates }));
-  };
-
-  const updateSessionTime = (index: number, time: string) => {
-    const newTimes = [...formData.sessionTimes];
-    newTimes[index] = time;
-    setFormData(prev => ({ ...prev, sessionTimes: newTimes }));
+    if (data.notes) form.setValue('notes', data.notes);
     
-    const endTime = formData.sessionEndTimes[index];
-    if (endTime && time && endTime < time) {
-      toast({
-        title: "Invalid Time",
-        description: "End time cannot be before start time",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const updateSessionEndTime = (index: number, endTime: string) => {
-    const newEndTimes = [...formData.sessionEndTimes];
-    newEndTimes[index] = endTime;
-    setFormData(prev => ({ ...prev, sessionEndTimes: newEndTimes }));
-    
-    const startTime = formData.sessionTimes[index];
-    if (startTime && endTime && endTime < startTime) {
-      toast({
-        title: "Invalid Time",
-        description: "End time cannot be before start time",
-        variant: "destructive"
-      });
-      return;
-    }
-  };
-
-  // Utility function to get next business day (skip weekends)
-  const getNextBusinessDay = (date: Date): Date => {
-    const nextDay = new Date(date);
-    nextDay.setDate(date.getDate() + 1);
-    
-    // If it's Saturday (6) or Sunday (0), move to Monday
-    while (nextDay.getDay() === 0 || nextDay.getDay() === 6) {
-      nextDay.setDate(nextDay.getDate() + 1);
-    }
-    
-    return nextDay;
-  };
-
-  const copyTimeToAll = (sourceIndex: number) => {
-    const sourceStartTime = formData.sessionTimes[sourceIndex];
-    const sourceEndTime = formData.sessionEndTimes[sourceIndex];
-    const sourceDate = formData.sessionDates[sourceIndex];
-    
-    const newSessionTimes = [...formData.sessionTimes];
-    const newSessionEndTimes = [...formData.sessionEndTimes];
-    const newSessionDates = [...formData.sessionDates];
-    
-    if (sourceStartTime) {
-      for (let i = 0; i < formData.sessions; i++) {
-        if (i !== sourceIndex) {
-          newSessionTimes[i] = sourceStartTime;
-        }
-      }
-    }
-    
-    if (sourceEndTime) {
-      for (let i = 0; i < formData.sessions; i++) {
-        if (i !== sourceIndex) {
-          newSessionEndTimes[i] = sourceEndTime;
-        }
-      }
-    }
-
-    // Smart date copying: each session gets the next business day
-    if (sourceDate) {
-      let currentDate = new Date(sourceDate);
-      
-      for (let i = 0; i < formData.sessions; i++) {
-        if (i === sourceIndex) {
-          // Keep the source date as is
-          continue;
-        } else if (i < sourceIndex) {
-          // For sessions before the source, go backwards
-          const daysBack = sourceIndex - i;
-          const targetDate = new Date(sourceDate);
-          let daysSubtracted = 0;
-          
-          while (daysSubtracted < daysBack) {
-            targetDate.setDate(targetDate.getDate() - 1);
-            // Skip weekends when going backwards too
-            if (targetDate.getDay() !== 0 && targetDate.getDay() !== 6) {
-              daysSubtracted++;
-            }
-          }
-          
-          newSessionDates[i] = targetDate.toISOString().split('T')[0];
-        } else {
-          // For sessions after the source, go forwards
-          const daysForward = i - sourceIndex;
-          currentDate = new Date(sourceDate);
-          
-          for (let d = 0; d < daysForward; d++) {
-            currentDate = getNextBusinessDay(currentDate);
-          }
-          
-          newSessionDates[i] = currentDate.toISOString().split('T')[0];
-        }
-      }
-    }
-    
-    setFormData(prev => ({
-      ...prev,
-      sessionTimes: newSessionTimes,
-      sessionEndTimes: newSessionEndTimes,
-      sessionDates: newSessionDates
-    }));
-  };
-
-  const addChecklistItem = () => {
-    const newItem = {
-      id: Date.now().toString(),
-      text: "",
-      completed: false
-    };
-    setFormData(prev => ({
-      ...prev,
-      checklist: [...prev.checklist, newItem]
-    }));
-  };
-
-  const updateChecklistItem = (index: number, text: string) => {
-    const newChecklist = [...formData.checklist];
-    newChecklist[index].text = text;
-    setFormData(prev => ({ ...prev, checklist: newChecklist }));
-  };
-
-  const toggleChecklistItem = (index: number) => {
-    const newChecklist = [...formData.checklist];
-    newChecklist[index].completed = !newChecklist[index].completed;
-    setFormData(prev => ({ ...prev, checklist: newChecklist }));
-  };
-
-  const removeChecklistItem = (index: number) => {
-    const newChecklist = formData.checklist.filter((_, i) => i !== index);
-    setFormData(prev => ({ ...prev, checklist: newChecklist }));
-  };
-
-  const addCostComponent = () => {
-    const newComponent: CostComponent = {
-      name: "",
-      amount: 0,
-      description: ""
-    };
-    setFormData(prev => ({
-      ...prev,
-      costBreakdown: [...prev.costBreakdown, newComponent]
-    }));
-  };
-
-  const updateCostComponent = (index: number, field: keyof CostComponent, value: string | number) => {
-    const newCostBreakdown = [...formData.costBreakdown];
-    newCostBreakdown[index] = { ...newCostBreakdown[index], [field]: value };
-    setFormData(prev => ({ ...prev, costBreakdown: newCostBreakdown }));
-  };
-
-  const removeCostComponent = (index: number) => {
-    const newCostBreakdown = formData.costBreakdown.filter((_, i) => i !== index);
-    setFormData(prev => ({ ...prev, costBreakdown: newCostBreakdown }));
-  };
-
-  const validateForm = () => {
-    if (!formData.title || !formData.location || !formData.maxParticipants) {
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields",
-        variant: "destructive"
-      });
-      return false;
-    }
-
-    if (!isMultiSession) {
-      if (!formData.date || !formData.time) {
-        toast({
-          title: "Validation Error", 
-          description: "Please select date and time for the training",
-          variant: "destructive"
-        });
-        return false;
-      }
-    } else {
-      const sessionsToValidate = Math.min(formData.sessions, formData.sessionDates.length);
-      for (let i = 0; i < sessionsToValidate; i++) {
-        if (!formData.sessionDates[i] || !formData.sessionTimes[i]) {
-          toast({
-            title: "Validation Error",
-            description: `Please fill in date and time for session ${i + 1}`,
-            variant: "destructive"
-          });
-          return false;
-        }
-        
-        if (formData.sessionEndTimes[i] && formData.sessionTimes[i] && 
-            formData.sessionEndTimes[i] < formData.sessionTimes[i]) {
-          toast({
-            title: "Validation Error",
-            description: `End time cannot be before start time for session ${i + 1}`,
-            variant: "destructive"
-          });
-          return false;
-        }
-      }
-    }
-
-    return true;
-  };
-
-  // Handle imported training content
-  const handleImportTrainingContent = (data: ExtractedTrainingData) => {
-    console.log('📥 [EditTrainingDialog] Importing training content:', data);
-    
-    // Update form data with extracted data
-    setFormData(prev => {
-      const updated = { ...prev };
-      
-      // Basic information
-      if (data.title) {
-        console.log('✅ [EditTrainingDialog] Setting title:', data.title);
-        updated.title = data.title;
-      }
-      
-      if (data.location) {
-        console.log('✅ [EditTrainingDialog] Setting location:', data.location);
-        updated.location = data.location;
-      }
-      
-      if (data.instructor) {
-        console.log('✅ [EditTrainingDialog] Setting instructor:', data.instructor);
-        updated.instructor = data.instructor;
-      }
-      
-      if (data.maxParticipants) {
-        console.log('✅ [EditTrainingDialog] Setting max participants:', data.maxParticipants);
-        updated.maxParticipants = data.maxParticipants.toString();
-      }
-      
-      // Handle dates and times
-      if (data.startDate) {
-        const formattedDate = TrainingContentExtractor.formatDateForInput(data.startDate);
-        if (formattedDate) {
-          updated.date = formattedDate;
-          updated.sessionDates = [formattedDate];
-          updated.sessions = 1;
-        }
-      }
-      
-      if (data.startTime) {
-        updated.time = data.startTime;
-        updated.sessionTimes = [data.startTime];
-      }
-      
-      if (data.endTime) {
-        updated.sessionEndTimes = [data.endTime];
-      }
-      
-      // Handle notes and requirements
-      let notes = updated.notes || '';
-      if (data.notes) {
-        notes = data.notes;
-      }
-      if (data.requirements && data.requirements.length > 0) {
-        notes += notes ? '\n\nRequirements:\n' : 'Requirements:\n';
-        notes += data.requirements.map(req => `• ${req}`).join('\n');
-      }
-      if (data.materials && data.materials.length > 0) {
-        notes += notes ? '\n\nMaterials:\n' : 'Materials:\n';
-        notes += data.materials.map(mat => `• ${mat}`).join('\n');
-      }
-      updated.notes = notes;
-      
-      // Handle cost breakdown
-      if (data.costs?.breakdown && data.costs.breakdown.length > 0) {
-        const costBreakdown = data.costs.breakdown.map(item => ({
-          id: Math.random().toString(36).substr(2, 9),
-          type: item.type,
-          description: item.description || item.type,
-          amount: item.amount,
-          currency: data.costs?.currency || 'EUR'
-        }));
-        updated.costBreakdown = costBreakdown;
-      }
-      
-      // For multi-session training, handle end date
-      if (data.endDate && data.startDate && data.endDate !== data.startDate) {
-        const startDate = new Date(data.startDate);
-        const endDate = new Date(data.endDate);
-        const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-        
-        if (daysDiff > 0) {
-          updated.sessions = Math.min(daysDiff + 1, 10); // Cap at 10 sessions
-          
-          // Generate session dates
-          const dates = [];
-          const times = [];
-          const endTimes = [];
-          
-          for (let i = 0; i <= daysDiff; i++) {
-            const sessionDate = new Date(startDate);
-            sessionDate.setDate(startDate.getDate() + i);
-            dates.push(sessionDate.toISOString().split('T')[0]);
-            times.push(data.startTime || '09:00');
-            endTimes.push(data.endTime || '17:00');
-          }
-          
-          updated.sessionDates = dates;
-          updated.sessionTimes = times;
-          updated.sessionEndTimes = endTimes;
-        }
-      }
-      
-      return updated;
-    });
-    
+    setIsImportDialogOpen(false);
     toast({
-      title: "Training Content Imported",
-      description: `Training information has been imported with ${data.confidence || 50}% confidence. Please review and adjust as needed.`,
+      title: "Training data imported",
+      description: "Training information has been imported from the document.",
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = (data: TrainingFormData) => {
+    if (!training) return;
     
-    if (!training || !validateForm()) return;
+    console.log("Updating training:", data);
+    
+    // Create the training data object
+    const trainingData = {
+      ...data,
+      // Ensure proper type conversions
+      sessions: Number(data.sessions),
+      maxParticipants: data.maxParticipants ? parseInt(data.maxParticipants) : undefined,
+      minParticipants: data.minParticipants ? parseInt(data.minParticipants) : undefined,
+      price: data.price || undefined,
+    };
 
-    try {
-      const updateData = {
-        id: training.id,
-        title: formData.title,
-        instructor: formData.instructor,
-        date: isMultiSession ? formData.sessionDates[0] : formData.date,
-        time: isMultiSession ? formData.sessionTimes[0] : formData.time,
-        location: formData.location,
-        maxParticipants: parseInt(formData.maxParticipants),
-        status: formData.status,
-        requiresApproval: formData.requiresApproval,
-        sessions_count: formData.sessions,
-        session_dates: isMultiSession ? formData.sessionDates.slice(0, formData.sessions) : null,
-        session_times: isMultiSession ? formData.sessionTimes.slice(0, formData.sessions) : null,
-        session_end_times: isMultiSession 
-          ? formData.sessionEndTimes.slice(0, formData.sessions) 
-          : (formData.sessionEndTimes[0] ? [formData.sessionEndTimes[0]] : null),
-        checklist: formData.checklist,
-        notes: formData.notes,
-        cost_breakdown: formData.costBreakdown,
-        price: formData.costBreakdown.length > 0 ? 
-          formData.costBreakdown.reduce((sum, item) => sum + item.amount, 0) : null
-      };
-      
-      await updateTraining.mutateAsync(updateData);
-      
-      toast({
-        title: "Success",
-        description: "Training updated successfully"
-      });
-      
-      onOpenChange(false);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update training",
-        variant: "destructive"
-      });
-    }
+    // Handle training update
+    updateTraining.mutate(
+      { id: training.id, data: trainingData },
+      {
+        onSuccess: () => {
+          toast({
+            title: t('training:editDialog.trainingUpdated'),
+            description: t('training:editDialog.trainingUpdatedSuccess', { title: data.title }),
+          });
+          onOpenChange(false);
+        },
+        onError: (error) => {
+          toast({
+            title: t('training:editDialog.updateError'),
+            description: error.message,
+            variant: "destructive",
+          });
+        }
+      }
+    );
   };
-
-  if (!training) return null;
 
   return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange} modal>
-      <CustomDialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto" onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle>Edit Training</DialogTitle>
-              <DialogDescription>
-                Update the training session details.
-              </DialogDescription>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setIsImportDialogOpen(true)}
-              className="flex items-center gap-2"
-            >
-              <Upload className="h-4 w-4" />
-              Import Content
-            </Button>
-          </div>
+          <DialogTitle>{t('training:editDialog.title')}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="title">Training Title</Label>
-            <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              required
-            />
-          </div>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <Tabs defaultValue="basic" className="w-full">
+              <TabsList className="grid w-full grid-cols-5">
+                <TabsTrigger value="basic">Basic Info</TabsTrigger>
+                <TabsTrigger value="schedule">Schedule</TabsTrigger>
+                <TabsTrigger value="participants">Participants</TabsTrigger>
+                <TabsTrigger value="content">Content</TabsTrigger>
+                <TabsTrigger value="advanced">Advanced</TabsTrigger>
+              </TabsList>
 
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label>Sessions ({formData.sessions})</Label>
-              <div className="flex items-center space-x-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRemoveSession}
-                  disabled={formData.sessions <= 1}
-                >
-                  <Minus className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAddSession}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+              <TabsContent value="basic" className="space-y-4">
+                {/* Training title display */}
+                <div className="text-center py-4 border-b">
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    {watchedTitle || t('training:editDialog.editingTraining')}
+                  </h2>
+                </div>
 
-            {formData.sessions === 1 ? (
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="date">Date</Label>
-                  <Input
-                    id="date"
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-                    required
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('training:editDialog.title')} *</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Enter training title" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="courseId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('training:editDialog.course')}</FormLabel>
+                        <FormControl>
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select course" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {courses.map((course) => (
+                                <SelectItem key={course.id} value={course.id}>
+                                  {course.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="time">Start Time</Label>
-                  <Input
-                    id="time"
-                    type="time"
-                    value={formData.time}
-                    onChange={(e) => setFormData(prev => ({ ...prev, time: e.target.value }))}
-                    required
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="instructor"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('training:editDialog.instructor')}</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Enter instructor name" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="location"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('training:editDialog.location')}</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Enter training location" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="endTime">End Time</Label>
-                  <Input
-                    id="endTime"
-                    type="time"
-                    value={formData.sessionEndTimes[0] || ""}
-                    onChange={(e) => {
-                      const newEndTimes = [...formData.sessionEndTimes];
-                      newEndTimes[0] = e.target.value;
-                      setFormData(prev => ({ ...prev, sessionEndTimes: newEndTimes }));
-                    }}
-                    placeholder="Optional"
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('training:editDialog.status')}</FormLabel>
+                        <FormControl>
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="scheduled">Scheduled</SelectItem>
+                              <SelectItem value="confirmed">Confirmed</SelectItem>
+                              <SelectItem value="cancelled">Cancelled</SelectItem>
+                              <SelectItem value="completed">Completed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="providerId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('training:editDialog.provider')}</FormLabel>
+                        <FormControl>
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select provider" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {providers.map((provider) => (
+                                <SelectItem key={provider.id} value={provider.id}>
+                                  {provider.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
                 </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {Array.from({ length: formData.sessions }, (_, index) => (
-                  <div key={index} className="grid grid-cols-4 gap-3 p-3 border rounded-lg bg-gray-50">
-                    <div className="space-y-1">
-                      <Label className="text-sm font-medium flex items-center gap-2">
-                        <Calendar className="h-3 w-3" />
-                        Session {index + 1}
-                      </Label>
-                      <Input
-                        type="date"
-                        value={formData.sessionDates[index] || ''}
-                        onChange={(e) => updateSessionDate(index, e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-sm font-medium">Start Time</Label>
-                      <Input
-                        type="time"
-                        value={formData.sessionTimes[index] || ''}
-                        onChange={(e) => updateSessionTime(index, e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-sm font-medium">End Time</Label>
-                      <Input
-                        type="time"
-                        value={formData.sessionEndTimes[index] || ''}
-                        onChange={(e) => updateSessionEndTime(index, e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-1 flex items-end">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => copyTimeToAll(index)}
-                        disabled={!formData.sessionTimes[index] && !formData.sessionEndTimes[index]}
-                        title="Copy times to all sessions"
-                        className="h-8 w-8 p-0 flex items-center justify-center"
-                      >
-                        <Copy className="h-3 w-3" />
-                      </Button>
-                    </div>
+
+                <div className="flex items-center space-x-2">
+                  <FormField
+                    control={form.control}
+                    name="requiresApproval"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-medium">
+                          {t('training:editDialog.requiresApproval')}
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* AI Import Button */}
+                <div className="flex justify-center pt-4">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setIsImportDialogOpen(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <Upload className="w-4 h-4" />
+                    <Sparkles className="w-4 h-4" />
+                    {t('training:editDialog.importFromDocument')}
+                  </Button>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="schedule" className="space-y-4">
+                <SmartMultiSessionSection
+                  sessions={watchedSessions}
+                  onSessionsChange={(sessions) => form.setValue('sessions', sessions)}
+                  sessionDates={form.watch('sessionDates')}
+                  onSessionDatesChange={(dates) => form.setValue('sessionDates', dates)}
+                  sessionTimes={form.watch('sessionTimes')}
+                  onSessionTimesChange={(times) => form.setValue('sessionTimes', times)}
+                  sessionEndTimes={form.watch('sessionEndTimes')}
+                  onSessionEndTimesChange={(endTimes) => form.setValue('sessionEndTimes', endTimes)}
+                />
+
+                <PlanSelectionSection
+                  selectedPlanId={selectedPlanId}
+                  onPlanSelect={setSelectedPlanId}
+                  selectedGroupId={selectedGroupId}
+                  onGroupSelect={setSelectedGroupId}
+                  onPlanDetailsChange={setPlanDetails}
+                />
+              </TabsContent>
+
+              <TabsContent value="participants" className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="minParticipants"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('training:editDialog.minParticipants')}</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="number" placeholder="Min participants" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="maxParticipants"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('training:editDialog.maxParticipants')}</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="number" placeholder="Max participants" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="participantLimit"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Participant Limit</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="number" placeholder="Overall limit" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="flex items-center space-x-2">
+                    <FormField
+                      control={form.control}
+                      name="waitingListEnabled"
+                      render={({ field }) => (
+                        <FormItem className="flex items-center space-x-2">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormLabel className="text-sm font-medium">
+                            Enable Waiting List
+                          </FormLabel>
+                        </FormItem>
+                      )}
+                    />
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="instructor">Instructor</Label>
-              <Input
-                id="instructor"
-                value={formData.instructor}
-                onChange={(e) => setFormData(prev => ({ ...prev, instructor: e.target.value }))}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
-              <Input
-                id="location"
-                value={formData.location}
-                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                required
-              />
-            </div>
-          </div>
+                <FormField
+                  control={form.control}
+                  name="prerequisites"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Prerequisites</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} placeholder="List any prerequisites for this training" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </TabsContent>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="maxParticipants">Max Participants</Label>
-              <Input
-                id="maxParticipants"
-                type="number"
-                min="1"
-                value={formData.maxParticipants}
-                onChange={(e) => setFormData(prev => ({ ...prev, maxParticipants: e.target.value }))}
-                required
-              />
-            </div>
+              <TabsContent value="content" className="space-y-4">
+                <ChecklistManagementSection
+                  checklist={form.watch('checklist')}
+                  onChecklistChange={(checklist) => form.setValue('checklist', checklist)}
+                />
 
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select value={formData.status} onValueChange={(value: any) => setFormData(prev => ({ ...prev, status: value }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="scheduled">Scheduled</SelectItem>
-                  <SelectItem value="confirmed">Confirmed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Additional Notes</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} placeholder="Any additional notes about this training" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-          {/* Cost Breakdown Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4" />
-                Cost Breakdown
-              </Label>
-              <Button type="button" variant="outline" size="sm" onClick={addCostComponent}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Cost Item
-              </Button>
-            </div>
-            
-            {formData.costBreakdown.length === 0 ? (
-              <div className="text-center py-8 text-gray-500 border-2 border-dashed rounded-lg">
-                <p className="text-sm">No cost items added yet</p>
-                <p className="text-xs">Click "Add Cost Item" to create pricing structure</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {formData.costBreakdown.map((cost, index) => (
-                  <div key={index} className="grid grid-cols-12 gap-3 items-center p-3 border rounded-lg bg-gray-50">
-                    <div className="col-span-3">
-                      <Label className="text-xs text-gray-600">Name</Label>
-                      <Input
-                        value={cost.name}
-                        onChange={(e) => updateCostComponent(index, 'name', e.target.value)}
-                        placeholder="e.g., Theory"
-                        className="mt-1"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <Label className="text-xs text-gray-600">Amount (€)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={cost.amount}
-                        onChange={(e) => updateCostComponent(index, 'amount', parseFloat(e.target.value) || 0)}
-                        className="mt-1"
-                      />
-                    </div>
-                    <div className="col-span-6">
-                      <Label className="text-xs text-gray-600">Description</Label>
-                      <Input
-                        value={cost.description}
-                        onChange={(e) => updateCostComponent(index, 'description', e.target.value)}
-                        placeholder="e.g., Theoretical training session"
-                        className="mt-1"
-                      />
-                    </div>
-                    <div className="col-span-1 flex justify-end">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeCostComponent(index)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-                
-                {formData.costBreakdown.length > 0 && (
-                  <div className="flex justify-end p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="text-sm font-semibold">
-                      Total: €{formData.costBreakdown.reduce((sum, item) => sum + item.amount, 0).toFixed(2)}
-                    </div>
+                <div className="flex items-center space-x-2">
+                  <FormField
+                    control={form.control}
+                    name="certificateRequired"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-medium">
+                          Certificate Required
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {form.watch('certificateRequired') && (
+                  <div className="flex justify-center pt-4">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setShowCertificateDialog(true)}
+                      className="flex items-center gap-2"
+                    >
+                      Certificate Settings
+                    </Button>
                   </div>
                 )}
-              </div>
-            )}
-          </div>
+              </TabsContent>
 
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              checked={formData.requiresApproval}
-              onCheckedChange={(checked) => setFormData(prev => ({ ...prev, requiresApproval: !!checked }))}
-            />
-            <Label htmlFor="requiresApproval">Requires approval for enrollment</Label>
-          </div>
+              <TabsContent value="advanced" className="space-y-4">
+                <div className="space-y-4">
+                  <h4 className="font-medium">Cost Management</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="price"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            <Euro className="w-4 h-4 inline mr-1" />
+                            Total Price
+                          </FormLabel>
+                          <FormControl>
+                            <Input 
+                              {...field} 
+                              type="number" 
+                              step="0.01"
+                              placeholder="0.00"
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || undefined)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label>Training Checklist</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addChecklistItem}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Item
+                    <FormField
+                      control={form.control}
+                      name="baseCost"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Base Cost</FormLabel>
+                          <FormControl>
+                            <Input 
+                              {...field} 
+                              type="number" 
+                              step="0.01"
+                              placeholder="0.00"
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || undefined)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <FormField
+                    control={form.control}
+                    name="automaticReminders"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-medium">
+                          Automatic Reminders
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="flex justify-center space-x-2 pt-4">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setShowCreateCourseDialog(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Create Course
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setShowCreateProviderDialog(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Create Provider
+                  </Button>
+                </div>
+              </TabsContent>
+            </Tabs>
+
+            <div className="flex justify-end space-x-2 pt-4 border-t">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                {t('training:editDialog.cancel')}
+              </Button>
+              <Button type="submit" disabled={updateTraining.isPending}>
+                {updateTraining.isPending ? t('training:editDialog.updating') : t('training:editDialog.updateTraining')}
               </Button>
             </div>
-            {formData.checklist.map((item, index) => (
-              <div key={item.id} className="flex items-center space-x-2 p-3 border rounded-lg">
-                <Checkbox
-                  checked={item.completed}
-                  onCheckedChange={() => toggleChecklistItem(index)}
-                />
-                <Input
-                  value={item.text}
-                  onChange={(e) => updateChecklistItem(index, e.target.value)}
-                  placeholder="Checklist item"
-                  className={`flex-1 ${item.completed ? 'line-through text-muted-foreground' : ''}`}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => removeChecklistItem(index)}
-                >
-                  <Minus className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
+          </form>
+        </Form>
+      </DialogContent>
 
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              placeholder="Additional notes about the training"
-              rows={4}
-            />
-          </div>
+      {/* AI Import Dialog */}
+      <TrainingContentImportDialog
+        open={isImportDialogOpen}
+        onOpenChange={setIsImportDialogOpen}
+        onImport={handleAIImport}
+      />
 
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={updateTraining.isPending}>
-              {updateTraining.isPending ? "Updating..." : "Update Training"}
-            </Button>
-          </div>
-        </form>
-      </CustomDialogContent>
+      {/* Quick Create Dialogs */}
+      <AddCourseDialog
+        open={showCreateCourseDialog}
+        onOpenChange={setShowCreateCourseDialog}
+      />
+
+      <AddProviderDialog
+        open={showCreateProviderDialog}
+        onOpenChange={setShowCreateProviderDialog}
+      />
+
+      <CertificateManagementDialog
+        open={showCertificateDialog}
+        onOpenChange={setShowCertificateDialog}
+      />
     </Dialog>
-
-    {/* Import Content Dialog */}
-    <TrainingContentImportDialog
-      open={isImportDialogOpen}
-      onOpenChange={setIsImportDialogOpen}
-      onImport={handleImportTrainingContent}
-      title="Import Training Content"
-    />
-    </>
   );
 }

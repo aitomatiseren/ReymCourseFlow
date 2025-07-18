@@ -179,22 +179,22 @@ export function TrainingDetailsView({
             <div className="grid grid-cols-2 gap-6 mt-6">
               <div className="flex items-center space-x-2">
                 <Users className="h-4 w-4 text-gray-500" />
-                <span className="font-medium">Instructor:</span> 
+                <span className="font-medium">Instructor: </span>
                 <span>{training.instructor || 'Not assigned'}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <MapPin className="h-4 w-4 text-gray-500" />
-                <span className="font-medium">Location:</span> 
+                <span className="font-medium">Location: </span>
                 <span>{training.location}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Users className="h-4 w-4 text-gray-500" />
-                <span className="font-medium">Capacity:</span> 
+                <span className="font-medium">Capacity: </span>
                 <span>{participants.length}/{training.maxParticipants}</span>
               </div>
               {training.code95_points && training.code95_points > 0 && (
                 <div className="flex items-center space-x-2">
-                  <span className="font-medium">Code 95 Points:</span> 
+                  <span className="font-medium">Code 95 Points: </span>
                   <span>{training.code95_points}</span>
                 </div>
               )}

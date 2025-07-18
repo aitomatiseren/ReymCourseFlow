@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
@@ -12,7 +12,7 @@ import {
   AlertTriangle,
   Download,
   Eye,
-  Activity
+  Activity,
 } from "lucide-react";
 import { EmployeeStatusManager } from "@/components/employee/EmployeeStatusManager";
 
@@ -90,7 +90,7 @@ const statusIcons = {
 export function UserProfileTabs({ userId }: UserProfileTabsProps) {
   return (
     <Tabs defaultValue="certificates" className="space-y-6">
-      <TabsList className="grid w-full grid-cols-5">
+      <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="certificates" className="flex items-center gap-2">
           <Award className="h-4 w-4" />
           Certificates
@@ -102,10 +102,6 @@ export function UserProfileTabs({ userId }: UserProfileTabsProps) {
         <TabsTrigger value="status" className="flex items-center gap-2">
           <Activity className="h-4 w-4" />
           Status History
-        </TabsTrigger>
-        <TabsTrigger value="documents" className="flex items-center gap-2">
-          <FileText className="h-4 w-4" />
-          Documents
         </TabsTrigger>
         <TabsTrigger value="profile" className="flex items-center gap-2">
           <User className="h-4 w-4" />
@@ -200,17 +196,6 @@ export function UserProfileTabs({ userId }: UserProfileTabsProps) {
 
       <TabsContent value="status" className="space-y-4">
         <EmployeeStatusManager employeeId={userId} currentStatus="active" />
-      </TabsContent>
-
-      <TabsContent value="documents">
-        <Card>
-          <CardHeader>
-            <CardTitle>Employee Documents</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">Document management features coming soon...</p>
-          </CardContent>
-        </Card>
       </TabsContent>
 
       <TabsContent value="profile">

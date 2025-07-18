@@ -7,6 +7,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Employee } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +26,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -36,21 +39,27 @@ import { AddressLookup } from "./AddressLookup";
 import { NationalitySelect } from "./NationalitySelect";
 import { EnhancedPhoneInput } from "./EnhancedPhoneInput";
 import { CityCountryLookup } from "./CityCountryLookup";
+import { getCombinedDepartmentOptions, getCombinedWorkLocationOptions } from "@/constants/employeeFields";
 
-const employeeSchema = z.object({
-  firstName: z.string().min(1, "First names are required"),
-  lastName: z.string().min(1, "Last name is required"),
+// Match AddUserDialog schema exactly
+const employeeSchema = (t: any) => z.object({
+  firstName: z.string().min(1, t('employees:addDialog.firstNamesRequired')),
+  lastName: z.string().min(1, t('employees:addDialog.lastNameRequired')),
   tussenvoegsel: z.string().optional(),
-  roepnaam: z.string().min(1, "Calling name is required"),
-  workEmail: z.string().email("Invalid work email address"),
+  roepnaam: z.string().min(1, t('employees:addDialog.roepnaamRequired')),
+  workEmail: z.string().email(t('employees:addDialog.invalidEmail')),
   privateEmail: z.string().optional().refine((val) => !val || z.string().email().safeParse(val).success, {
-    message: "Invalid private email address"
+    message: t('employees:addDialog.invalidEmail')
   }),
-  department: z.string().min(1, "Department is required"),
-  employeeNumber: z.string().min(1, "Employee number is required"),
+  employeeNumber: z.string().min(1, t('employees:addDialog.employeeNumberRequired')),
+  department: z.string().min(1, t('employees:addDialog.departmentRequired')),
   jobTitle: z.string().optional(),
-  phone: z.string().optional(),
-  mobilePhone: z.string().optional(),
+  phone: z.string().optional().refine((val) => !val || /^\+?[1-9]\d{1,14}$/.test(val.replace(/\s/g, '')), {
+    message: "Please enter a valid phone number"
+  }),
+  mobilePhone: z.string().optional().refine((val) => !val || /^\+?[1-9]\d{1,14}$/.test(val.replace(/\s/g, '')), {
+    message: "Please enter a valid mobile phone number"
+  }),
   dateOfBirth: z.string().optional(),
   gender: z.enum(["male", "female", "other"]).optional().or(z.literal("")),
   birthPlace: z.string().optional(),
@@ -66,20 +75,21 @@ const employeeSchema = z.object({
   workingHours: z.string().optional(),
   nationality: z.string().optional(),
   personalId: z.string().optional(),
-  maritalStatus: z.enum(["single", "married", "divorced", "widowed", "separated", "domestic_partnership", "civil_union", "engaged", "cohabiting", "unknown"]).optional(),
+  maritalStatus: z.enum(["single", "married", "divorced", "widowed", "separated", "domestic_partnership", "civil_union", "engaged", "cohabiting", "unknown", "not_specified"]).optional(),
   marriageDate: z.string().optional(),
   divorceDate: z.string().optional(),
-  deathDate: z.string().optional(),
   emergencyContactName: z.string().optional(),
   emergencyContactRelationship: z.string().optional(),
   emergencyContactPhone: z.string().optional(),
   notes: z.string().optional(),
-  website: z.string().optional(),
-  // KVM fields
+  website: z.string().optional().refine((val) => !val || val.trim() === "" || /^(https?:\/\/|www\.|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.[a-zA-Z]{2,})/.test(val), {
+    message: "Please enter a valid website URL (e.g., www.example.com or https://example.com)"
+  }),
+  // ID Proof fields
   idProofType: z.string().optional(),
   idProofNumber: z.string().optional(),
   idProofExpiryDate: z.string().optional(),
-  // License fields
+  // Driving License fields
   drivingLicenseA: z.boolean().optional(),
   drivingLicenseAStartDate: z.string().optional(),
   drivingLicenseAExpiryDate: z.string().optional(),
@@ -98,12 +108,9 @@ const employeeSchema = z.object({
   drivingLicenseD: z.boolean().optional(),
   drivingLicenseDStartDate: z.string().optional(),
   drivingLicenseDExpiryDate: z.string().optional(),
-  drivingLicenseCode95: z.boolean().optional(),
-  drivingLicenseCode95StartDate: z.string().optional(),
-  drivingLicenseCode95ExpiryDate: z.string().optional(),
 });
 
-type EmployeeFormData = z.infer<typeof employeeSchema>;
+type EmployeeFormData = z.infer<ReturnType<typeof employeeSchema>>;
 
 interface EditEmployeeDialogProps {
   open: boolean;
@@ -116,67 +123,13 @@ export function EditEmployeeDialog({
   onOpenChange,
   employee,
 }: EditEmployeeDialogProps) {
+  const { t } = useTranslation(['employees', 'common']);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [workEmailError, setWorkEmailError] = useState("");
-  const [privateEmailError, setPrivateEmailError] = useState("");
-  const [workPhoneError, setWorkPhoneError] = useState("");
-  const [privatePhoneError, setPrivatePhoneError] = useState("");
-  const [emergencyPhoneError, setEmergencyPhoneError] = useState("");
+  
+  // Create schema with translations
+  const userSchema = employeeSchema(t);
 
-  // Handle Escape key to close dialog
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && open) {
-        onOpenChange(false);
-      }
-    };
-
-    if (open) {
-      document.addEventListener('keydown', handleKeyDown);
-      return () => document.removeEventListener('keydown', handleKeyDown);
-    }
-  }, [open, onOpenChange]);
-
-  // Clear validation errors when dialog opens/closes
-  useEffect(() => {
-    if (!open) {
-      setWorkEmailError("");
-      setPrivateEmailError("");
-      setWorkPhoneError("");
-      setPrivatePhoneError("");
-      setEmergencyPhoneError("");
-    }
-  }, [open]);
-
-
-  // Validation functions
-  const validateEmail = (email: string) => {
-    if (!email) return "";
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email) ? "" : "Invalid email format";
-  };
-
-  const validatePhone = (phone: string) => {
-    if (!phone) return "";
-    const cleanPhone = phone.replace(/\D/g, '');
-    const phoneRegex = /^[\+]?[0-9\s\-\(\)]{7,20}$/;
-    
-    // Special handling for Dutch mobile numbers (+31 6 followed by 8 digits)
-    if (phone.startsWith('+31 6') || phone.startsWith('+316')) {
-      const dutchMobile = phone.replace(/\D/g, '');
-      // Should be 11 digits total (31 + 6 + 8 digits)
-      if (dutchMobile.length === 11 && dutchMobile.startsWith('316')) {
-        return "";
-      }
-      return "Invalid Dutch mobile number format";
-    }
-    
-    if (!phoneRegex.test(phone) || cleanPhone.length < 7 || cleanPhone.length > 15) {
-      return "Invalid phone format";
-    }
-    return "";
-  };
 
   // Function to generate full name from Dutch components (using roepnaam)
   const generateFullName = (roepnaam: string, lastName: string, tussenvoegsel?: string) => {
@@ -190,8 +143,11 @@ export function EditEmployeeDialog({
     return parts.join(' ');
   };
 
+  const [activeTab, setActiveTab] = useState("basic");
+
   const form = useForm<EmployeeFormData>({
-    resolver: zodResolver(employeeSchema),
+    resolver: zodResolver(userSchema),
+    mode: "onChange",
     defaultValues: {
       firstName: employee.firstName || "",
       lastName: employee.lastName || "",
@@ -205,7 +161,6 @@ export function EditEmployeeDialog({
       phone: employee.phone || "",
       mobilePhone: employee.mobilePhone || "",
       dateOfBirth: employee.dateOfBirth || "",
-      deathDate: employee.deathDate || "",
       gender: employee.gender || "",
       birthPlace: employee.birthPlace || "",
       birthCountry: employee.birthCountry || "",
@@ -220,7 +175,7 @@ export function EditEmployeeDialog({
       workingHours: employee.workingHours?.toString() || "40",
       nationality: employee.nationality || "",
       personalId: employee.personalId || "",
-      maritalStatus: employee.maritalStatus,
+      maritalStatus: employee.maritalStatus || "not_specified",
       marriageDate: employee.marriageDate || "",
       divorceDate: employee.divorceDate || "",
       emergencyContactName: employee.emergencyContact?.name || "",
@@ -273,8 +228,7 @@ export function EditEmployeeDialog({
         phone: employee.phone || "",
         mobilePhone: employee.mobilePhone || "",
         dateOfBirth: employee.dateOfBirth || "",
-        deathDate: employee.deathDate || "",
-        gender: employee.gender || "",
+          gender: employee.gender || "",
         birthPlace: employee.birthPlace || "",
         birthCountry: employee.birthCountry || "",
         hireDate: employee.hireDate || "",
@@ -288,7 +242,7 @@ export function EditEmployeeDialog({
         workingHours: employee.workingHours?.toString() || "40",
         nationality: employee.nationality || "",
         personalId: employee.personalId || "",
-        maritalStatus: employee.maritalStatus,
+        maritalStatus: employee.maritalStatus || "not_specified",
         marriageDate: employee.marriageDate || "",
         divorceDate: employee.divorceDate || "",
         emergencyContactName: employee.emergencyContact?.name || "",
@@ -330,6 +284,135 @@ export function EditEmployeeDialog({
   const watchedFields = form.watch(['roepnaam', 'lastName', 'tussenvoegsel']);
   const [roepnaam, lastName, tussenvoegsel] = watchedFields;
 
+  // Map field names to their corresponding tabs
+  const fieldToTabMap: Record<string, string> = {
+    // Basic Info tab
+    roepnaam: "basic",
+    firstName: "basic",
+    lastName: "basic",
+    tussenvoegsel: "basic",
+    workEmail: "basic",
+    privateEmail: "basic",
+    phone: "basic",
+    mobilePhone: "basic",
+    website: "employment",
+    // Employment tab
+    employeeNumber: "employment",
+    department: "employment",
+    jobTitle: "employment",
+    hireDate: "employment",
+    contractType: "employment",
+    workLocation: "employment",
+    workingHours: "employment",
+    salary: "employment",
+    // Personal tab
+    dateOfBirth: "personal",
+    gender: "personal",
+    nationality: "personal",
+    maritalStatus: "personal",
+    marriageDate: "personal",
+    divorceDate: "personal",
+    birthPlace: "personal",
+    birthCountry: "personal",
+    address: "personal",
+    postcode: "personal",
+    city: "personal",
+    country: "personal",
+    emergencyContactName: "personal",
+    emergencyContactRelationship: "personal",
+    emergencyContactPhone: "personal",
+    notes: "personal",
+    // Identity & ID tab
+    personalId: "identity",
+    idProofType: "identity",
+    idProofNumber: "identity",
+    idProofExpiryDate: "identity",
+    // Licenses tab
+    drivingLicenseA: "licenses",
+    drivingLicenseAStartDate: "licenses",
+    drivingLicenseAExpiryDate: "licenses",
+    drivingLicenseB: "licenses",
+    drivingLicenseBStartDate: "licenses",
+    drivingLicenseBExpiryDate: "licenses",
+    drivingLicenseBE: "licenses",
+    drivingLicenseBEStartDate: "licenses",
+    drivingLicenseBEExpiryDate: "licenses",
+    drivingLicenseC: "licenses",
+    drivingLicenseCStartDate: "licenses",
+    drivingLicenseCExpiryDate: "licenses",
+    drivingLicenseCE: "licenses",
+    drivingLicenseCEStartDate: "licenses",
+    drivingLicenseCEExpiryDate: "licenses",
+    drivingLicenseD: "licenses",
+    drivingLicenseDStartDate: "licenses",
+    drivingLicenseDExpiryDate: "licenses",
+  };
+
+  // Function to switch to tab with first error
+  const switchToErrorTab = () => {
+    const errors = form.formState.errors;
+    const errorFields = Object.keys(errors);
+    
+    console.log('Form errors:', errors);
+    console.log('Error fields:', errorFields);
+    
+    if (errorFields.length > 0) {
+      // Find the first error field that has a corresponding tab
+      for (const fieldName of errorFields) {
+        const targetTab = fieldToTabMap[fieldName];
+        console.log(`Field ${fieldName} maps to tab ${targetTab}`);
+        console.log(`Error for ${fieldName}:`, errors[fieldName]);
+        
+        if (targetTab) {
+          console.log(`Switching to tab: ${targetTab}`);
+          setActiveTab(targetTab);
+          
+          // Add a small delay to ensure the tab switch completes and then scroll to the error
+          setTimeout(() => {
+            const errorElement = document.querySelector(`[name="${fieldName}"]`);
+            if (errorElement) {
+              errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              console.log(`Scrolled to field: ${fieldName}`);
+            }
+          }, 100);
+          break;
+        }
+      }
+    }
+  };
+
+  // Enhanced submit handler that triggers validation and shows errors
+  const handleFormSubmit = async (data: EmployeeFormData) => {
+    // Trigger validation
+    const isValid = await form.trigger();
+    
+    if (!isValid) {
+      // If validation fails, switch to the tab with errors
+      switchToErrorTab();
+      return;
+    }
+    
+    // If validation passes, proceed with submission
+    onSubmit(data);
+  };
+
+  // Also add a button click handler that manually triggers validation
+  const handleSubmitButtonClick = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Trigger validation manually
+    const isValid = await form.trigger();
+    
+    if (!isValid) {
+      // If validation fails, switch to the tab with errors
+      switchToErrorTab();
+      return;
+    }
+    
+    // If validation passes, submit the form normally
+    form.handleSubmit(onSubmit)();
+  };
+
   const updateEmployee = useMutation({
     mutationFn: async (data: EmployeeFormData) => {
       // Auto-generate full name from Dutch components (using roepnaam)
@@ -351,7 +434,6 @@ export function EditEmployeeDialog({
           phone: data.phone || null,
           mobile_phone: data.mobilePhone || null,
           date_of_birth: data.dateOfBirth || null,
-          death_date: data.deathDate || null,
           gender: data.gender || null,
           birth_place: data.birthPlace || null,
           birth_country: data.birthCountry || null,
@@ -366,7 +448,7 @@ export function EditEmployeeDialog({
           working_hours: data.workingHours ? parseFloat(data.workingHours) : null,
           nationality: data.nationality || null,
           personal_id: data.personalId || null,
-          marital_status: data.maritalStatus || null,
+          marital_status: data.maritalStatus === "not_specified" ? null : data.maritalStatus,
           marriage_date: data.marriageDate || null,
           divorce_date: data.divorceDate || null,
           emergency_contact_name: data.emergencyContactName || null,
@@ -439,21 +521,17 @@ export function EditEmployeeDialog({
   });
 
   const onSubmit = (data: EmployeeFormData) => {
-    // If employee no longer has C, CE, or D licenses, remove Code 95
-    if (!data.drivingLicenseC && !data.drivingLicenseCE && !data.drivingLicenseD) {
-      data.drivingLicenseCode95 = false;
-      data.drivingLicenseCode95StartDate = "";
-      data.drivingLicenseCode95ExpiryDate = "";
-    }
-    
-    updateEmployee.mutate(data);
-  };
+    // Auto-generate full name from Dutch components (using roepnaam)
+    const fullName = generateFullName(data.roepnaam, data.lastName, data.tussenvoegsel);
 
-  const handleAddressSelect = (addressData: any) => {
-    form.setValue("address", addressData.street || "");
-    form.setValue("postcode", addressData.postcode || "");
-    form.setValue("city", addressData.city || "");
-    form.setValue("country", addressData.country || "Netherlands");
+    // Create the employee data object
+    const employeeData = {
+      ...data,
+      name: fullName,
+      email: data.workEmail, // Map workEmail to email for backward compatibility
+    };
+
+    updateEmployee.mutate(employeeData);
   };
 
   return (
@@ -479,339 +557,304 @@ export function EditEmployeeDialog({
         e.preventDefault();
       }}>
         <DialogHeader>
-          <DialogTitle>Edit Employee</DialogTitle>
+          <DialogTitle>{t('employees:editDialog.title')}</DialogTitle>
           <DialogDescription>
-            Update employee information and personal details.
+            {t('employees:editDialog.description')}
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Employee Name Display */}
-            <div className="text-center py-4 border-b">
-              <h2 className="text-2xl font-bold text-gray-900">
-                {roepnaam && lastName 
-                  ? generateFullName(roepnaam, lastName, tussenvoegsel) 
-                  : employee.name || 'Edit Employee'
-                }
-              </h2>
-            </div>
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-5">
+                <TabsTrigger value="basic">Basic Info</TabsTrigger>
+                <TabsTrigger value="employment">Employment</TabsTrigger>
+                <TabsTrigger value="personal">Personal</TabsTrigger>
+                <TabsTrigger value="identity">Identity & ID</TabsTrigger>
+                <TabsTrigger value="licenses">Licenses</TabsTrigger>
+              </TabsList>
 
-            {/* Name Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Name Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="firstName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Voornamen (First names) *</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="e.g., Ahmed Mohamed" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <TabsContent value="basic" className="space-y-4">
+                {/* Employee name display */}
+                <div className="text-center py-4 border-b">
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    {roepnaam && lastName 
+                      ? generateFullName(roepnaam, lastName, tussenvoegsel) 
+                      : employee.name || t('employees:editDialog.editEmployee')
+                    }
+                  </h2>
+                </div>
 
-                <FormField
-                  control={form.control}
-                  name="tussenvoegsel"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tussenvoegsel</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="e.g., van, de, van der" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="lastName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Achternaam (Last name) *</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="e.g., Hassan" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="roepnaam"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Roepnaam (Calling name) *</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="e.g., Ahmed" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Employment Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Employment Information</h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="employeeNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Employee Number *</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="department"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Department *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('employees:addDialog.firstNames')} *</FormLabel>
                         <FormControl>
-                          <SelectTrigger className="font-normal">
-                            <SelectValue placeholder="Select department" />
-                          </SelectTrigger>
+                          <Input {...field} placeholder="Enter first names" />
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Human Resources">Human Resources</SelectItem>
-                          <SelectItem value="Finance">Finance</SelectItem>
-                          <SelectItem value="IT">IT</SelectItem>
-                          <SelectItem value="Operations">Operations</SelectItem>
-                          <SelectItem value="Sales">Sales</SelectItem>
-                          <SelectItem value="Marketing">Marketing</SelectItem>
-                          <SelectItem value="Engineering">Engineering</SelectItem>
-                          <SelectItem value="Customer Service">Customer Service</SelectItem>
-                          <SelectItem value="Legal">Legal</SelectItem>
-                          <SelectItem value="Procurement">Procurement</SelectItem>
-                          <SelectItem value="Quality Assurance">Quality Assurance</SelectItem>
-                          <SelectItem value="Safety">Safety</SelectItem>
-                          <SelectItem value="Training">Training</SelectItem>
-                          <SelectItem value="Management">Management</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="jobTitle"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Job Title</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                  <FormField
+                    control={form.control}
+                    name="tussenvoegsel"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('employees:addDialog.tussenvoegsel')}</FormLabel>
                         <FormControl>
-                          <SelectTrigger className="font-normal">
-                            <SelectValue placeholder="Select job title" />
-                          </SelectTrigger>
+                          <Input {...field} placeholder="e.g., van, de, der" />
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Manager">Manager</SelectItem>
-                          <SelectItem value="Senior Manager">Senior Manager</SelectItem>
-                          <SelectItem value="Team Leader">Team Leader</SelectItem>
-                          <SelectItem value="Supervisor">Supervisor</SelectItem>
-                          <SelectItem value="Specialist">Specialist</SelectItem>
-                          <SelectItem value="Senior Specialist">Senior Specialist</SelectItem>
-                          <SelectItem value="Coordinator">Coordinator</SelectItem>
-                          <SelectItem value="Administrator">Administrator</SelectItem>
-                          <SelectItem value="Assistant">Assistant</SelectItem>
-                          <SelectItem value="Analyst">Analyst</SelectItem>
-                          <SelectItem value="Senior Analyst">Senior Analyst</SelectItem>
-                          <SelectItem value="Officer">Officer</SelectItem>
-                          <SelectItem value="Senior Officer">Senior Officer</SelectItem>
-                          <SelectItem value="Technician">Technician</SelectItem>
-                          <SelectItem value="Senior Technician">Senior Technician</SelectItem>
-                          <SelectItem value="Engineer">Engineer</SelectItem>
-                          <SelectItem value="Senior Engineer">Senior Engineer</SelectItem>
-                          <SelectItem value="Developer">Developer</SelectItem>
-                          <SelectItem value="Senior Developer">Senior Developer</SelectItem>
-                          <SelectItem value="Consultant">Consultant</SelectItem>
-                          <SelectItem value="Senior Consultant">Senior Consultant</SelectItem>
-                          <SelectItem value="Director">Director</SelectItem>
-                          <SelectItem value="Associate">Associate</SelectItem>
-                          <SelectItem value="Representative">Representative</SelectItem>
-                          <SelectItem value="Executive">Executive</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="workLocation"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Location</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                  <FormField
+                    control={form.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('employees:addDialog.lastName')} *</FormLabel>
                         <FormControl>
-                          <SelectTrigger className="font-normal">
-                            <SelectValue placeholder="Select location" />
-                          </SelectTrigger>
+                          <Input {...field} placeholder="Enter last name" />
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Head Office">Head Office</SelectItem>
-                          <SelectItem value="Amsterdam Office">Amsterdam Office</SelectItem>
-                          <SelectItem value="Rotterdam Office">Rotterdam Office</SelectItem>
-                          <SelectItem value="The Hague Office">The Hague Office</SelectItem>
-                          <SelectItem value="Utrecht Office">Utrecht Office</SelectItem>
-                          <SelectItem value="Eindhoven Office">Eindhoven Office</SelectItem>
-                          <SelectItem value="Warehouse North">Warehouse North</SelectItem>
-                          <SelectItem value="Warehouse South">Warehouse South</SelectItem>
-                          <SelectItem value="Distribution Center">Distribution Center</SelectItem>
-                          <SelectItem value="Production Facility">Production Facility</SelectItem>
-                          <SelectItem value="Remote Work">Remote Work</SelectItem>
-                          <SelectItem value="Hybrid Work">Hybrid Work</SelectItem>
-                          <SelectItem value="Field Work">Field Work</SelectItem>
-                          <SelectItem value="Customer Site">Customer Site</SelectItem>
-                          <SelectItem value="Multiple Locations">Multiple Locations</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-            {/* Contact Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Contact Information</h3>
-              
-              {/* First row: Work Phone, Private Phone */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Work Phone</FormLabel>
-                      <FormControl>
-                        <div>
-                          <EnhancedPhoneInput
-                            value={field.value}
-                            onChange={(value) => {
-                              field.onChange(value);
-                              setWorkPhoneError(validatePhone(value));
-                            }}
-                            onBlur={() => {
-                              field.onBlur();
-                              setWorkPhoneError(validatePhone(field.value || ""));
-                            }}
-                            placeholder="Work phone number"
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="roepnaam"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('employees:addDialog.roepnaam')} *</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Enter calling name" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="employeeNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('employees:addDialog.employeeNumber')} *</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Enter employee number" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="workEmail"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Work Email *</FormLabel>
+                        <FormControl>
+                          <Input type="email" {...field} placeholder="Enter work email address" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="privateEmail"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Private Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" {...field} placeholder="Enter private email (optional)" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone Number</FormLabel>
+                        <FormControl>
+                          <EnhancedPhoneInput 
+                            value={field.value || ""} 
+                            onChange={field.onChange}
+                            placeholder="Enter phone number"
                           />
-                          {workPhoneError && <p className="text-sm text-red-500 mt-1">{workPhoneError}</p>}
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="mobilePhone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Private Phone</FormLabel>
-                      <FormControl>
-                        <div>
-                          <EnhancedPhoneInput
-                            value={field.value}
-                            onChange={(value) => {
-                              field.onChange(value);
-                              setPrivatePhoneError(validatePhone(value));
-                            }}
-                            onBlur={() => {
-                              field.onBlur();
-                              setPrivatePhoneError(validatePhone(field.value || ""));
-                            }}
-                            placeholder="Private phone number"
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="mobilePhone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Mobile Phone</FormLabel>
+                        <FormControl>
+                          <EnhancedPhoneInput 
+                            value={field.value || ""} 
+                            onChange={field.onChange}
+                            placeholder="Enter mobile phone number"
                           />
-                          {privatePhoneError && <p className="text-sm text-red-500 mt-1">{privatePhoneError}</p>}
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </TabsContent>
 
-              {/* Second row: Work Email, Private Email */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <TabsContent value="employment" className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="department"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('employees:addDialog.department')} *</FormLabel>
+                        <FormControl>
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger>
+                              <SelectValue placeholder={t('employees:addDialog.departmentPlaceholder')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {getCombinedDepartmentOptions().map((dept) => (
+                                <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="jobTitle"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('employees:addDialog.jobTitle')}</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Enter job title" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="hireDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('employees:addDialog.hireDate')}</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="contractType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('employees:addDialog.contractType')}</FormLabel>
+                        <FormControl>
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select contract type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="permanent">{t('employees:addDialog.permanent')}</SelectItem>
+                              <SelectItem value="temporary">{t('employees:addDialog.temporary')}</SelectItem>
+                              <SelectItem value="freelance">{t('employees:addDialog.freelance')}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="workLocation"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('employees:addDialog.workLocation')}</FormLabel>
+                        <FormControl>
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger>
+                              <SelectValue placeholder={t('employees:addDialog.workLocationPlaceholder')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {getCombinedWorkLocationOptions().map((location) => (
+                                <SelectItem key={location} value={location}>{location}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="workingHours"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Working Hours</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="e.g., 40 hours/week" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
                 <FormField
                   control={form.control}
-                  name="workEmail"
+                  name="salary"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Work Email *</FormLabel>
+                      <FormLabel>Salary</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="email" 
-                          {...field} 
-                          placeholder="Work email address"
-                          onBlur={(e) => {
-                            field.onBlur();
-                            setWorkEmailError(validateEmail(e.target.value));
-                          }}
-                          className={workEmailError ? "border-red-500" : ""}
-                        />
+                        <Input {...field} placeholder="Enter salary (optional)" />
                       </FormControl>
-                      {workEmailError && <p className="text-sm text-red-500">{workEmailError}</p>}
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="privateEmail"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Private Email</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="email" 
-                          {...field} 
-                          placeholder="Private email address"
-                          onBlur={(e) => {
-                            field.onBlur();
-                            setPrivateEmailError(validateEmail(e.target.value));
-                          }}
-                          className={privateEmailError ? "border-red-500" : ""}
-                        />
-                      </FormControl>
-                      {privateEmailError && <p className="text-sm text-red-500">{privateEmailError}</p>}
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* Third row: Website */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="website"
@@ -819,172 +862,122 @@ export function EditEmployeeDialog({
                     <FormItem>
                       <FormLabel>Website</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="https://www.example.com" />
+                        <Input {...field} placeholder="Personal or professional website" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
-            </div>
+              </TabsContent>
 
-            {/* Address Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Address Information</h3>
-              <AddressLookup onAddressSelect={handleAddressSelect} />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <TabsContent value="personal" className="space-y-4">
+                <div className="grid grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="dateOfBirth"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('employees:addDialog.dateOfBirth')}</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="gender"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Gender</FormLabel>
+                        <FormControl>
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select gender" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="male">Male</SelectItem>
+                              <SelectItem value="female">Female</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="nationality"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nationality</FormLabel>
+                        <FormControl>
+                          <NationalitySelect 
+                            value={field.value || ""} 
+                            onValueChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="birthPlace"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Birth Place</FormLabel>
+                        <FormControl>
+                          <CityCountryLookup 
+                            value={field.value || ""} 
+                            onValueChange={field.onChange}
+                            onSelect={(result) => {
+                              field.onChange(result.city);
+                              form.setValue("birthCountry", result.country);
+                            }}
+                            placeholder="Enter birth place"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="birthCountry"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Birth Country</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Enter birth country" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
                 <FormField
                   control={form.control}
                   name="address"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Street Address</FormLabel>
+                      <FormLabel>{t('employees:addDialog.address')}</FormLabel>
                       <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="postcode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Postcode</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="city"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>City</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="country"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Country</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Personal Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Personal Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="dateOfBirth"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Date of Birth</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="gender"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Gender</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
-                        <FormControl>
-                          <SelectTrigger className="font-normal">
-                            <SelectValue placeholder="Select gender" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="male">Male</SelectItem>
-                          <SelectItem value="female">Female</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="birthPlace"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Birth Place</FormLabel>
-                      <FormControl>
-                        <CityCountryLookup
-                          value={field.value || ''}
-                          placeholder="Search for your birth city..."
-                          onSelect={(result) => {
-                            field.onChange(result.city);
-                            // Always auto-fill birth country when selecting from dropdown
-                            form.setValue('birthCountry', result.country);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="birthCountry"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Birth Country</FormLabel>
-                      <FormControl>
-                        <CityCountryLookup
-                          value={field.value || ''}
-                          placeholder="Search for your birth country..."
-                          onSelect={(result) => {
-                            field.onChange(result.country);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="nationality"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nationality</FormLabel>
-                      <FormControl>
-                        <NationalitySelect
-                          value={field.value}
+                        <AddressLookup 
+                          value={field.value || ""} 
                           onValueChange={field.onChange}
-                          placeholder="Select nationality"
+                          onAddressSelect={(address) => {
+                            field.onChange(address.street);
+                            form.setValue("postcode", address.postcode);
+                            form.setValue("city", address.city);
+                            form.setValue("country", address.country);
+                          }}
                         />
                       </FormControl>
                       <FormMessage />
@@ -992,689 +985,552 @@ export function EditEmployeeDialog({
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="personalId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Personal ID (BSN)</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="maritalStatus"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Marital Status</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select marital status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="single">Single</SelectItem>
-                          <SelectItem value="married">Married</SelectItem>
-                          <SelectItem value="divorced">Divorced</SelectItem>
-                          <SelectItem value="widowed">Widowed</SelectItem>
-                          <SelectItem value="separated">Separated</SelectItem>
-                          <SelectItem value="domestic_partnership">Domestic Partnership</SelectItem>
-                          <SelectItem value="civil_union">Civil Union</SelectItem>
-                          <SelectItem value="engaged">Engaged</SelectItem>
-                          <SelectItem value="cohabiting">Cohabiting</SelectItem>
-                          <SelectItem value="unknown">Unknown</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="marriageDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Marriage Date</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="divorceDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Divorce Date</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="deathDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Death Date</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="hireDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Hire Date</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="contractType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Contract Type</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select contract type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="permanent">Permanent</SelectItem>
-                          <SelectItem value="temporary">Temporary</SelectItem>
-                          <SelectItem value="freelance">Freelance</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-
-                <FormField
-                  control={form.control}
-                  name="workingHours"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Working Hours per Week</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="salary"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Salary (Annual)</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="0.01" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* KVM Section */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">KVM</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="idProofType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>ID Proof Type</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
-                        <FormControl>
-                          <SelectTrigger className="font-normal">
-                            <SelectValue placeholder="Select ID proof type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="passport">Passport</SelectItem>
-                          <SelectItem value="national_id">National ID</SelectItem>
-                          <SelectItem value="drivers_license">Driver's License</SelectItem>
-                          <SelectItem value="eu_id">EU ID Card</SelectItem>
-                          <SelectItem value="residence_permit">Residence Permit</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="idProofNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>ID Proof Number</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="idProofExpiryDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>ID Proof Expiry Date</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-              </div>
-            </div>
-
-            {/* Driving Licenses */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Driving Licenses</h3>
-              
-              {/* License A */}
-              <div className="space-y-2">
-                <FormField
-                  control={form.control}
-                  name="drivingLicenseA"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <input
-                          type="checkbox"
-                          checked={field.value}
-                          onChange={field.onChange}
-                          className="rounded border-gray-300"
-                        />
-                      </FormControl>
-                      <FormLabel className="text-sm font-normal">
-                        License A
-                      </FormLabel>
-                    </FormItem>
-                  )}
-                />
-                {form.watch("drivingLicenseA") && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-6">
-                    <FormField
-                      control={form.control}
-                      name="drivingLicenseAStartDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Start Date</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="drivingLicenseAExpiryDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Expiry Date</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* License B */}
-              <div className="space-y-2">
-                <FormField
-                  control={form.control}
-                  name="drivingLicenseB"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <input
-                          type="checkbox"
-                          checked={field.value}
-                          onChange={field.onChange}
-                          className="rounded border-gray-300"
-                        />
-                      </FormControl>
-                      <FormLabel className="text-sm font-normal">
-                        License B
-                      </FormLabel>
-                    </FormItem>
-                  )}
-                />
-                {form.watch("drivingLicenseB") && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-6">
-                    <FormField
-                      control={form.control}
-                      name="drivingLicenseBStartDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Start Date</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="drivingLicenseBExpiryDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Expiry Date</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* License B/E */}
-              <div className="space-y-2">
-                <FormField
-                  control={form.control}
-                  name="drivingLicenseBE"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <input
-                          type="checkbox"
-                          checked={field.value}
-                          onChange={field.onChange}
-                          className="rounded border-gray-300"
-                        />
-                      </FormControl>
-                      <FormLabel className="text-sm font-normal">
-                        License B/E
-                      </FormLabel>
-                    </FormItem>
-                  )}
-                />
-                {form.watch("drivingLicenseBE") && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-6">
-                    <FormField
-                      control={form.control}
-                      name="drivingLicenseBEStartDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Start Date</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="drivingLicenseBEExpiryDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Expiry Date</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* License C */}
-              <div className="space-y-2">
-                <FormField
-                  control={form.control}
-                  name="drivingLicenseC"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <input
-                          type="checkbox"
-                          checked={field.value}
-                          onChange={field.onChange}
-                          className="rounded border-gray-300"
-                        />
-                      </FormControl>
-                      <FormLabel className="text-sm font-normal">
-                        License C
-                      </FormLabel>
-                    </FormItem>
-                  )}
-                />
-                {form.watch("drivingLicenseC") && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-6">
-                    <FormField
-                      control={form.control}
-                      name="drivingLicenseCStartDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Start Date</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="drivingLicenseCExpiryDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Expiry Date</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* License C/E */}
-              <div className="space-y-2">
-                <FormField
-                  control={form.control}
-                  name="drivingLicenseCE"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <input
-                          type="checkbox"
-                          checked={field.value}
-                          onChange={field.onChange}
-                          className="rounded border-gray-300"
-                        />
-                      </FormControl>
-                      <FormLabel className="text-sm font-normal">
-                        License C/E
-                      </FormLabel>
-                    </FormItem>
-                  )}
-                />
-                {form.watch("drivingLicenseCE") && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-6">
-                    <FormField
-                      control={form.control}
-                      name="drivingLicenseCEStartDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Start Date</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="drivingLicenseCEExpiryDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Expiry Date</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* License D */}
-              <div className="space-y-2">
-                <FormField
-                  control={form.control}
-                  name="drivingLicenseD"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <input
-                          type="checkbox"
-                          checked={field.value}
-                          onChange={field.onChange}
-                          className="rounded border-gray-300"
-                        />
-                      </FormControl>
-                      <FormLabel className="text-sm font-normal">
-                        License D
-                      </FormLabel>
-                    </FormItem>
-                  )}
-                />
-                {form.watch("drivingLicenseD") && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-6">
-                    <FormField
-                      control={form.control}
-                      name="drivingLicenseDStartDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Start Date</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="drivingLicenseDExpiryDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Expiry Date</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Code 95 - Only show for employees with C, CE, or D licenses */}
-              {(form.watch("drivingLicenseC") || form.watch("drivingLicenseCE") || form.watch("drivingLicenseD")) && (
-                <div className="space-y-2">
+                <div className="grid grid-cols-3 gap-4">
                   <FormField
                     control={form.control}
-                    name="drivingLicenseCode95"
+                    name="postcode"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                      <FormItem>
+                        <FormLabel>{t('employees:addDialog.postcode')}</FormLabel>
                         <FormControl>
-                          <input
-                            type="checkbox"
-                            checked={field.value}
-                            onChange={field.onChange}
-                            className="rounded border-gray-300"
-                          />
+                          <Input {...field} placeholder="1234 AB" />
                         </FormControl>
-                        <FormLabel className="text-sm font-normal">
-                          Code 95
-                        </FormLabel>
-                        <span className="text-xs text-gray-500">(Required for C, CE, D licenses)</span>
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
-                  {form.watch("drivingLicenseCode95") && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-6">
+                  <FormField
+                    control={form.control}
+                    name="city"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('employees:addDialog.city')}</FormLabel>
+                        <FormControl>
+                          <CityCountryLookup 
+                            value={field.value || ""} 
+                            onValueChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="country"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('employees:addDialog.country')}</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Enter country" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="maritalStatus"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Marital Status</FormLabel>
+                        <FormControl>
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select marital status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="not_specified">Not specified</SelectItem>
+                              <SelectItem value="single">Single</SelectItem>
+                              <SelectItem value="married">Married</SelectItem>
+                              <SelectItem value="divorced">Divorced</SelectItem>
+                              <SelectItem value="widowed">Widowed</SelectItem>
+                              <SelectItem value="separated">Separated</SelectItem>
+                              <SelectItem value="domestic_partnership">Domestic Partnership</SelectItem>
+                              <SelectItem value="civil_union">Civil Union</SelectItem>
+                              <SelectItem value="engaged">Engaged</SelectItem>
+                              <SelectItem value="cohabiting">Cohabiting</SelectItem>
+                              <SelectItem value="unknown">Unknown</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="marriageDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Marriage Date</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="font-medium">Emergency Contact</h4>
+                  <div className="grid grid-cols-3 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="emergencyContactName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Emergency contact name" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="emergencyContactRelationship"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Relationship</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., Spouse, Parent" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="emergencyContactPhone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone</FormLabel>
+                          <FormControl>
+                            <EnhancedPhoneInput 
+                              value={field.value || ""} 
+                              onChange={field.onChange}
+                              placeholder="Emergency contact phone"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Additional Notes</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} placeholder="Any additional notes about the employee" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </TabsContent>
+
+              <TabsContent value="identity" className="space-y-4">
+                <div className="space-y-4">
+                  <h4 className="font-medium">Identity & Identification</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="personalId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Personal ID (BSN)</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Enter BSN or personal ID" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="idProofType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>ID Proof Type</FormLabel>
+                          <FormControl>
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select ID proof type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="passport">Passport</SelectItem>
+                                <SelectItem value="id_card">ID Card</SelectItem>
+                                <SelectItem value="driving_license">Driving License</SelectItem>
+                                <SelectItem value="other">Other</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="idProofNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>ID Proof Number</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Enter ID proof number" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="idProofExpiryDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>ID Proof Expiry Date</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="licenses" className="space-y-4">
+                <div className="space-y-6">
+                  <h4 className="font-medium">Driving Licenses</h4>
+                  
+                  {/* License A */}
+                  <div className="border rounded-lg p-4 space-y-3">
+                    <div className="flex items-center space-x-2">
                       <FormField
                         control={form.control}
-                        name="drivingLicenseCode95StartDate"
+                        name="drivingLicenseA"
                         render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Start Date</FormLabel>
+                          <FormItem className="flex items-center space-x-2">
                             <FormControl>
-                              <Input type="date" {...field} />
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
                             </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="drivingLicenseCode95ExpiryDate"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Expiry Date</FormLabel>
-                            <FormControl>
-                              <Input type="date" {...field} />
-                            </FormControl>
-                            <FormMessage />
+                            <FormLabel className="text-sm font-medium">License A (Motorcycle)</FormLabel>
                           </FormItem>
                         )}
                       />
                     </div>
-                  )}
+                    {form.watch("drivingLicenseA") && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="drivingLicenseAStartDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Start Date</FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="drivingLicenseAExpiryDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Expiry Date</FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* License B */}
+                  <div className="border rounded-lg p-4 space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <FormField
+                        control={form.control}
+                        name="drivingLicenseB"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <FormLabel className="text-sm font-medium">License B (Car)</FormLabel>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    {form.watch("drivingLicenseB") && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="drivingLicenseBStartDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Start Date</FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="drivingLicenseBExpiryDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Expiry Date</FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* License BE */}
+                  <div className="border rounded-lg p-4 space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <FormField
+                        control={form.control}
+                        name="drivingLicenseBE"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <FormLabel className="text-sm font-medium">License BE (Car with Trailer)</FormLabel>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    {form.watch("drivingLicenseBE") && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="drivingLicenseBEStartDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Start Date</FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="drivingLicenseBEExpiryDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Expiry Date</FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* License C */}
+                  <div className="border rounded-lg p-4 space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <FormField
+                        control={form.control}
+                        name="drivingLicenseC"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <FormLabel className="text-sm font-medium">License C (Truck)</FormLabel>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    {form.watch("drivingLicenseC") && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="drivingLicenseCStartDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Start Date</FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="drivingLicenseCExpiryDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Expiry Date</FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* License CE */}
+                  <div className="border rounded-lg p-4 space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <FormField
+                        control={form.control}
+                        name="drivingLicenseCE"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <FormLabel className="text-sm font-medium">License CE (Truck with Trailer)</FormLabel>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    {form.watch("drivingLicenseCE") && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="drivingLicenseCEStartDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Start Date</FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="drivingLicenseCEExpiryDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Expiry Date</FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* License D */}
+                  <div className="border rounded-lg p-4 space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <FormField
+                        control={form.control}
+                        name="drivingLicenseD"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <FormLabel className="text-sm font-medium">License D (Bus)</FormLabel>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    {form.watch("drivingLicenseD") && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="drivingLicenseDStartDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Start Date</FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="drivingLicenseDExpiryDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Expiry Date</FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
+              </TabsContent>
+            </Tabs>
 
-            {/* Emergency Contact */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Emergency Contact</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="emergencyContactName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Emergency Contact Name</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
-                <FormField
-                  control={form.control}
-                  name="emergencyContactRelationship"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Relationship</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="emergencyContactPhone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Emergency Contact Phone</FormLabel>
-                      <FormControl>
-                        <div>
-                          <EnhancedPhoneInput
-                            value={field.value}
-                            onChange={(value) => {
-                              field.onChange(value);
-                              setEmergencyPhoneError(validatePhone(value));
-                            }}
-                            onBlur={() => {
-                              field.onBlur();
-                              setEmergencyPhoneError(validatePhone(field.value || ""));
-                            }}
-                            placeholder="Emergency contact phone"
-                          />
-                          {emergencyPhoneError && <p className="text-sm text-red-500 mt-1">{emergencyPhoneError}</p>}
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Notes */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Additional Notes</h3>
-              <FormField
-                control={form.control}
-                name="notes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Notes</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} rows={4} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="flex justify-end space-x-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancel
+            <div className="flex justify-end space-x-2 pt-4 border-t">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                {t('employees:addDialog.cancel')}
               </Button>
-              <Button type="submit" disabled={updateEmployee.isPending}>
+              <Button type="button" onClick={handleSubmitButtonClick} disabled={updateEmployee.isPending}>
                 {updateEmployee.isPending ? "Updating..." : "Update Employee"}
               </Button>
             </div>

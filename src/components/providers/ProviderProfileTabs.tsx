@@ -274,7 +274,7 @@ export function ProviderProfileTabs({ providerId }: ProviderProfileTabsProps) {
                       </div>
                       <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
                         <div>Date: {new Date(training.date).toLocaleDateString()}</div>
-                        <div>Time: {training.time}</div>
+                        <div>Time: {training.time ? training.time.slice(0, 5) : ''}</div>
                         <div>Location: {training.location || 'TBD'}</div>
                         <div>Instructor: {training.instructor || 'TBD'}</div>
                       </div>

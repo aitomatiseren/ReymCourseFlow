@@ -166,6 +166,10 @@
         "employeeAdded": "Medewerker Toegevoegd",
         "employeeAddedDescription": "{{name}} is succesvol toegevoegd."
     },
+    "editDialog": {
+        "title": "Medewerker Bewerken",
+        "description": "Medewerker informatie en instellingen bijwerken."
+    },
     "employeeProfile": "Medewerker Profiel",
     "employeeProfileDescription": "Bekijk en beheer medewerker informatie en trainingsvoortgang.",
     "userNotFound": "Gebruiker niet gevonden",

@@ -27,10 +27,11 @@ export function TrainingTimeline({ onTrainingSelect, selectedTrainingId }: Train
   };
 
   const formatTime = (time: string, endTime?: string) => {
+    const formattedTime = time ? time.slice(0, 5) : '';
     if (endTime) {
-      return `${time} - ${endTime}`;
+      return `${formattedTime} - ${endTime.slice(0, 5)}`;
     }
-    return time;
+    return formattedTime;
   };
 
   const getStatusColor = (status: Training['status']) => {
@@ -115,7 +116,7 @@ export function TrainingTimeline({ onTrainingSelect, selectedTrainingId }: Train
                         {training.session_dates.slice(0, 2).map((date, sessionIndex) => (
                           <div key={sessionIndex} className="flex items-center text-sm text-gray-600 bg-gray-50 p-2 rounded">
                             <Clock className="h-4 w-4 mr-2 text-blue-500" />
-                            <span className="font-medium">Session {sessionIndex + 1}:</span>
+                            <span className="font-medium">Session {sessionIndex + 1}: </span>
                             <span className="ml-2">
                               {formatDate(date).month} {formatDate(date).day} at {formatTime(
                                 training.session_times?.[sessionIndex] || "",
@@ -148,7 +149,7 @@ export function TrainingTimeline({ onTrainingSelect, selectedTrainingId }: Train
                         <span>{training.participantCount}/{training.maxParticipants} participants</span>
                       </div>
                       <div className="text-gray-600">
-                        <span className="font-medium">Instructor:</span> {training.instructor}
+                        <span className="font-medium">Instructor: </span>{training.instructor}
                       </div>
                     </div>
                   </CardContent>

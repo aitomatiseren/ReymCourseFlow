@@ -124,7 +124,6 @@
         "unsavedChanges": "You have unsaved changes. Are you sure you want to leave?"
     },
     "time": {
-        "seconds": "seconds",
         "minutes": "minutes",
         "hours": "hours",
         "days": "days",

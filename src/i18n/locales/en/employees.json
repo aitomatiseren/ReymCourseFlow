@@ -136,6 +136,7 @@
         "phoneNumber": "Phone Number",
         "department": "Department",
         "departmentRequired": "Department is required",
+        "departmentPlaceholder": "Select department",
         "jobTitle": "Job Title",
         "hireDate": "Hire Date",
         "contractType": "Contract Type",
@@ -143,6 +144,7 @@
         "temporary": "Temporary",
         "freelance": "Freelance",
         "workLocation": "Work Location",
+        "workLocationPlaceholder": "Select work location",
         "dateOfBirth": "Date of Birth",
         "address": "Address",
         "postcode": "Postcode",
@@ -152,6 +154,10 @@
         "addEmployee": "Add Employee",
         "employeeAdded": "Employee Added",
         "employeeAddedSuccess": "{{name}} has been added successfully."
+    },
+    "editDialog": {
+        "title": "Edit Employee",
+        "description": "Update employee information and settings."
     },
     "employeeProfile": "Employee Profile",
     "employeeProfileDescription": "View and manage employee information and training progress.",

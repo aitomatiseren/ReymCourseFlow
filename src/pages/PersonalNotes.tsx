@@ -253,8 +253,8 @@ const EmployeeDetailContent = ({ employeeId }: { employeeId: string }) => {
                     {cert.expiryDate ? `Expires: ${format(new Date(cert.expiryDate), 'PPP')}` : 'No expiry'}
                   </p>
                 </div>
-                <Badge variant={cert.isValid ? 'default' : 'destructive'} className="text-xs">
-                  {cert.isValid ? 'Valid' : 'Expired'}
+                <Badge variant={cert.status === 'valid' ? 'default' : cert.status === 'expiring' ? 'secondary' : 'destructive'} className="text-xs">
+                  {cert.status === 'valid' ? 'Valid' : cert.status === 'expiring' ? 'Expiring' : 'Expired'}
                 </Badge>
               </div>
             ))}
@@ -315,7 +315,7 @@ const TrainingDetailContent = ({ trainingId }: { trainingId: string }) => {
           </div>
           <div>
             <label className="text-sm font-medium text-gray-500">Time</label>
-            <p className="text-sm">{training.time || 'Not specified'}</p>
+            <p className="text-sm">{training.time ? training.time.slice(0, 5) : 'Not specified'}</p>
           </div>
           <div>
             <label className="text-sm font-medium text-gray-500">Duration</label>
@@ -443,10 +443,10 @@ const CourseDetailContent = ({ courseId }: { courseId: string }) => {
           <p className="text-gray-600 mb-4">{course.description}</p>
         )}
         <div className="flex items-center gap-2">
-          <Badge variant={course.isActive ? 'default' : 'secondary'}>
-            {course.isActive ? 'Active' : 'Inactive'}
+          <Badge variant="default">
+            Active
           </Badge>
-          {course.isCode95 && (
+          {course.code95Points && (
             <Badge variant="outline">Code 95 - {course.code95Points} points</Badge>
           )}
         </div>
@@ -516,8 +516,8 @@ const CourseDetailContent = ({ courseId }: { courseId: string }) => {
                     {provider.city} - {provider.contactEmail}
                   </p>
                 </div>
-                <Badge variant={provider.isActive ? 'default' : 'secondary'} className="text-xs">
-                  {provider.isActive ? 'Active' : 'Inactive'}
+                <Badge variant={provider.active ? 'default' : 'secondary'} className="text-xs">
+                  {provider.active ? 'Active' : 'Inactive'}
                 </Badge>
               </div>
             ))}
@@ -611,8 +611,8 @@ const ProviderDetailContent = ({ providerId }: { providerId: string }) => {
           <p className="text-gray-600 mb-4">{provider.description}</p>
         )}
         <div className="flex items-center gap-2">
-          <Badge variant={provider.isActive ? 'default' : 'secondary'}>
-            {provider.isActive ? 'Active' : 'Inactive'}
+          <Badge variant={provider.active ? 'default' : 'secondary'}>
+            {provider.active ? 'Active' : 'Inactive'}
           </Badge>
           {provider.isPreferred && (
             <Badge variant="outline">Preferred Provider</Badge>
@@ -715,13 +715,13 @@ const ProviderDetailContent = ({ providerId }: { providerId: string }) => {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {course.isCode95 && (
+                  {course.code95Points && (
                     <Badge variant="outline" className="text-xs">
                       Code 95
                     </Badge>
                   )}
-                  <Badge variant={course.isActive ? 'default' : 'secondary'} className="text-xs">
-                    {course.isActive ? 'Active' : 'Inactive'}
+                  <Badge variant="default" className="text-xs">
+                    Active
                   </Badge>
                 </div>
               </div>
@@ -806,8 +806,8 @@ const CertificateDetailContent = ({ certificateId }: { certificateId: string }) 
           <p className="text-gray-600 mb-4">{certificate.description}</p>
         )}
         <div className="flex items-center gap-2">
-          <Badge variant={certificate.isValid ? 'default' : 'destructive'}>
-            {certificate.isValid ? 'Valid' : 'Expired'}
+          <Badge variant={certificate.status === 'valid' ? 'default' : certificate.status === 'expiring' ? 'secondary' : 'destructive'}>
+            {certificate.status === 'valid' ? 'Valid' : certificate.status === 'expiring' ? 'Expiring' : 'Expired'}
           </Badge>
           {certificate.isCode95 && (
             <Badge variant="outline">Code 95 Certificate</Badge>
@@ -911,13 +911,13 @@ const CertificateDetailContent = ({ certificateId }: { certificateId: string }) 
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {course.isCode95 && (
+                  {course.code95Points && (
                     <Badge variant="outline" className="text-xs">
                       Code 95
                     </Badge>
                   )}
-                  <Badge variant={course.isActive ? 'default' : 'secondary'} className="text-xs">
-                    {course.isActive ? 'Active' : 'Inactive'}
+                  <Badge variant="default" className="text-xs">
+                    Active
                   </Badge>
                 </div>
               </div>
@@ -1087,7 +1087,7 @@ export default function PersonalNotes() {
           id: employee.id,
           type: 'employee',
           name: employee.name,
-          subtitle: employee.jobTitle || employee.department,
+          subtitle: `${employee.jobTitle || employee.department || 'Employee'} - ${employee.status || 'Active'}`,
           icon: <User className="h-4 w-4" />
         });
       }
@@ -1100,7 +1100,7 @@ export default function PersonalNotes() {
           id: training.id,
           type: 'training',
           name: training.title,
-          subtitle: training.date ? format(new Date(training.date), 'MMM d, yyyy') : undefined,
+          subtitle: `${training.date ? format(new Date(training.date), 'MMM d, yyyy') : 'Not scheduled'} - ${training.status || 'Scheduled'}`,
           icon: <Calendar className="h-4 w-4" />
         });
       }
@@ -1113,7 +1113,7 @@ export default function PersonalNotes() {
           id: course.id,
           type: 'course',
           name: course.title,
-          subtitle: course.description,
+          subtitle: `${course.duration_hours || 'N/A'} hours - Active`,
           icon: <FileText className="h-4 w-4" />
         });
       }
@@ -1126,7 +1126,7 @@ export default function PersonalNotes() {
           id: provider.id,
           type: 'provider',
           name: provider.name,
-          subtitle: provider.city,
+          subtitle: `${provider.city || 'Location N/A'} - ${provider.active ? 'Active' : 'Inactive'}`,
           icon: <MapPin className="h-4 w-4" />
         });
       }
@@ -1139,7 +1139,7 @@ export default function PersonalNotes() {
           id: certificate.id,
           type: 'certificate',
           name: certificate.name,
-          subtitle: certificate.category,
+          subtitle: `${certificate.category || 'Certificate'} - ${certificate.status === 'valid' ? 'Valid' : certificate.status === 'expiring' ? 'Expiring' : 'Expired'}`,
           icon: <Sparkles className="h-4 w-4" />
         });
       }
@@ -1761,6 +1761,10 @@ export default function PersonalNotes() {
             minWidth: '250px',
             pointerEvents: 'auto'
           }}
+          onWheel={(e) => {
+            // Allow wheel scrolling within the autocomplete dropdown
+            e.stopPropagation();
+          }}
         >
           {autocompleteItems.map(item => (
             <button
@@ -1771,6 +1775,10 @@ export default function PersonalNotes() {
                 e.stopPropagation();
                 console.log('Autocomplete item click:', item);
                 handleAutocompleteSelect(item, !!editingNote);
+              }}
+              onMouseDown={(e) => {
+                // Prevent default to avoid losing focus from textarea
+                e.preventDefault();
               }}
             >
               <div className="text-gray-400">

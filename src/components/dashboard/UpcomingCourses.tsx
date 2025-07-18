@@ -91,7 +91,7 @@ export function UpcomingCourses() {
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="h-4 w-4" />
-                        {training.time}
+                        {training.time ? training.time.slice(0, 5) : ''}
                       </div>
                     </div>
                     <div className="flex items-center gap-4 text-sm text-gray-600">

@@ -25,12 +25,10 @@ import {
   useEmployeeRenewalCourses,
   useEmployeeDocuments 
 } from '@/hooks/useEmployeeSelfService';
-import { DocumentUpload } from '@/components/certificates/DocumentUpload';
 import { formatDate, formatDistanceToNow } from 'date-fns';
 
 export const EmployeeCertificateManager: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState('certificates');
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
 
   const { data: certificates, isLoading: certificatesLoading } = useEmployeeCertificates();
   const { data: renewals, isLoading: renewalsLoading } = useEmployeeCertificateRenewals();
@@ -139,10 +137,6 @@ export const EmployeeCertificateManager: React.FC = () => {
           <TabsTrigger value="documents">
             <FileText className="h-4 w-4 mr-2" />
             Documents
-          </TabsTrigger>
-          <TabsTrigger value="upload">
-            <Upload className="h-4 w-4 mr-2" />
-            Upload
           </TabsTrigger>
         </TabsList>
 
@@ -464,30 +458,6 @@ export const EmployeeCertificateManager: React.FC = () => {
           )}
         </TabsContent>
 
-        {/* Upload Tab */}
-        <TabsContent value="upload">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Upload className="h-5 w-5" />
-                Upload Certificate Document
-              </CardTitle>
-              <CardDescription>
-                Upload certificate documents for AI processing and verification
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <DocumentUpload
-                showEmployeeSelection={false}
-                showLicenseSelection={true}
-                onUploadComplete={() => {
-                  // Refresh documents when upload is complete
-                  setSelectedTab('documents');
-                }}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
     </div>
   );

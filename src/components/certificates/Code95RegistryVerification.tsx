@@ -143,7 +143,7 @@ export function Code95RegistryVerification() {
 
           {stats?.lastSyncTime && (
             <div className="text-sm text-gray-600 mb-4">
-              Last sync: {format(new Date(stats.lastSyncTime), 'PPpp')}
+              Last sync: {format(new Date(stats.lastSyncTime), 'PPP p')}
             </div>
           )}
 

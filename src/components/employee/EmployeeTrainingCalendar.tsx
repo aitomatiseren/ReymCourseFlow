@@ -340,7 +340,7 @@ export const EmployeeTrainingCalendar: React.FC = () => {
           {selectedEvent && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Status:</span>
+                <span className="text-sm font-medium">Status: </span>
                 <Badge className={getStatusColor(selectedEvent.status)}>
                   <span className="flex items-center gap-1">
                     {getStatusIcon(selectedEvent.status)}
