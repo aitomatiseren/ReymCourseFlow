@@ -35,7 +35,7 @@ import { PlanViewDialog } from "@/components/planning/PlanViewDialog";
 export default function PreliminaryPlanning() {
   const { t } = useTranslation(['common', 'planning']);
   const navigate = useNavigate();
-  const [selectedLicenseId, setSelectedLicenseId] = useState<string>('');
+  const [selectedLicenseId, setSelectedLicenseId] = useState<string>('all');
   const [selectedDepartment, setSelectedDepartment] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [activeTab, setActiveTab] = useState('plans');

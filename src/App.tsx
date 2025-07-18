@@ -33,6 +33,7 @@ import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import CertificateExpiry from "./pages/CertificateExpiry";
 import PreliminaryPlanning from "./pages/PreliminaryPlanning";
+import PersonalNotes from "./pages/PersonalNotes";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -95,6 +96,7 @@ const App = () => (
                       <Route path="/employee-portal" element={<AuthGuard><EmployeePortal /></AuthGuard>} />
                       <Route path="/communications" element={<AuthGuard><Notifications /></AuthGuard>} />
                       <Route path="/reports" element={<AuthGuard><Reports /></AuthGuard>} />
+                      <Route path="/personal-notes" element={<AuthGuard><PersonalNotes /></AuthGuard>} />
                       <Route path="/settings" element={<AuthGuard><Settings /></AuthGuard>} />
 
                       {/* Public Routes */}

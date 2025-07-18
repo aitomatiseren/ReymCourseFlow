@@ -14,7 +14,8 @@ import {
   User,
   Wrench,
   Shield,
-  PenTool
+  PenTool,
+  StickyNote
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { usePermissions } from "@/context/PermissionsContext";
@@ -41,6 +42,7 @@ const getMenuItems = (t: (key: string) => string) => [
   { titleKey: "navigation.employeePortal", url: "/employee-dashboard", icon: User, permissions: ["view_own_profile"] },
   { titleKey: "navigation.notifications", url: "/communications", icon: Bell, permissions: [] },
   { titleKey: "navigation.reports", url: "/reports", icon: FileText, permissions: ["view_basic_reports"] },
+  { titleKey: "navigation.personalNotes", url: "/personal-notes", icon: StickyNote, permissions: [] },
   { titleKey: "navigation.settings", url: "/settings", icon: Settings, permissions: ["manage_system_settings"] },
 ];
 

@@ -29,6 +29,7 @@ import {
 import { CertificateExpiryAnalysis, usePreliminaryPlanningMutations } from "@/hooks/usePreliminaryPlanning";
 import { useTrainings } from "@/hooks/useTrainings";
 import { useProviders } from "@/hooks/useProviders";
+import { useCourses } from "@/hooks/useCourses";
 import { useProvidersForCertificate, useCoursesForCertificate } from "@/hooks/useProvidersForCertificate";
 import { OpenAIService } from "@/services/ai";
 import { useProviderPreferencesSummary } from "@/hooks/useProviderPreferences";
@@ -266,6 +267,7 @@ export function EmployeeGroupingView({
 
   const { data: existingTrainings = [], isLoading: trainingsLoading } = useTrainings();
   const { data: providers = [], isLoading: providersLoading } = useProviders();
+  const { data: courses = [], isLoading: coursesLoading } = useCourses();
   
   // Function to check if an employee is already scheduled for training for the selected certificate
   const isEmployeeScheduledForCertificate = (employeeId: string) => {
@@ -1023,7 +1025,21 @@ export function EmployeeGroupingView({
       if (!openaiKey) {
         throw new Error('OpenAI API key not configured. Please set VITE_OPENAI_API_KEY in your environment variables.');
       }
-      const selectedLicenseName = licenses.find(l => l.id === selectedLicenseId)?.name || 'Unknown';
+      
+      // Debug logging
+      console.log('🔍 AI Planning Debug Info:');
+      console.log('- Selected License ID:', selectedLicenseId);
+      console.log('- Expiry Data Length:', expiryData.length);
+      console.log('- Available Licenses:', licenses.map(l => ({ id: l.id, name: l.name })));
+      console.log('- Sample Expiry Data:', expiryData.slice(0, 3));
+      
+      if (expiryData.length === 0) {
+        throw new Error('No available employees found for planning. Please check your certificate and status filters.');
+      }
+      
+      const selectedLicenseName = selectedLicenseId === 'all' 
+        ? 'All Certificates' 
+        : (licenses.find(l => l.id === selectedLicenseId)?.name || 'Unknown');
       const availableEmployees = expiryData.length;
       const departments = Array.from(new Set(expiryData.map(e => e.department || 'Unknown')));
       
@@ -1296,20 +1312,36 @@ WEEKEND SCHEDULING POLICY:
 - OPTIMAL DAYS: Prefer Tuesday, Wednesday, Thursday for best attendance
 
 CERTIFICATE AND COURSE INFORMATION:
-- Certificate: ${selectedLicense?.name || 'Unknown'}
+${selectedLicenseId === 'all' ? 
+  `- Working with ALL certificate types across multiple employees
+- Each employee needs training for their specific certificate type
+- Group employees by certificate type for efficiency
+- Available certificates: ${licenses.map(l => l.name).join(', ')}
+- IMPORTANT: Create separate groups for each certificate type` :
+  `- Certificate: ${selectedLicense?.name || 'Unknown'}
 - Category: ${selectedLicense?.category || 'Unknown'}
 - Renewal Notice Period: Typically 6 months before expiry (configurable per certificate)
 - Optimal Renewal Timing: Schedule training closer to expiry date for maximum validity period
-- Grace Period: Usually 3 months after expiry for renewals (varies by certificate type)
+- Grace Period: Usually 3 months after expiry for renewals (varies by certificate type)`
+}
 
-COURSES THAT GRANT THIS CERTIFICATE:
-${certificateCourses.map(course => 
-  `- ${course.title} (${course.duration_hours || 'N/A'} hours, max ${course.max_participants || 'N/A'} participants)`
-).join('\n') || 'No courses available for this certificate type'}
+COURSES THAT GRANT ${selectedLicenseId === 'all' ? 'CERTIFICATES' : 'THIS CERTIFICATE'}:
+${selectedLicenseId === 'all' ?
+  `Working with multiple certificate types - courses available:
+${licenses.map(license => {
+  const coursesForLicense = courses.filter(course => 
+    course.course_certificates?.some((cc: any) => cc.license_id === license.id)
+  );
+  return `${license.name}: ${coursesForLicense.length} course(s) available`;
+}).join('\n')}` :
+  certificateCourses.map(course => 
+    `- ${course.title} (${course.duration_hours || 'N/A'} hours, max ${course.max_participants || 'N/A'} participants)`
+  ).join('\n') || 'No courses available for this certificate type'
+}
 
 EMPLOYEES AVAILABLE FOR GROUPING (${filteredEmployees.length} total after filtering):
 ${filteredEmployees.slice(0, 25).map(emp => 
-  `• ${emp.first_name} ${emp.last_name} (${emp.department || 'Unknown'}, ${emp.work_location || 'Unknown Location'}) - Status: ${emp.employee_status} - Expires in: ${emp.days_until_expiry || 'N/A'} days`
+  `• ${emp.first_name} ${emp.last_name} (${emp.department || 'Unknown'}, ${emp.work_location || 'Unknown Location'}) - Status: ${emp.employee_status}${selectedLicenseId === 'all' ? ` - Certificate: ${emp.license_name || 'Unknown'}` : ''} - Expires in: ${emp.days_until_expiry || 'N/A'} days`
 ).join('\n')}
 
 WORK LOCATION ANALYSIS:
@@ -1855,7 +1887,7 @@ FINAL VALIDATION BEFORE RESPONDING:
             </div>
             <Button 
               onClick={handleNaturalLanguagePlanning}
-              disabled={!planningRequest.trim() || isProcessingRequest || !selectedLicenseId || trainingsLoading || providersLoading || certificateProvidersLoading || certificateCoursesLoading || preferencesLoading || availabilityLoading}
+              disabled={!planningRequest.trim() || isProcessingRequest || !selectedLicenseId || trainingsLoading || providersLoading || coursesLoading || certificateProvidersLoading || certificateCoursesLoading || preferencesLoading || availabilityLoading}
               className="w-full"
             >
               {isProcessingRequest ? (
