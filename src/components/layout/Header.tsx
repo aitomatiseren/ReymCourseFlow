@@ -56,6 +56,21 @@ export const Header: React.FC = () => {
     setSearchOpen(true);
   };
 
+  // Global keydown event listener for search shortcut
+  React.useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'K') {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+
+    document.addEventListener('keydown', handleGlobalKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleGlobalKeyDown);
+    };
+  }, []);
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.ctrlKey && e.shiftKey && e.key === 'K') {
       e.preventDefault();
@@ -100,7 +115,7 @@ export const Header: React.FC = () => {
 
   return (
     <>
-      <header className="bg-white border-b border-gray-200 px-4 py-4 h-16 flex items-center">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 px-4 py-4 h-16 flex items-center">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center space-x-4">
             <SidebarTrigger className="ml-0" />

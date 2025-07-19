@@ -75,6 +75,7 @@ export interface Employee {
   lastActive?: string;
   created_at?: string;
   updated_at?: string;
+  employee_licenses?: any[]; // Raw employee_licenses data from database
 }
 
 export interface Certificate {

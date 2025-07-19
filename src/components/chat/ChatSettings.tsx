@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { AlertCircle, CheckCircle, Settings } from 'lucide-react';
 import { AIServiceFactory } from '@/services/ai/ai-factory';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 export function ChatSettings() {
   const [status, setStatus] = useState<{ provider: string; configured: boolean; error?: string }>({
@@ -36,6 +36,9 @@ export function ChatSettings() {
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>AI Chat Settings</DialogTitle>
+          <DialogDescription>
+            Configure your AI chat service settings and view connection status.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <Card>

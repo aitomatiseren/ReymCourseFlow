@@ -168,3 +168,38 @@ export function useTrainingParticipants(trainingId?: string) {
     updateParticipantCode95Status
   };
 }
+
+// Hook to get all training participations for a specific employee
+export function useEmployeeTrainingHistory(employeeId?: string) {
+  return useQuery({
+    queryKey: ['employee-training-history', employeeId],
+    queryFn: async () => {
+      if (!employeeId) return [];
+
+      const { data, error } = await supabase
+        .from('training_participants')
+        .select(`
+          id,
+          status,
+          approval_status,
+          registration_date,
+          code95_eligible,
+          training_id,
+          trainings (
+            id,
+            title,
+            date,
+            instructor,
+            status,
+            location
+          )
+        `)
+        .eq('employee_id', employeeId)
+        .order('registration_date', { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!employeeId
+  });
+}

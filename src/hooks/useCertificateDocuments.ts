@@ -82,7 +82,7 @@ export const useCertificateDocuments = (filters?: {
             id, name, employee_number
           ),
           license:licenses!certificate_documents_license_id_fkey(
-            id, name, category
+            id, name, description, level
           ),
           uploaded_by_employee:employees!certificate_documents_uploaded_by_fkey(
             id, name
@@ -126,7 +126,7 @@ export const usePendingDocuments = () => {
             id, name, employee_number
           ),
           license:licenses!certificate_documents_license_id_fkey(
-            id, name, category
+            id, name, description, level
           )
         `)
         .in('processing_status', ['pending', 'processing'])
@@ -151,7 +151,7 @@ export const useDocumentsForVerification = () => {
             id, name, employee_number
           ),
           license:licenses!certificate_documents_license_id_fkey(
-            id, name, category
+            id, name, description, level
           ),
           uploaded_by_employee:employees!certificate_documents_uploaded_by_fkey(
             id, name
@@ -172,19 +172,72 @@ export const useDocumentManagement = () => {
   const queryClient = useQueryClient();
 
   const uploadDocument = useMutation({
-    mutationFn: async ({ file, employeeId, licenseId }: {
+    mutationFn: async ({ file, employeeId, licenseId, certificateData }: {
       file: File;
       employeeId?: string;
       licenseId?: string;
+      certificateData?: {
+        certificateName?: string;
+        employeeName?: string;
+        issueDate?: string;
+      };
     }) => {
-      // Upload file to Supabase Storage
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}_${file.name}`;
+      // Generate proper filename upfront instead of using timestamp
+      let fileName = file.name;
+      
+      // If we have certificate data, generate the proper filename immediately
+      if (certificateData?.certificateName && certificateData?.employeeName) {
+        const fileExt = file.name.split('.').pop() || 'pdf';
+        
+        // Format date as yymmdd
+        let datePrefix = '';
+        if (certificateData.issueDate) {
+          const date = new Date(certificateData.issueDate);
+          if (!isNaN(date.getTime())) {
+            const year = date.getFullYear().toString().slice(-2);
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            datePrefix = `${year}${month}${day}`;
+          }
+        }
+        
+        // Fallback to current date if no valid issue date
+        if (!datePrefix) {
+          const now = new Date();
+          const year = now.getFullYear().toString().slice(-2);
+          const month = (now.getMonth() + 1).toString().padStart(2, '0');
+          const day = now.getDate().toString().padStart(2, '0');
+          datePrefix = `${year}${month}${day}`;
+        }
+        
+        // Clean certificate name (remove special characters, limit length)
+        const cleanCertName = certificateData.certificateName
+          .replace(/[^a-zA-Z0-9\s]/g, '')
+          .trim()
+          .substring(0, 30)
+          .replace(/\s+/g, ' ');
+        
+        // Clean employee name 
+        const cleanEmployeeName = certificateData.employeeName
+          .replace(/[^a-zA-Z0-9\s,.]/g, '')
+          .trim()
+          .substring(0, 25);
+        
+        fileName = `${datePrefix} - ${cleanCertName} - ${cleanEmployeeName}.${fileExt}`;
+      } else {
+        // Fallback: use original filename with timestamp only if no certificate data
+        const fileExt = file.name.split('.').pop();
+        fileName = `${Date.now()}_${file.name}`;
+      }
+
       const filePath = `certificate-documents/${fileName}`;
 
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('documents')
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false // Don't overwrite existing files
+        });
 
       if (uploadError) throw uploadError;
 
@@ -200,7 +253,7 @@ export const useDocumentManagement = () => {
       const documentData: CertificateDocumentInsert = {
         employee_id: employeeId || null,
         license_id: licenseId || null,
-        file_name: file.name,
+        file_name: fileName, // Use the generated filename, not original
         file_path: filePath,
         file_size: file.size,
         mime_type: file.type,
@@ -374,12 +427,63 @@ export const useDocumentManagement = () => {
     },
   });
 
+  const cleanupOrphanedDocuments = useMutation({
+    mutationFn: async () => {
+      // Get all certificate documents
+      const { data: documents, error: fetchError } = await supabase
+        .from('certificate_documents')
+        .select('id, file_path');
+
+      if (fetchError) throw fetchError;
+
+      if (!documents || documents.length === 0) return { cleaned: 0 };
+
+      let cleanedCount = 0;
+      
+      // Check each document's file existence
+      for (const doc of documents) {
+        if (!doc.file_path) continue;
+        
+        try {
+          // Try to create a signed URL to check if file exists
+          const { error } = await supabase.storage
+            .from('documents')
+            .createSignedUrl(doc.file_path, 60); // Short expiry for testing
+          
+          // If error indicates file not found, delete the database record
+          if (error && error.message?.includes('Object not found')) {
+            await supabase
+              .from('certificate_documents')
+              .delete()
+              .eq('id', doc.id);
+            cleanedCount++;
+          }
+        } catch (error) {
+          // If there's an error accessing the file, consider it missing
+          await supabase
+            .from('certificate_documents')
+            .delete()
+            .eq('id', doc.id);
+          cleanedCount++;
+        }
+      }
+
+      return { cleaned: cleanedCount };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['certificate-documents'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-documents'] });
+      queryClient.invalidateQueries({ queryKey: ['documents-for-verification'] });
+    },
+  });
+
   return {
     uploadDocument,
     processDocument,
     verifyDocument,
     updateDocumentMetadata,
     deleteDocument,
+    cleanupOrphanedDocuments,
   };
 };
 

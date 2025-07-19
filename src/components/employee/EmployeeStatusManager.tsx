@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Clock, AlertTriangle, Edit, Trash2 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -77,14 +77,27 @@ export function EmployeeStatusManager({ employeeId, currentStatus }: EmployeeSta
       // Automatically close any ongoing status when the new status starts
       const currentStatusRecord = statusHistory.find(status => status.end_date === null);
       if (currentStatusRecord) {
-        // Set the end date to the day before the new status starts
-        const endDate = new Date(statusData.startDate);
-        endDate.setDate(endDate.getDate() - 1);
-        const formattedEndDate = endDate.toISOString().split('T')[0];
+        // If the new status starts today, end the current status today
+        // If the new status starts in the future, end the current status the day before
+        const newStartDate = new Date(statusData.startDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        newStartDate.setHours(0, 0, 0, 0);
+        
+        let endDate;
+        if (newStartDate.getTime() === today.getTime()) {
+          // New status starts today, end current status today
+          endDate = statusData.startDate;
+        } else {
+          // New status starts in the future, end current status the day before
+          const calculatedEndDate = new Date(statusData.startDate);
+          calculatedEndDate.setDate(calculatedEndDate.getDate() - 1);
+          endDate = calculatedEndDate.toISOString().split('T')[0];
+        }
 
         await supabase
           .from('employee_status_history')
-          .update({ end_date: formattedEndDate })
+          .update({ end_date: endDate })
           .eq('id', currentStatusRecord.id);
       }
 
@@ -434,6 +447,9 @@ export function EmployeeStatusManager({ employeeId, currentStatus }: EmployeeSta
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>Add Status Entry</DialogTitle>
+                <DialogDescription>
+                  Add a new status entry for this employee with effective date and optional notes.
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 {validationErrors.length > 0 && (
@@ -490,7 +506,6 @@ export function EmployeeStatusManager({ employeeId, currentStatus }: EmployeeSta
                       id="startDate"
                       type="date"
                       value={newStatus.startDate}
-                      min={new Date().toISOString().split('T')[0]}
                       onChange={(e) => {
                         setNewStatus({ ...newStatus, startDate: e.target.value });
                         setValidationErrors([]);
@@ -579,6 +594,9 @@ export function EmployeeStatusManager({ employeeId, currentStatus }: EmployeeSta
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>Edit Status Entry</DialogTitle>
+                <DialogDescription>
+                  Update the details of this status entry for the employee.
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 {validationErrors.length > 0 && (

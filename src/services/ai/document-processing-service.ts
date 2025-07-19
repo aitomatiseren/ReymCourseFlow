@@ -1,5 +1,6 @@
 import { OpenAIService } from './openai-service';
 import { supabase } from '@/integrations/supabase/client';
+import * as pdfjsLib from 'pdfjs-dist';
 
 export interface DocumentProcessingResult {
   success: boolean;
@@ -31,6 +32,8 @@ export class DocumentProcessingService {
 
   constructor() {
     this.openaiService = new OpenAIService();
+    // Configure PDF.js worker - use local file to avoid CORS issues
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
   }
 
   async processDocument(documentId: string): Promise<DocumentProcessingResult> {
@@ -118,9 +121,116 @@ export class DocumentProcessingService {
   }
 
   private async extractTextFromPdf(file: Blob): Promise<string> {
-    // For now, return a placeholder. In production, you'd use a PDF parsing library
-    // like pdf-parse or PDF.js to extract text from the PDF
-    console.log('PDF text extraction not implemented yet - using mock text');
+    try {
+      console.log('Extracting text from PDF using PDF.js');
+      
+      // Convert blob to array buffer
+      const arrayBuffer = await file.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      
+      // Load PDF document
+      const pdf = await pdfjsLib.getDocument({ data: uint8Array }).promise;
+      console.log(`PDF loaded with ${pdf.numPages} pages`);
+      
+      let fullText = '';
+      
+      // Extract text from each page
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        
+        // Combine all text items
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(' ');
+        
+        fullText += pageText + '\n';
+      }
+      
+      const extractedText = fullText.trim();
+      console.log('PDF text extracted successfully:', extractedText.length, 'characters');
+      
+      // Check if we got meaningful text (not just whitespace or very short)
+      if (extractedText.length < 10) {
+        console.log('PDF appears to be image-based (no extractable text), trying Vision API');
+        return await this.extractTextFromImagePdf(file);
+      }
+      
+      return extractedText;
+      
+    } catch (error) {
+      console.error('PDF text extraction error:', error);
+      console.log('Trying Vision API for image-based PDF');
+      return await this.extractTextFromImagePdf(file);
+    }
+  }
+
+  private async extractTextFromImagePdf(file: Blob): Promise<string> {
+    try {
+      console.log('Converting PDF to images for Vision API processing');
+      
+      // Convert blob to array buffer
+      const arrayBuffer = await file.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      
+      // Load PDF document
+      const pdf = await pdfjsLib.getDocument({ data: uint8Array }).promise;
+      
+      let allText = '';
+      
+      // Process each page as an image
+      for (let pageNum = 1; pageNum <= Math.min(pdf.numPages, 3); pageNum++) { // Limit to first 3 pages
+        const page = await pdf.getPage(pageNum);
+        
+        // Set up canvas
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        
+        if (!context) {
+          console.error('Could not get canvas context');
+          continue;
+        }
+        
+        // Set canvas size
+        const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better quality
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        
+        // Render page to canvas
+        await page.render({
+          canvasContext: context,
+          viewport: viewport
+        }).promise;
+        
+        // Convert canvas to base64
+        const imageData = canvas.toDataURL('image/png');
+        const base64 = imageData.split(',')[1];
+        
+        console.log(`Processing page ${pageNum} with Vision API`);
+        
+        // Use Vision API to extract text
+        const response = await this.openaiService.processVisionRequest(
+          'Extract all text from this certificate PDF page. Focus on certificate numbers, dates, names, and issuing authorities. Look for European date formats like DD-MM-YYYY.',
+          base64,
+          'image/png'
+        );
+        
+        if (response.content) {
+          allText += response.content + '\n';
+        }
+      }
+      
+      console.log('Image-based PDF text extracted successfully:', allText.length, 'characters');
+      return allText.trim() || this.getMockText();
+      
+    } catch (error) {
+      console.error('Image-based PDF text extraction error:', error);
+      console.log('Falling back to mock text');
+      return this.getMockText();
+    }
+  }
+
+  private getMockText(): string {
     return `
       TRAINING CERTIFICATE
       Certificate Number: CERT-${Math.random().toString(36).substr(2, 9).toUpperCase()}
@@ -140,15 +250,16 @@ export class DocumentProcessingService {
       
       // Use OpenAI Vision API to extract text from image
       const response = await this.openaiService.processVisionRequest(
-        'Extract all text from this certificate image. Focus on certificate numbers, dates, names, and issuing authorities.',
-        base64
+        'Extract all text from this certificate image. Focus on certificate numbers, dates, names, and issuing authorities. Look for European date formats like DD-MM-YYYY.',
+        base64,
+        file.type
       );
 
       return response.content || '';
     } catch (error) {
       console.error('Image text extraction error:', error);
       // Fallback to mock text if vision API fails
-      return this.extractTextFromPdf(file);
+      return this.getMockText();
     }
   }
 
@@ -174,13 +285,20 @@ export class DocumentProcessingService {
     try {
       const prompt = `
         Analyze the following certificate text and extract structured information.
+        
+        IMPORTANT DATE PARSING RULES:
+        - European date format DD-MM-YYYY is commonly used (e.g., 18-06-2025 means June 18, 2025)
+        - Look for dates in formats like: DD-MM-YYYY, DD/MM/YYYY, DD.MM.YYYY
+        - Convert ALL dates to YYYY-MM-DD format in the response
+        - Be careful: 18-06-2025 should become 2025-06-18, NOT 2025-18-06
+        
         Return a JSON object with the following fields:
-        - certificateNumber: The certificate or license number
-        - issueDate: Issue date in YYYY-MM-DD format
-        - expiryDate: Expiry date in YYYY-MM-DD format  
-        - issuer: The issuing authority or organization
-        - employeeName: The name of the certificate holder
-        - certificateType: The type or name of the certificate/training
+        - certificateNumber: The certificate or license number (look for numbers at the bottom or labeled as "Certificate number", "Zertifikatsnummer", "Certificaatnummer")
+        - issueDate: Issue date in YYYY-MM-DD format (look for labels like "op/on/am", "datum", "date", "uitgereikt")
+        - expiryDate: Expiry date in YYYY-MM-DD format (look for labels like "Geldig tot", "Valid until", "Gültig bis")
+        - issuer: The issuing authority or organization (look for "Uitgereikt door", "Handed over by", "Ausgegeben von")
+        - employeeName: The name of the certificate holder (usually the person's name prominently displayed)
+        - certificateType: The type or name of the certificate/training (look for "REYM werkt veilig", certificate titles, training names)
         
         Also provide a confidence score (0-1) for the extraction quality.
         
@@ -202,13 +320,39 @@ export class DocumentProcessingService {
       const response = await this.openaiService.processTextRequest(prompt);
       
       try {
-        const parsedData = JSON.parse(response.content || '{}');
+        // Clean the response to remove markdown code blocks
+        let cleanedResponse = response.content || '{}';
+        
+        // Remove markdown code blocks if present
+        if (cleanedResponse.includes('```json')) {
+          cleanedResponse = cleanedResponse
+            .replace(/```json\s*/, '')
+            .replace(/```\s*$/, '')
+            .trim();
+        } else if (cleanedResponse.includes('```')) {
+          cleanedResponse = cleanedResponse
+            .replace(/```\s*/, '')
+            .replace(/```\s*$/, '')
+            .trim();
+        }
+        
+        const parsedData = JSON.parse(cleanedResponse);
+        
+        // Post-process dates to ensure correct format
+        if (parsedData.issueDate) {
+          parsedData.issueDate = this.validateAndCorrectDate(parsedData.issueDate);
+        }
+        if (parsedData.expiryDate) {
+          parsedData.expiryDate = this.validateAndCorrectDate(parsedData.expiryDate);
+        }
+        
         return {
           extractedData: parsedData,
           confidence: parsedData.confidence || 0.5
         };
       } catch (parseError) {
         console.error('Failed to parse AI response:', parseError);
+        console.error('Raw response:', response.content);
         return this.fallbackExtraction(text);
       }
     } catch (error) {
@@ -316,7 +460,7 @@ export class DocumentProcessingService {
     try {
       const { data: licenses } = await supabase
         .from('licenses')
-        .select('id, name, category');
+        .select('id, name, description, level');
 
       if (!licenses || licenses.length === 0) return undefined;
 
@@ -324,10 +468,11 @@ export class DocumentProcessingService {
       
       const similarities = licenses.map(license => {
         const nameMatch = this.calculateStringSimilarity(searchText, license.name.toLowerCase());
-        const categoryMatch = this.calculateStringSimilarity(searchText, license.category.toLowerCase());
+        const descriptionMatch = license.description ? 
+          this.calculateStringSimilarity(searchText, license.description.toLowerCase()) : 0;
         return {
           ...license,
-          confidence: Math.max(nameMatch, categoryMatch)
+          confidence: Math.max(nameMatch, descriptionMatch)
         };
       });
 
@@ -371,12 +516,51 @@ export class DocumentProcessingService {
     return matrix[str2.length][str1.length];
   }
 
+  /**
+   * Validates and corrects date format, handling European DD-MM-YYYY format
+   */
+  private validateAndCorrectDate(dateString: string): string {
+    if (!dateString) return dateString;
+    
+    // If already in YYYY-MM-DD format and valid, return as is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      const date = new Date(dateString);
+      if (!isNaN(date.getTime())) {
+        return dateString;
+      }
+    }
+    
+    // Handle European formats: DD-MM-YYYY, DD/MM/YYYY, DD.MM.YYYY
+    const europeanPattern = /^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/;
+    const match = dateString.match(europeanPattern);
+    
+    if (match) {
+      const [, day, month, year] = match;
+      const paddedDay = day.padStart(2, '0');
+      const paddedMonth = month.padStart(2, '0');
+      
+      // Validate the date
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      if (!isNaN(date.getTime()) && 
+          date.getFullYear() === parseInt(year) &&
+          date.getMonth() === parseInt(month) - 1 &&
+          date.getDate() === parseInt(day)) {
+        return `${year}-${paddedMonth}-${paddedDay}`;
+      }
+    }
+    
+    // If can't parse, return original
+    return dateString;
+  }
+
   private async updateDocumentWithResults(documentId: string, result: DocumentProcessingResult): Promise<void> {
     const updateData = {
       processing_status: result.success ? 'completed' : 'failed',
       extracted_certificate_number: result.extractedData.certificateNumber,
       extracted_issue_date: result.extractedData.issueDate,
       extracted_expiry_date: result.extractedData.expiryDate,
+      extracted_employee_name: result.extractedData.employeeName,
+      extracted_license_type: result.extractedData.certificateType,
       extracted_issuer: result.extractedData.issuer,
       ai_confidence_score: result.confidence,
       ai_extracted_data: {

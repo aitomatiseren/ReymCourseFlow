@@ -16,7 +16,8 @@ export interface ExemptionWithDetails extends CertificateExemption {
   license?: {
     id: string;
     name: string;
-    category: string | null;
+    description: string | null;
+    level: number | null;
   };
   requested_by?: {
     id: string;
@@ -58,7 +59,7 @@ export const useCertificateExemptions = (filters?: {
             id, name, employee_number, department
           ),
           license:licenses!certificate_exemptions_license_id_fkey(
-            id, name, category
+            id, name, description, level
           ),
           requested_by:employees!certificate_exemptions_requested_by_id_fkey(
             id, name
@@ -105,7 +106,7 @@ export const usePendingExemptions = () => {
             id, name, employee_number, department, job_title
           ),
           license:licenses!certificate_exemptions_license_id_fkey(
-            id, name, category, level
+            id, name, description, level
           ),
           requested_by:employees!certificate_exemptions_requested_by_id_fkey(
             id, name
@@ -126,16 +127,7 @@ export const useEmployeeExemptionStatus = (employeeId: string, licenseId: string
   return useQuery({
     queryKey: ['employee-exemption-status', employeeId, licenseId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .rpc('has_active_exemption', {
-          p_employee_id: employeeId,
-          p_license_id: licenseId
-        });
-
-      if (error) throw error;
-
-      // Also get the exemption details
-      const { data: exemption, error: exemptionError } = await supabase
+      const { data: exemption, error } = await supabase
         .from('certificate_exemptions')
         .select(`
           *,
@@ -147,11 +139,13 @@ export const useEmployeeExemptionStatus = (employeeId: string, licenseId: string
         .eq('is_active', true)
         .lte('effective_date', new Date().toISOString().split('T')[0])
         .or(`expiry_date.is.null,expiry_date.gte.${new Date().toISOString().split('T')[0]}`)
-        .single();
+        .maybeSingle();
+
+      if (error) throw error;
 
       return {
-        hasActiveExemption: data,
-        exemption: exemptionError ? null : exemption
+        hasActiveExemption: exemption !== null,
+        exemption: exemption
       };
     },
     enabled: !!employeeId && !!licenseId,

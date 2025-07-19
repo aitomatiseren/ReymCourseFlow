@@ -605,7 +605,7 @@ ${dbContext.recentActivity.slice(0, 3).map(activity =>
     }
   }
 
-  async processVisionRequest(prompt: string, base64Image: string): Promise<{ content: string }> {
+  async processVisionRequest(prompt: string, base64Data: string, mimeType: string = 'image/jpeg'): Promise<{ content: string }> {
     if (!AI_CONFIG.openai.apiKey) {
       throw new Error('OpenAI API key not configured');
     }
@@ -630,7 +630,7 @@ ${dbContext.recentActivity.slice(0, 3).map(activity =>
                 {
                   type: 'image_url',
                   image_url: {
-                    url: `data:image/jpeg;base64,${base64Image}`,
+                    url: `data:${mimeType};base64,${base64Data}`,
                     detail: 'high'
                   }
                 }
@@ -643,7 +643,9 @@ ${dbContext.recentActivity.slice(0, 3).map(activity =>
       });
 
       if (!response.ok) {
-        throw new Error(`OpenAI Vision API error: ${response.status}`);
+        const errorText = await response.text();
+        console.error('OpenAI Vision API error response:', errorText);
+        throw new Error(`OpenAI Vision API error: ${response.status} - ${errorText}`);
       }
 
       const data: OpenAIResponse = await response.json();

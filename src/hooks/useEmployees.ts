@@ -226,7 +226,8 @@ export function useEmployee(id: string) {
           phone: data.emergency_contact_phone || ''
         } : undefined,
         notes: data.notes || undefined,
-        lastActive: data.updated_at
+        lastActive: data.updated_at,
+        employee_licenses: data.employee_licenses || []
       };
       
       return employee;

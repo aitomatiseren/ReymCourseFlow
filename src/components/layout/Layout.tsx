@@ -13,9 +13,6 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const { userProfile } = usePermissions();
 
-  // Debug logging for user profile
-  console.log('Layout: userProfile', userProfile);
-  console.log('Layout: employee_id for notifications', userProfile?.employee?.id);
 
   return (
     <SidebarProvider defaultOpen={true}>
@@ -23,7 +20,7 @@ export function Layout({ children }: LayoutProps) {
         <AppSidebar />
         <SidebarInset className="flex-1">
           <Header />
-          <main className="flex-1 p-6">
+          <main className="flex-1 p-6 pt-20">
             {children}
           </main>
         </SidebarInset>

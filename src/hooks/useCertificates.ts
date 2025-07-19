@@ -360,12 +360,51 @@ export function useCertificateManagement() {
     }
   });
 
+  const createEmployeeLicense = useMutation({
+    mutationFn: async (certificate: {
+      employee_id: string;
+      license_id: string;
+      certificate_number?: string;
+      issue_date?: string;
+      expiry_date?: string;
+    }) => {
+      const { data, error } = await supabase
+        .from('employee_licenses')
+        .insert(certificate)
+        .select(`
+          id,
+          certificate_number,
+          issue_date,
+          expiry_date,
+          employees:employee_id (
+            id,
+            name,
+            employee_number
+          ),
+          licenses:license_id (
+            id,
+            name
+          )
+        `)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['certificates'] });
+      queryClient.invalidateQueries({ queryKey: ['employee-licenses'] });
+      queryClient.invalidateQueries({ queryKey: ['certificate-expiry'] });
+    }
+  });
+
   return {
     createCourseCertificateMapping,
     updateCourseCertificateMapping,
     deleteCourseCertificateMapping,
     createLicense,
     updateLicense,
-    deleteLicense
+    deleteLicense,
+    createEmployeeLicense
   };
 }

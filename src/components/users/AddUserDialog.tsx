@@ -365,7 +365,7 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
       // Auto-generate full name from Dutch components (using roepnaam)
       const fullName = generateFullName(data.roepnaam, data.lastName, data.tussenvoegsel);
       
-      const { error } = await supabase
+      const { data: newEmployee, error } = await supabase
         .from("employees")
         .insert({
           name: fullName,
@@ -427,11 +427,34 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
           driving_license_d_start_date: data.drivingLicenseDStartDate || null,
           driving_license_d_expiry_date: data.drivingLicenseDExpiryDate || null,
           status: 'active',
+          status_start_date: data.hireDate || new Date().toISOString().split('T')[0],
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Create initial status history entry
+      const statusStartDate = data.hireDate || new Date().toISOString().split('T')[0];
+      const { error: statusError } = await supabase
+        .from('employee_status_history')
+        .insert({
+          employee_id: newEmployee.id,
+          status: 'active',
+          start_date: statusStartDate,
+          end_date: null,
+          reason: 'Initial employee status',
+          notes: 'Employee created and set to active status',
+          changed_by_name: 'System' // TODO: Replace with actual user when auth is implemented
+        });
+
+      if (statusError) {
+        console.error('Failed to create initial status history:', statusError);
+        // Don't throw error here as the employee was successfully created
+      }
+
       return fullName;
     },
     onSuccess: (fullName) => {

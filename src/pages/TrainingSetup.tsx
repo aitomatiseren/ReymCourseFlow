@@ -216,17 +216,6 @@ export default function TrainingSetup() {
                     />
                     <span className="text-sm">{t('common:courses.code95Only')}</span>
                   </label>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleSort('title')}
-                      className="flex items-center space-x-1"
-                    >
-                      <span>{t('common:common.title')}</span>
-                      {getSortIcon('title')}
-                    </Button>
-                  </div>
                 </div>
               </CardContent>
             </Card>
