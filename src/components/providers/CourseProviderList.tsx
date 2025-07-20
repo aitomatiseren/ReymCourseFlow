@@ -29,6 +29,9 @@ import {
   Globe,
   Search,
   Eye,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 
 interface ProviderLocation {
@@ -65,18 +68,65 @@ interface CourseProviderListProps {
   searchTerm?: string;
 }
 
+type SortField = 'name' | 'city' | 'active';
+type SortDirection = 'asc' | 'desc';
+
 export function CourseProviderList({ searchTerm = "" }: CourseProviderListProps) {
   const navigate = useNavigate();
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   const { data: providers, isLoading } = useProviders(true) as { data: CourseProvider[] | undefined, isLoading: boolean };
 
-  const filteredProviders = providers?.filter(
-    (provider) =>
-      provider.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      provider.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      provider.contact_person?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Sort handling functions
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
 
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) return <ArrowUpDown className="h-4 w-4" />;
+    return sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />;
+  };
+
+  // Filter and sort providers
+  const sortedAndFilteredProviders = providers
+    ?.filter(
+      (provider) =>
+        provider.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        provider.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        provider.contact_person?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    ?.sort((a, b) => {
+      let aValue: any = a[sortField];
+      let bValue: any = b[sortField];
+
+      // Handle null/undefined values
+      if (aValue == null && bValue == null) return 0;
+      if (aValue == null) return sortDirection === 'asc' ? 1 : -1;
+      if (bValue == null) return sortDirection === 'asc' ? -1 : 1;
+
+      // Special handling for boolean values (active status)
+      if (typeof aValue === 'boolean' && typeof bValue === 'boolean') {
+        const aNum = aValue ? 1 : 0;
+        const bNum = bValue ? 1 : 0;
+        return sortDirection === 'asc' ? aNum - bNum : bNum - aNum;
+      }
+
+      // Convert to strings for comparison if needed
+      if (typeof aValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = bValue?.toLowerCase() || '';
+      }
+
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
 
   const handleView = (provider: CourseProvider) => {
     navigate(`/providers/${provider.id}`);
@@ -98,16 +148,34 @@ export function CourseProviderList({ searchTerm = "" }: CourseProviderListProps)
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Provider</TableHead>
+              <TableHead className="text-left font-medium">
+                <Button
+                  variant="ghost"
+                  onClick={() => handleSort('name')}
+                  className="flex items-center space-x-1 -ml-4"
+                >
+                  <span>Provider</span>
+                  {getSortIcon('name')}
+                </Button>
+              </TableHead>
               <TableHead>Phone</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Website</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead className="text-left font-medium">
+                <Button
+                  variant="ghost"
+                  onClick={() => handleSort('active')}
+                  className="flex items-center space-x-1 -ml-4"
+                >
+                  <span>Status</span>
+                  {getSortIcon('active')}
+                </Button>
+              </TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredProviders?.map((provider) => (
+            {sortedAndFilteredProviders?.map((provider) => (
               <TableRow key={provider.id} className="hover:bg-gray-50">
                 <TableCell>
                   <div className="font-medium flex items-center gap-2">
@@ -173,7 +241,7 @@ export function CourseProviderList({ searchTerm = "" }: CourseProviderListProps)
           </TableBody>
         </Table>
 
-        {filteredProviders?.length === 0 && (
+        {sortedAndFilteredProviders?.length === 0 && (
           <div className="text-center py-12 text-gray-500">
             No providers found matching your search
           </div>

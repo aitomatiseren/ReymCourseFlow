@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { CacheInvalidationService } from "@/services/ai/cache-invalidation";
 import { ChatProvider } from "./context/ChatContext";
 import { PermissionsProvider } from "./context/PermissionsContext";
 import { LanguageProvider } from "./context/LanguageContext";
@@ -57,6 +58,9 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Initialize cache invalidation service for AI operations
+CacheInvalidationService.setQueryClient(queryClient);
 
 const App = () => (
   <ErrorBoundary>

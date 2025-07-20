@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { CacheInvalidationService } from './cache-invalidation';
 
 type Employee = Database['public']['Tables']['employees']['Row'];
 type EmployeeUpdate = Database['public']['Tables']['employees']['Update'];
@@ -306,6 +307,9 @@ export class SecureDatabaseService {
       // Log the operation
       await this.logAIOperation('CREATE_TRAINING', 'trainings', data.id, trainingData);
 
+      // Invalidate training-related cache to ensure UI updates
+      CacheInvalidationService.invalidateTrainingQueries();
+
       return {
         success: true,
         message: 'Successfully created training',
@@ -370,6 +374,9 @@ export class SecureDatabaseService {
 
       // Log the operation
       await this.logAIOperation('UPDATE_TRAINING', 'trainings', trainingId, updates);
+
+      // Invalidate training-related cache to ensure UI updates
+      CacheInvalidationService.invalidateTrainingQueries();
 
       return {
         success: true,
@@ -525,6 +532,9 @@ export class SecureDatabaseService {
         result.data.id,
         licenseData
       );
+
+      // Invalidate certificate-related cache to ensure UI updates
+      CacheInvalidationService.invalidateCertificateQueries();
 
       return {
         success: true,

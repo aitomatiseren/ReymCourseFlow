@@ -1,6 +1,7 @@
 import { OpenAIService } from './openai-service';
 import { supabase } from '@/integrations/supabase/client';
 import * as pdfjsLib from 'pdfjs-dist';
+import { CacheInvalidationService } from './cache-invalidation';
 
 export interface DocumentProcessingResult {
   success: boolean;
@@ -576,6 +577,9 @@ export class DocumentProcessingService {
       .from('certificate_documents')
       .update(updateData)
       .eq('id', documentId);
+
+    // Invalidate certificate document cache to ensure UI updates
+    CacheInvalidationService.invalidateCertificateDocumentQueries();
   }
 }
 

@@ -56,25 +56,36 @@ export function AppSidebar() {
 
   return (
     <Sidebar
-      className="border-r"
       collapsible="icon"
     >
       <SidebarHeader className="border-b border-sidebar-border h-16">
-        <div className="flex items-center justify-between h-full px-4">
-          {state === "expanded" && (
-            <div>
-              <h2 className="text-xl font-bold text-blue-400">CourseFlow</h2>
-              <p className="text-xs text-muted-foreground">Management System</p>
+        <div className={`flex items-center justify-center h-full transition-all duration-200 ease-linear ${state === "expanded" ? "px-4" : "px-1"}`}>
+          {state === "expanded" ? (
+            <div className="flex items-center space-x-3 transition-all duration-200 ease-linear">
+              <h2 className="text-xl font-bold text-red-500 whitespace-nowrap transition-all duration-200 ease-linear origin-left opacity-100 scale-x-100 translate-x-0">
+                CourseFlow
+              </h2>
+              <img
+                src="/lovable-uploads/ac9dfd50-16e3-40fc-bd96-7722cc5e2bb9.png"
+                alt="Company Logo"
+                className="h-8 w-auto max-w-[2rem] object-contain transition-all duration-200 ease-linear"
+              />
             </div>
+          ) : (
+            <img
+              src="/lovable-uploads/ac9dfd50-16e3-40fc-bd96-7722cc5e2bb9.png"
+              alt="Company Logo"
+              className="h-8 w-auto object-contain transition-all duration-200 ease-linear"
+            />
           )}
         </div>
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
+        <SidebarGroup className="group-data-[collapsible=icon]:items-center">
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
+          <SidebarGroupContent className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center">
+            <SidebarMenu className="group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
               {menuItems.map((item) => {
                 // Check if user has permission to see this menu item
                 // Admin users can see everything, others need specific permissions
@@ -86,9 +97,13 @@ export function AppSidebar() {
                 return (
                   <SidebarMenuItem key={item.titleKey}>
                     <SidebarMenuButton asChild isActive={isActive} tooltip={title}>
-                      <NavLink to={item.url}>
-                        <item.icon />
-                        <span>{title}</span>
+                      <NavLink to={item.url} className="transition-all duration-200 ease-linear">
+                        <item.icon className="flex-shrink-0 transition-all duration-200 ease-linear" />
+                        <span className={`transition-all duration-200 ease-linear ${
+                          state === "collapsed" ? "opacity-0 max-w-0 overflow-hidden ml-0" : "opacity-100 max-w-none ml-2"
+                        }`}>
+                          {title}
+                        </span>
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

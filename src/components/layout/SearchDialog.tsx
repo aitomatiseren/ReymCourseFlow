@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -12,7 +12,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, User, Calendar, BookOpen, Building2, Award, PenTool, FileText, Shield } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Search, User, Calendar, BookOpen, Building2, Award, PenTool, FileText, Shield, Filter } from "lucide-react";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useTrainings } from "@/hooks/useTrainings";
 import { useCourses } from "@/hooks/useCourses";
@@ -22,18 +23,65 @@ import { usePreliminaryPlans } from "@/hooks/usePreliminaryPlanning";
 interface SearchDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialQuery?: string;
 }
 
-export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
+export function SearchDialog({ open, onOpenChange, initialQuery = "" }: SearchDialogProps) {
   const { t } = useTranslation('common');
   const [query, setQuery] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const navigate = useNavigate();
 
-  const { data: employees = [] } = useEmployees();
-  const { data: trainings = [] } = useTrainings();
-  const { data: courses = [] } = useCourses();
-  const { data: certificates = [] } = useLicenses();
-  const { data: preliminaryPlans = [] } = usePreliminaryPlans();
+  // Set initial query when dialog opens
+  React.useEffect(() => {
+    if (open && initialQuery) {
+      setQuery(initialQuery);
+    } else if (!open) {
+      setQuery("");
+    }
+  }, [open, initialQuery]);
+
+  const { data: employees = [], isLoading: employeesLoading } = useEmployees();
+  const { data: trainings = [], isLoading: trainingsLoading } = useTrainings();
+  const { data: courses = [], isLoading: coursesLoading } = useCourses();
+  const { data: certificates = [], isLoading: certificatesLoading } = useLicenses();
+  const { data: preliminaryPlans = [], isLoading: plansLoading } = usePreliminaryPlans();
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log('Search Dialog Data:', {
+      employees: employees?.length || 0,
+      trainings: trainings?.length || 0,
+      courses: courses?.length || 0,
+      certificates: certificates?.length || 0,
+      preliminaryPlans: preliminaryPlans?.length || 0,
+      query,
+      selectedCategories
+    });
+  }, [employees, trainings, courses, certificates, preliminaryPlans, query, selectedCategories]);
+
+  // Search categories for filtering
+  const searchCategories = [
+    { id: 'employees', label: 'Employees', icon: User },
+    { id: 'trainings', label: 'Trainings', icon: Calendar },
+    { id: 'courses', label: 'Courses', icon: BookOpen },
+    { id: 'providers', label: 'Providers', icon: Building2 },
+    { id: 'certificates', label: 'Certificates', icon: Award },
+    { id: 'planning', label: 'Planning', icon: PenTool },
+    { id: 'pages', label: 'Pages', icon: FileText },
+  ];
+
+  const toggleCategory = (categoryId: string) => {
+    setSelectedCategories(prev => 
+      prev.includes(categoryId)
+        ? prev.filter(id => id !== categoryId)
+        : [...prev, categoryId]
+    );
+  };
+
+  const shouldShowCategory = (categoryId: string) => {
+    return selectedCategories.length === 0 || selectedCategories.includes(categoryId);
+  };
 
   const { data: providers = [] } = useQuery({
     queryKey: ["course-providers"],
@@ -48,39 +96,45 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
     },
   });
 
-  const filteredEmployees = employees.filter(employee =>
-    employee.name.toLowerCase().includes(query.toLowerCase()) ||
-    employee.email.toLowerCase().includes(query.toLowerCase()) ||
-    employee.employeeNumber.toLowerCase().includes(query.toLowerCase())
-  );
+  const filteredEmployees = employees.filter(employee => {
+    if (!query.trim()) return selectedCategories.includes('employees') || selectedCategories.length === 0;
+    return employee.name.toLowerCase().includes(query.toLowerCase()) ||
+           employee.email?.toLowerCase().includes(query.toLowerCase()) ||
+           employee.employeeNumber?.toLowerCase().includes(query.toLowerCase());
+  });
 
-  const filteredTrainings = trainings.filter(training =>
-    training.title.toLowerCase().includes(query.toLowerCase()) ||
-    training.instructor?.toLowerCase().includes(query.toLowerCase())
-  );
+  const filteredTrainings = trainings.filter(training => {
+    if (!query.trim()) return selectedCategories.includes('trainings') || selectedCategories.length === 0;
+    return training.title.toLowerCase().includes(query.toLowerCase()) ||
+           training.instructor?.toLowerCase().includes(query.toLowerCase());
+  });
 
-  const filteredCourses = courses.filter(course =>
-    course.title.toLowerCase().includes(query.toLowerCase()) ||
-    course.description?.toLowerCase().includes(query.toLowerCase())
-  );
+  const filteredCourses = courses.filter(course => {
+    if (!query.trim()) return selectedCategories.includes('courses') || selectedCategories.length === 0;
+    return course.title.toLowerCase().includes(query.toLowerCase()) ||
+           course.description?.toLowerCase().includes(query.toLowerCase());
+  });
 
-  const filteredProviders = providers.filter(provider =>
-    provider.name.toLowerCase().includes(query.toLowerCase()) ||
-    provider.contact_person?.toLowerCase().includes(query.toLowerCase()) ||
-    provider.city?.toLowerCase().includes(query.toLowerCase()) ||
-    provider.email?.toLowerCase().includes(query.toLowerCase())
-  );
+  const filteredProviders = providers.filter(provider => {
+    if (!query.trim()) return selectedCategories.includes('providers') || selectedCategories.length === 0;
+    return provider.name.toLowerCase().includes(query.toLowerCase()) ||
+           provider.contact_person?.toLowerCase().includes(query.toLowerCase()) ||
+           provider.city?.toLowerCase().includes(query.toLowerCase()) ||
+           provider.email?.toLowerCase().includes(query.toLowerCase());
+  });
 
-  const filteredCertificates = certificates.filter(certificate =>
-    certificate.name.toLowerCase().includes(query.toLowerCase()) ||
-    certificate.category?.toLowerCase().includes(query.toLowerCase()) ||
-    certificate.description?.toLowerCase().includes(query.toLowerCase())
-  );
+  const filteredCertificates = certificates.filter(certificate => {
+    if (!query.trim()) return selectedCategories.includes('certificates') || selectedCategories.length === 0;
+    return certificate.name.toLowerCase().includes(query.toLowerCase()) ||
+           certificate.category?.toLowerCase().includes(query.toLowerCase()) ||
+           certificate.description?.toLowerCase().includes(query.toLowerCase());
+  });
 
-  const filteredPlans = preliminaryPlans.filter(plan =>
-    plan.name.toLowerCase().includes(query.toLowerCase()) ||
-    plan.description?.toLowerCase().includes(query.toLowerCase())
-  );
+  const filteredPlans = preliminaryPlans.filter(plan => {
+    if (!query.trim()) return selectedCategories.includes('planning') || selectedCategories.length === 0;
+    return plan.name.toLowerCase().includes(query.toLowerCase()) ||
+           plan.description?.toLowerCase().includes(query.toLowerCase());
+  });
 
   // Add static navigation items for reports and settings
   const staticItems = [
@@ -90,10 +144,11 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
     { name: "Settings", description: "System configuration and preferences", path: "/settings", icon: Shield },
   ];
 
-  const filteredStaticItems = staticItems.filter(item =>
-    item.name.toLowerCase().includes(query.toLowerCase()) ||
-    item.description.toLowerCase().includes(query.toLowerCase())
-  );
+  const filteredStaticItems = staticItems.filter(item => {
+    if (!query.trim()) return selectedCategories.includes('pages') || selectedCategories.length === 0;
+    return item.name.toLowerCase().includes(query.toLowerCase()) ||
+           item.description.toLowerCase().includes(query.toLowerCase());
+  });
 
   const handleEmployeeClick = (employeeId: string) => {
     navigate(`/participants/${employeeId}`);
@@ -141,23 +196,56 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>{t('search.title')}</DialogTitle>
+          <DialogTitle className="flex items-center space-x-2">
+            <Search className="h-5 w-5" />
+            <span>Advanced Search</span>
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder={t('search.placeholder')}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="pl-10"
-          />
+        <div className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder={t('search.placeholder')}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          {/* Category Filters */}
+          <div>
+            <div className="flex items-center space-x-2 mb-2">
+              <Filter className="h-4 w-4 text-gray-500" />
+              <span className="text-sm font-medium text-gray-700">Filter by category:</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {searchCategories.map((category) => (
+                <Badge
+                  key={category.id}
+                  variant={selectedCategories.includes(category.id) ? "default" : "outline"}
+                  className="cursor-pointer hover:bg-gray-100"
+                  onClick={() => toggleCategory(category.id)}
+                >
+                  <category.icon className="h-3 w-3 mr-1" />
+                  {category.label}
+                </Badge>
+              ))}
+            </div>
+          </div>
         </div>
 
+        {/* Debug info */}
         {query && (
+          <div className="text-xs text-gray-500 p-2 bg-gray-50 rounded">
+            Query: "{query}" | Data loaded: E:{employees?.length} T:{trainings?.length} C:{courses?.length} P:{providers?.length}
+          </div>
+        )}
+
+        {(query || selectedCategories.length > 0) && (
           <div className="max-h-96 overflow-y-auto space-y-4">
             {/* Employees */}
-            {filteredEmployees.length > 0 && (
+            {filteredEmployees.length > 0 && shouldShowCategory('employees') && (
               <div>
                 <h3 className="font-medium text-sm text-gray-500 mb-2">{t('search.employees')}</h3>
                 <div className="space-y-1">
@@ -182,7 +270,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             )}
 
             {/* Trainings */}
-            {filteredTrainings.length > 0 && (
+            {filteredTrainings.length > 0 && shouldShowCategory('trainings') && (
               <div>
                 <h3 className="font-medium text-sm text-gray-500 mb-2">{t('search.trainings')}</h3>
                 <div className="space-y-1">
@@ -207,7 +295,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             )}
 
             {/* Courses */}
-            {filteredCourses.length > 0 && (
+            {filteredCourses.length > 0 && shouldShowCategory('courses') && (
               <div>
                 <h3 className="font-medium text-sm text-gray-500 mb-2">{t('search.courses')}</h3>
                 <div className="space-y-1">
@@ -234,7 +322,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             )}
 
             {/* Providers */}
-            {filteredProviders.length > 0 && (
+            {filteredProviders.length > 0 && shouldShowCategory('providers') && (
               <div>
                 <h3 className="font-medium text-sm text-gray-500 mb-2">{t('search.providers')}</h3>
                 <div className="space-y-1">
@@ -261,7 +349,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             )}
 
             {/* Certificates */}
-            {filteredCertificates.length > 0 && (
+            {filteredCertificates.length > 0 && shouldShowCategory('certificates') && (
               <div>
                 <h3 className="font-medium text-sm text-gray-500 mb-2">Certificates</h3>
                 <div className="space-y-1">
@@ -288,7 +376,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             )}
 
             {/* Preliminary Plans */}
-            {filteredPlans.length > 0 && (
+            {filteredPlans.length > 0 && shouldShowCategory('planning') && (
               <div>
                 <h3 className="font-medium text-sm text-gray-500 mb-2">Planning</h3>
                 <div className="space-y-1">
@@ -315,7 +403,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             )}
 
             {/* Static Navigation Items */}
-            {filteredStaticItems.length > 0 && (
+            {filteredStaticItems.length > 0 && shouldShowCategory('pages') && (
               <div>
                 <h3 className="font-medium text-sm text-gray-500 mb-2">Pages</h3>
                 <div className="space-y-1">
