@@ -277,7 +277,7 @@ export function UserProfileHeader({ userId }: UserProfileHeaderProps) {
               </h3>
               <div className="space-y-2 text-sm text-gray-600">
                 {employee.dateOfBirth && (
-                  <div>Birth Date: {new Date(employee.dateOfBirth).toLocaleDateString()} ({calculateAge(employee.dateOfBirth)})</div>
+                  <div>Birth Date: {new Date(employee.dateOfBirth).toLocaleDateString()} ({calculateAge(employee.dateOfBirth)} years)</div>
                 )}
                 {employee.gender && (
                   <div>Gender: {employee.gender}</div>

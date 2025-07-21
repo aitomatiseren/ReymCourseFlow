@@ -526,7 +526,7 @@ export default function CertificateDefinitions() {
                     <SelectContent>
                       {allCourses?.map(course => (
                         <SelectItem key={course.id} value={course.id}>
-                          {course.title} ({course.category})
+                          {course.title}{course.category ? ` (${course.category})` : ''}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -545,7 +545,7 @@ export default function CertificateDefinitions() {
                     <SelectContent>
                       {licenses?.map(license => (
                         <SelectItem key={license.id} value={license.id}>
-                          {license.name} ({license.category})
+                          {license.name}{license.category ? ` (${license.category})` : ''}
                         </SelectItem>
                       ))}
                     </SelectContent>

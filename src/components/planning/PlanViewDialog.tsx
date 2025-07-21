@@ -508,7 +508,7 @@ export function PlanViewDialog({
                       <div>
                         <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                           <Users className="h-4 w-4" />
-                          Employee Groups ({groups.length})
+                          Employee Groups ({groups.length || 0})
                         </h3>
                         <div className="space-y-3">
                           {groups
@@ -542,7 +542,7 @@ export function PlanViewDialog({
                       <div>
                         <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                           <Calendar className="h-4 w-4" />
-                          Planned Trainings ({trainings.length})
+                          Planned Trainings ({trainings.length || 0})
                         </h3>
                         <div className="space-y-3">
                           {trainings

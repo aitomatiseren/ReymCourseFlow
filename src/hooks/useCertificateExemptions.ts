@@ -53,21 +53,7 @@ export const useCertificateExemptions = (filters?: {
     queryFn: async () => {
       let query = supabase
         .from('certificate_exemptions')
-        .select(`
-          *,
-          employee:employees!certificate_exemptions_employee_id_fkey(
-            id, name, employee_number, department
-          ),
-          license:licenses!certificate_exemptions_license_id_fkey(
-            id, name, description, level
-          ),
-          requested_by:employees!certificate_exemptions_requested_by_id_fkey(
-            id, name
-          ),
-          approved_by:employees!certificate_exemptions_approved_by_id_fkey(
-            id, name
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (filters?.employeeId) {
@@ -100,18 +86,7 @@ export const usePendingExemptions = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('certificate_exemptions')
-        .select(`
-          *,
-          employee:employees!certificate_exemptions_employee_id_fkey(
-            id, name, employee_number, department, job_title
-          ),
-          license:licenses!certificate_exemptions_license_id_fkey(
-            id, name, description, level
-          ),
-          requested_by:employees!certificate_exemptions_requested_by_id_fkey(
-            id, name
-          )
-        `)
+        .select('*')
         .eq('approval_status', 'pending')
         .eq('is_active', true)
         .order('created_at', { ascending: true });
@@ -131,7 +106,7 @@ export const useEmployeeExemptionStatus = (employeeId: string, licenseId: string
         .from('certificate_exemptions')
         .select(`
           *,
-          license:licenses!certificate_exemptions_license_id_fkey(name, description)
+          license:licenses(name, description, category)
         `)
         .eq('employee_id', employeeId)
         .eq('license_id', licenseId)
@@ -258,7 +233,7 @@ export const useExemptionManagement = () => {
 
       const updateData: CertificateExemptionUpdate = {
         approval_status: 'approved',
-        approval_date: new Date().toISOString(),
+        approved_at: new Date().toISOString(),
         approval_notes: approvalNotes,
         approved_by_id: userProfile?.employee_id || null,
         approved_by_name: approvedByName
@@ -301,7 +276,7 @@ export const useExemptionManagement = () => {
 
       const updateData: CertificateExemptionUpdate = {
         approval_status: 'rejected',
-        approval_date: new Date().toISOString(),
+        approved_at: new Date().toISOString(),
         approval_notes: rejectionReason,
         approved_by_id: userProfile?.employee_id || null,
         approved_by_name: approvedByName
@@ -335,8 +310,7 @@ export const useExemptionManagement = () => {
       const updateData: CertificateExemptionUpdate = {
         approval_status: 'revoked',
         is_active: false,
-        approval_notes: revocationReason,
-        updated_at: new Date().toISOString()
+        approval_notes: revocationReason
       };
 
       const { data, error } = await supabase

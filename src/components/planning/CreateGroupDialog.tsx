@@ -498,7 +498,7 @@ export function CreateGroupDialog({
 
             {/* Employee List */}
             <div className="space-y-2">
-              <FormLabel>Employees in Group ({employeeIds.length})</FormLabel>
+              <FormLabel>Employees in Group ({employeeIds.length || 0})</FormLabel>
               <div className="max-h-32 overflow-y-auto border rounded-lg p-2">
                 <div className="flex flex-wrap gap-1">
                   {employeeNames.map((name, index) => (

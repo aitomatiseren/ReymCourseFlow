@@ -214,7 +214,7 @@ const EmployeeDetailContent = ({ employeeId }: { employeeId: string }) => {
       <div>
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <Calendar className="h-5 w-5" />
-          Training History ({employeeTrainings.length})
+          Training History ({employeeTrainings.length || 0})
         </h3>
         {employeeTrainings.length > 0 ? (
           <div className="space-y-2 max-h-32 overflow-y-auto">
@@ -241,7 +241,7 @@ const EmployeeDetailContent = ({ employeeId }: { employeeId: string }) => {
       <div>
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <Award className="h-5 w-5" />
-          Certificates ({employeeCertificates.length})
+          Certificates ({employeeCertificates.length || 0})
         </h3>
         {employeeCertificates.length > 0 ? (
           <div className="space-y-2 max-h-32 overflow-y-auto">
@@ -374,7 +374,7 @@ const TrainingDetailContent = ({ trainingId }: { trainingId: string }) => {
       <div>
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <Users className="h-5 w-5" />
-          Participants ({participants.length})
+          Participants ({participants.length || 0})
         </h3>
         {participants.length > 0 ? (
           <div className="space-y-2 max-h-40 overflow-y-auto">
@@ -504,7 +504,7 @@ const CourseDetailContent = ({ courseId }: { courseId: string }) => {
       <div>
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <Building2 className="h-5 w-5" />
-          Available Providers ({courseProviders.length})
+          Available Providers ({courseProviders.length || 0})
         </h3>
         {courseProviders.length > 0 ? (
           <div className="space-y-2 max-h-32 overflow-y-auto">
@@ -531,7 +531,7 @@ const CourseDetailContent = ({ courseId }: { courseId: string }) => {
       <div>
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <Calendar className="h-5 w-5" />
-          Scheduled Trainings ({relatedTrainings.length})
+          Scheduled Trainings ({relatedTrainings.length || 0})
         </h3>
         {relatedTrainings.length > 0 ? (
           <div className="space-y-2 max-h-32 overflow-y-auto">
@@ -702,7 +702,7 @@ const ProviderDetailContent = ({ providerId }: { providerId: string }) => {
       <div>
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <FileText className="h-5 w-5" />
-          Available Courses ({providerCourses.length})
+          Available Courses ({providerCourses.length || 0})
         </h3>
         {providerCourses.length > 0 ? (
           <div className="space-y-2 max-h-32 overflow-y-auto">
@@ -736,7 +736,7 @@ const ProviderDetailContent = ({ providerId }: { providerId: string }) => {
       <div>
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <Calendar className="h-5 w-5" />
-          Training History ({providerTrainings.length})
+          Training History ({providerTrainings.length || 0})
         </h3>
         {providerTrainings.length > 0 ? (
           <div className="space-y-2 max-h-32 overflow-y-auto">
@@ -898,7 +898,7 @@ const CertificateDetailContent = ({ certificateId }: { certificateId: string }) 
       <div>
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <FileText className="h-5 w-5" />
-          Related Courses ({relatedCourses.length})
+          Related Courses ({relatedCourses.length || 0})
         </h3>
         {relatedCourses.length > 0 ? (
           <div className="space-y-2 max-h-32 overflow-y-auto">

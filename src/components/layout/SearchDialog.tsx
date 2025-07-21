@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -41,24 +42,11 @@ export function SearchDialog({ open, onOpenChange, initialQuery = "" }: SearchDi
     }
   }, [open, initialQuery]);
 
-  const { data: employees = [], isLoading: employeesLoading } = useEmployees();
-  const { data: trainings = [], isLoading: trainingsLoading } = useTrainings();
-  const { data: courses = [], isLoading: coursesLoading } = useCourses();
-  const { data: certificates = [], isLoading: certificatesLoading } = useLicenses();
-  const { data: preliminaryPlans = [], isLoading: plansLoading } = usePreliminaryPlans();
-
-  // Debug logging
-  React.useEffect(() => {
-    console.log('Search Dialog Data:', {
-      employees: employees?.length || 0,
-      trainings: trainings?.length || 0,
-      courses: courses?.length || 0,
-      certificates: certificates?.length || 0,
-      preliminaryPlans: preliminaryPlans?.length || 0,
-      query,
-      selectedCategories
-    });
-  }, [employees, trainings, courses, certificates, preliminaryPlans, query, selectedCategories]);
+  const { data: employees = [] } = useEmployees();
+  const { data: trainings = [] } = useTrainings();
+  const { data: courses = [] } = useCourses();
+  const { data: certificates = [] } = useLicenses();
+  const { data: preliminaryPlans = [] } = usePreliminaryPlans();
 
   // Search categories for filtering
   const searchCategories = [
@@ -200,6 +188,9 @@ export function SearchDialog({ open, onOpenChange, initialQuery = "" }: SearchDi
             <Search className="h-5 w-5" />
             <span>Advanced Search</span>
           </DialogTitle>
+          <DialogDescription>
+            Search through employees, trainings, courses, providers, and more. Use category filters to narrow your results.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -235,12 +226,6 @@ export function SearchDialog({ open, onOpenChange, initialQuery = "" }: SearchDi
           </div>
         </div>
 
-        {/* Debug info */}
-        {query && (
-          <div className="text-xs text-gray-500 p-2 bg-gray-50 rounded">
-            Query: "{query}" | Data loaded: E:{employees?.length} T:{trainings?.length} C:{courses?.length} P:{providers?.length}
-          </div>
-        )}
 
         {(query || selectedCategories.length > 0) && (
           <div className="max-h-96 overflow-y-auto space-y-4">

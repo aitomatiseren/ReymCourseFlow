@@ -55,6 +55,10 @@ export default function TrainingSetup() {
   const [providerViewMode, setProviderViewMode] = useViewMode('providers');
   const [providerSearchTerm, setProviderSearchTerm] = useState("");
 
+  // Certificates state
+  const [certificateViewMode, setCertificateViewMode] = useViewMode('certificates');
+  const [showAddCertificateDialog, setShowAddCertificateDialog] = useState(false);
+
   // Data hooks
   const { data: courses = [], isLoading, error } = useCourses();
   const deleteCourse = useDeleteCourse();
@@ -377,9 +381,9 @@ export default function TrainingSetup() {
           <TabsContent value="providers" className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">{t('providers:page.title')}</h1>
+                <h1 className="text-3xl font-bold text-gray-900">Provider Management</h1>
                 <p className="text-gray-600 mt-1">
-                  {t('providers:page.subtitle')}
+                  Manage training providers and their course offerings
                 </p>
               </div>
               <div className="flex items-center space-x-2">
@@ -413,7 +417,27 @@ export default function TrainingSetup() {
 
           {/* Certificates Tab */}
           <TabsContent value="certificates" className="space-y-6">
-            <CertificateTemplatesTab />
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Certificate Management</h1>
+                <p className="text-gray-600 mt-1">
+                  Define and manage certificate types and their course relationships
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button onClick={() => setShowAddCertificateDialog(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Certificate
+                </Button>
+                <ViewToggle value={certificateViewMode} onValueChange={setCertificateViewMode} />
+              </div>
+            </div>
+            <CertificateTemplatesTab 
+              viewMode={certificateViewMode}
+              onViewModeChange={setCertificateViewMode}
+              showAddDialog={showAddCertificateDialog}
+              onShowAddDialogChange={setShowAddCertificateDialog}
+            />
           </TabsContent>
         </Tabs>
 

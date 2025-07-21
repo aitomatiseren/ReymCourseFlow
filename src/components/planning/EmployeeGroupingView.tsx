@@ -1781,7 +1781,7 @@ FINAL VALIDATION BEFORE RESPONDING:
                     .filter(plan => plan.status === 'draft' || plan.status === 'approved' || plan.status === 'review')
                     .map((plan) => (
                     <SelectItem key={plan.id} value={plan.id}>
-                      {plan.name} ({plan.status})
+                      {plan.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

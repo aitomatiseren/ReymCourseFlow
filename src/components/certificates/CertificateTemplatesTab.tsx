@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Switch } from '@/components/ui/switch';
@@ -26,13 +26,15 @@ import {
   AlertCircle,
   CheckCircle,
   Eye,
-  Trash2
+  Trash2,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { useViewMode } from '@/hooks/useViewMode';
 import { 
   useLicenseDefinitions,
   useCourseDefinitions,
-  useCourseCertificateMappings,
   useCertificateDefinitionManagement,
   getLevelColor
 } from '@/hooks/useCertificateDefinitions';
@@ -44,17 +46,36 @@ import {
 import { useCourses } from '@/hooks/useCourses';
 import { toast } from '@/hooks/use-toast';
 
-export function CertificateTemplatesTab() {
+interface CertificateTemplatesTabProps {
+  viewMode?: string;
+  onViewModeChange?: (mode: string) => void;
+  showAddDialog?: boolean;
+  onShowAddDialogChange?: (show: boolean) => void;
+}
+
+export function CertificateTemplatesTab({
+  viewMode: externalViewMode,
+  onViewModeChange: externalOnViewModeChange,
+  showAddDialog: externalShowAddDialog,
+  onShowAddDialogChange: externalOnShowAddDialogChange
+}: CertificateTemplatesTabProps = {}) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [showLicenseDialog, setShowLicenseDialog] = useState(false);
+  const [internalShowLicenseDialog, setInternalShowLicenseDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [selectedLicense, setSelectedLicense] = useState<any>(null);
-  const [viewMode, setViewMode] = useViewMode('certificates');
+  const [internalViewMode, setInternalViewMode] = useViewMode('certificates');
+  const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc' | 'desc'} | null>(null);
+
+  // Use external props when available, fallback to internal state
+  const viewMode = externalViewMode || internalViewMode;
+  const setViewMode = externalOnViewModeChange || setInternalViewMode;
+  const showLicenseDialog = externalShowAddDialog ?? internalShowLicenseDialog;
+  const setShowLicenseDialog = externalOnShowAddDialogChange || setInternalShowLicenseDialog;
+
 
   // Data hooks
   const { data: licenses, isLoading: licensesLoading } = useLicenseDefinitions();
   const { data: courses, isLoading: coursesLoading } = useCourseDefinitions();
-  const { data: mappings, isLoading: mappingsLoading } = useCourseCertificateMappings();
   const { data: allCourses } = useCourses();
   const { data: licensesWithHierarchy, isLoading: hierarchyLoading } = useLicensesWithHierarchy();
   const { data: certificateHierarchy } = useCertificateHierarchy();
@@ -326,6 +347,14 @@ export function CertificateTemplatesTab() {
     setErrors([]);
   };
 
+  // Handle external dialog trigger
+  useEffect(() => {
+    if (externalShowAddDialog && externalShowAddDialog !== internalShowLicenseDialog) {
+      setSelectedLicense(null);
+      resetLicenseForm();
+    }
+  }, [externalShowAddDialog, internalShowLicenseDialog]);
+
   const openLicenseDetails = (license: any) => {
     // Get the license with full hierarchy data
     const licenseWithHierarchy = licensesWithHierarchy?.find(l => l.id === license.id) || license;
@@ -383,13 +412,27 @@ export function CertificateTemplatesTab() {
     };
   }) || [];
 
-  const filteredLicenses = combinedLicenses.filter(license => {
+  let filteredLicenses = combinedLicenses.filter(license => {
     const matchesSearch = license.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       license.description?.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesSearch;
   });
 
-  if (licensesLoading || coursesLoading || mappingsLoading || hierarchyLoading) {
+  // Apply sorting
+  if (sortConfig) {
+    filteredLicenses = [...filteredLicenses].sort((a, b) => {
+      if (sortConfig.key === 'name') {
+        const aValue = a.name.toLowerCase();
+        const bValue = b.name.toLowerCase();
+        return sortConfig.direction === 'asc' 
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+      return 0;
+    });
+  }
+
+  if (licensesLoading || coursesLoading || hierarchyLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="text-muted-foreground">Loading certificates...</div>
@@ -399,26 +442,6 @@ export function CertificateTemplatesTab() {
 
   return (
     <div className="space-y-6">
-      {/* Header - Match Courses/Providers pattern */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Certificates</h1>
-          <p className="text-gray-600 mt-1">
-            Manage certificate types and link them to training courses
-          </p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button onClick={() => {
-            setSelectedLicense(null);
-            resetLicenseForm();
-            setShowLicenseDialog(true);
-          }}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Certificate
-          </Button>
-          <ViewToggle value={viewMode} onValueChange={setViewMode} />
-        </div>
-      </div>
 
       {/* Search and Filter Bar - Match Courses pattern with Card wrapper */}
       <Card>
@@ -459,7 +482,7 @@ export function CertificateTemplatesTab() {
                   </div>
                   <div className="flex flex-col gap-1">
                     {license.is_base_level ? (
-                      <Badge className="bg-blue-100 text-blue-800">
+                      <Badge className="bg-green-100 text-green-800">
                         Base Level
                       </Badge>
                     ) : (
@@ -564,69 +587,95 @@ export function CertificateTemplatesTab() {
 
       {/* Certificates List View */}
       {viewMode === 'list' && (
-        <Tabs defaultValue="certificates" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="certificates">Certificates</TabsTrigger>
-            <TabsTrigger value="mappings">Course-Certificate Mappings</TabsTrigger>
-          </TabsList>
-
-          {/* Certificates Tab */}
-          <TabsContent value="certificates" className="space-y-4">
-            <Card>
-              <CardContent className="p-0">
-                <div className="space-y-4 p-6">
-                  {filteredLicenses.map(license => (
-                    <div key={license.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3">
-                          <div>
-                            <h3 className="font-medium">{license.name}</h3>
-                            {license.supersedes_license_id && (
-                              <p className="text-xs text-yellow-700">
-                                Supersedes: {license.supersedes?.name || 'Lower-tier certificate'}
-                              </p>
-                            )}
-                            {license.superseded_by && license.superseded_by.length > 0 && (
-                              <p className="text-xs text-blue-700">
-                                Superseded by: {license.superseded_by.map((cert: any) => cert.name).join(', ')}
-                              </p>
-                            )}
-                            {license.prerequisites && license.prerequisites.length > 0 && (
-                              <p className="text-xs text-purple-700">
-                                Prerequisites: {license.prerequisites.map((p: any) => p.name).join(', ')}
-                              </p>
-                            )}
-                            {license.course_certificates && license.course_certificates.length > 0 && (
-                              <p className="text-xs text-green-700">
-                                Linked Courses: {license.course_certificates.map((cc: any) => cc.courses?.title || 'Unknown Course').join(', ')}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex gap-2">
-                            {license.is_base_level ? (
-                              <Badge className="bg-blue-100 text-blue-800">
-                                Base Level
-                              </Badge>
-                            ) : (
-                              <Badge className="bg-purple-100 text-purple-800">
-                                Advanced
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-left font-medium">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto p-0 font-medium"
+                      onClick={() => {
+                        setSortConfig(prev => {
+                          if (prev?.key === 'name') {
+                            return prev.direction === 'asc' 
+                              ? { key: 'name', direction: 'desc' }
+                              : null;
+                          }
+                          return { key: 'name', direction: 'asc' };
+                        });
+                      }}
+                    >
+                      Certificate
+                      {sortConfig?.key === 'name' ? (
+                        sortConfig.direction === 'asc' ? (
+                          <ArrowUp className="ml-1 h-3 w-3" />
+                        ) : (
+                          <ArrowDown className="ml-1 h-3 w-3" />
+                        )
+                      ) : (
+                        <ArrowUpDown className="ml-1 h-3 w-3" />
+                      )}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-left font-medium">Type</TableHead>
+                  <TableHead className="text-left font-medium">Validity</TableHead>
+                  <TableHead className="text-left font-medium">Hierarchy</TableHead>
+                  <TableHead className="text-right font-medium">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredLicenses.map((license) => (
+                  <TableRow key={license.id} className="hover:bg-gray-50">
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{license.name}</div>
                         {license.description && (
-                          <p className="text-sm text-gray-600 mt-2 line-clamp-1">{license.description}</p>
+                          <div className="text-sm text-gray-500 line-clamp-1">{license.description}</div>
                         )}
                       </div>
-                      <div className="flex items-center space-x-4 text-sm">
-                        <div className="text-center">
-                          <div className="font-medium">{license.validity_period_months}mo</div>
-                          <div className="text-gray-500">Valid</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-medium">{license.course_certificates?.length || 0}</div>
-                          <div className="text-gray-500">Courses</div>
-                        </div>
+                    </TableCell>
+                    <TableCell>
+                      {license.is_base_level ? (
+                        <Badge variant="outline" className="bg-green-100 text-green-800">
+                          Base Level
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-purple-100 text-purple-800">
+                          Advanced
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {license.validity_period_months ? (
+                        <Badge variant="outline">
+                          {license.validity_period_months} months
+                        </Badge>
+                      ) : (
+                        <span className="text-gray-500">No expiry</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        {license.supersedes_license_id && (
+                          <div className="text-xs text-yellow-700">
+                            Supersedes: {license.supersedes?.name || 'Lower-tier'}
+                          </div>
+                        )}
+                        {license.superseded_by && license.superseded_by.length > 0 && (
+                          <div className="text-xs text-blue-700">
+                            Superseded by: {license.superseded_by.map((cert: any) => cert.name).join(', ')}
+                          </div>
+                        )}
+                        {!license.supersedes_license_id && (!license.superseded_by || license.superseded_by.length === 0) && (
+                          <span className="text-gray-500 text-xs">Independent</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end space-x-2">
                         <Button
                           size="sm"
                           className="bg-slate-800 text-white hover:bg-slate-900"
@@ -636,74 +685,13 @@ export function CertificateTemplatesTab() {
                           View
                         </Button>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Course-Certificate Mappings Tab */}
-          <TabsContent value="mappings" className="space-y-4">
-            <div className="space-y-4">
-              {mappings?.map(mapping => (
-                <Card key={mapping.id}>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="flex items-center space-x-2">
-                          <BookOpen className="h-5 w-5 text-blue-600" />
-                          <div>
-                            <p className="font-medium">{mapping.courses?.title}</p>
-                            <p className="text-sm text-muted-foreground">Course</p>
-                          </div>
-                        </div>
-                        
-                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                        
-                        <div className="flex items-center space-x-2">
-                          <Award className="h-5 w-5 text-green-600" />
-                          <div>
-                            <p className="font-medium">{mapping.licenses?.name}</p>
-                            {mapping.licenses?.description && (
-                              <p className="text-sm text-muted-foreground">{mapping.licenses.description}</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        {mapping.directly_grants ? (
-                          <Badge className="bg-green-100 text-green-800">
-                            Directly Grants
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-blue-100 text-blue-800">
-                            Progression Course
-                          </Badge>
-                        )}
-                        {mapping.is_required && (
-                          <Badge variant="outline">Required</Badge>
-                        )}
-                        {mapping.renewal_eligible && (
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                            Renewal Eligible
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {mapping.notes && (
-                      <div className="mt-3 p-3 bg-muted rounded-md">
-                        <p className="text-sm text-muted-foreground">{mapping.notes}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-        </Tabs>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
 
       {/* No Results */}
@@ -1133,7 +1121,7 @@ export function CertificateTemplatesTab() {
               {/* Linked Courses */}
               {selectedLicense.course_certificates && selectedLicense.course_certificates.length > 0 && (
                 <div>
-                  <h3 className="font-semibold text-lg mb-3">Linked Courses ({selectedLicense.course_certificates.length})</h3>
+                  <h3 className="font-semibold text-lg mb-3">Linked Courses ({selectedLicense.course_certificates.length || 0})</h3>
                   <div className="grid grid-cols-1 gap-3">
                     {selectedLicense.course_certificates.map((cc: any) => (
                       <div key={cc.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">

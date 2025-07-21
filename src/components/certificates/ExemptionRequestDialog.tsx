@@ -68,7 +68,13 @@ export const ExemptionRequestDialog: React.FC<ExemptionRequestDialogProps> = ({
     }
 
     try {
-      await createExemptionRequest.mutateAsync(formData);
+      // Set dontRepeatFlag based on exemption type
+      const submitData = {
+        ...formData,
+        dontRepeatFlag: formData.exemptionType === 'permanent'
+      };
+      
+      await createExemptionRequest.mutateAsync(submitData);
       
       toast({
         title: "Exemption Request Submitted",
@@ -157,7 +163,7 @@ export const ExemptionRequestDialog: React.FC<ExemptionRequestDialogProps> = ({
                     <SelectItem key={employee.id} value={employee.id}>
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4" />
-                        <span>{employee.name} ({employee.employee_number})</span>
+                        <span>{employee.name}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -209,7 +215,7 @@ export const ExemptionRequestDialog: React.FC<ExemptionRequestDialogProps> = ({
                 {selectedLicense && (
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Certificate:</span>
-                    <span>{selectedLicense.name} ({selectedLicense.category})</span>
+                    <span>{selectedLicense.name}</span>
                   </div>
                 )}
               </CardContent>
@@ -243,7 +249,7 @@ export const ExemptionRequestDialog: React.FC<ExemptionRequestDialogProps> = ({
                   <Button
                     variant="outline"
                     className={cn(
-                      "justify-start text-left font-normal",
+                      "w-full justify-start text-left font-normal",
                       !formData.effectiveDate && "text-muted-foreground"
                     )}
                   >
@@ -254,7 +260,7 @@ export const ExemptionRequestDialog: React.FC<ExemptionRequestDialogProps> = ({
                     }
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
+                <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={formData.effectiveDate ? new Date(formData.effectiveDate) : undefined}
@@ -273,7 +279,7 @@ export const ExemptionRequestDialog: React.FC<ExemptionRequestDialogProps> = ({
                     <Button
                       variant="outline"
                       className={cn(
-                        "justify-start text-left font-normal",
+                        "w-full justify-start text-left font-normal",
                         !formData.expiryDate && "text-muted-foreground"
                       )}
                     >
@@ -284,13 +290,19 @@ export const ExemptionRequestDialog: React.FC<ExemptionRequestDialogProps> = ({
                       }
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
+                  <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
                       selected={formData.expiryDate ? new Date(formData.expiryDate) : undefined}
                       onSelect={(date) => handleDateSelect(date, 'expiryDate')}
-                      initialFocus
-                      disabled={(date) => date <= new Date(formData.effectiveDate)}
+                      disabled={(date) => {
+                        if (!formData.effectiveDate) return false;
+                        try {
+                          return date <= new Date(formData.effectiveDate);
+                        } catch {
+                          return false;
+                        }
+                      }}
                     />
                   </PopoverContent>
                 </Popover>
@@ -335,17 +347,6 @@ export const ExemptionRequestDialog: React.FC<ExemptionRequestDialogProps> = ({
               />
             </div>
 
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="dontRepeat"
-                checked={formData.dontRepeatFlag}
-                onCheckedChange={(checked) => 
-                  setFormData(prev => ({ ...prev, dontRepeatFlag: checked }))}
-              />
-              <Label htmlFor="dontRepeat" className="text-sm">
-                Permanently exempt this employee from this certificate requirement
-              </Label>
-            </div>
           </div>
         </div>
 

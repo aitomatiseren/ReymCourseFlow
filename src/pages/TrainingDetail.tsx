@@ -240,7 +240,7 @@ export default function TrainingDetail() {
 
             {training.sessions_count && training.sessions_count > 1 && training.session_dates ? (
               <div className="space-y-4">
-                <p className="font-medium">{t('detail.sessions')} ({training.sessions_count})</p>
+                <p className="font-medium">{t('detail.sessions')} ({training.sessions_count || 0})</p>
                 {Array.from({ length: training.sessions_count }, (_, index) => (
                   <div key={index} className="flex items-center space-x-6 py-2">
                     <span className="font-medium">{t('detail.session')} {index + 1}</span>

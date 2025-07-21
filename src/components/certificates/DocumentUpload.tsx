@@ -462,7 +462,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
                       <SelectItem value="__auto__">Let AI detect employee</SelectItem>
                       {employees?.map(employee => (
                         <SelectItem key={employee.id} value={employee.id}>
-                          {employee.name} ({employee.employee_number})
+                          {employee.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -481,7 +481,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
                       <SelectItem value="__auto__">Let AI detect certificate</SelectItem>
                       {licenses?.map(license => (
                         <SelectItem key={license.id} value={license.id}>
-                          {license.name} ({license.category})
+                          {license.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -733,7 +733,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
                                     <SelectContent>
                                       {employees?.map(employee => (
                                         <SelectItem key={employee.id} value={employee.id}>
-                                          {employee.name} ({employee.employee_number})
+                                          {employee.name}
                                         </SelectItem>
                                       ))}
                                     </SelectContent>

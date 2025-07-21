@@ -173,19 +173,19 @@ export function Code95Dashboard() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span className="text-sm">Compliant ({stats.compliant})</span>
+                <span className="text-sm">Compliant ({stats.compliant || 0})</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                <span className="text-sm">Expiring ({stats.expiring})</span>
+                <span className="text-sm">Expiring ({stats.expiring || 0})</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <span className="text-sm">Expired ({stats.expired})</span>
+                <span className="text-sm">Expired ({stats.expired || 0})</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                <span className="text-sm">Need Training ({stats.needsTraining})</span>
+                <span className="text-sm">Need Training ({stats.needsTraining || 0})</span>
               </div>
             </div>
           </div>
@@ -216,10 +216,10 @@ export function Code95Dashboard() {
         <CardContent>
           <Tabs defaultValue="all" className="w-full">
             <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="all">All ({filteredEmployees.length})</TabsTrigger>
-              <TabsTrigger value="expired">Expired ({stats.expired})</TabsTrigger>
-              <TabsTrigger value="expiring">Expiring ({stats.expiring})</TabsTrigger>
-              <TabsTrigger value="compliant">Compliant ({stats.compliant})</TabsTrigger>
+              <TabsTrigger value="all">All ({filteredEmployees.length || 0})</TabsTrigger>
+              <TabsTrigger value="expired">Expired ({stats.expired || 0})</TabsTrigger>
+              <TabsTrigger value="expiring">Expiring ({stats.expiring || 0})</TabsTrigger>
+              <TabsTrigger value="compliant">Compliant ({stats.compliant || 0})</TabsTrigger>
               <TabsTrigger value="registry">Registry</TabsTrigger>
             </TabsList>
             

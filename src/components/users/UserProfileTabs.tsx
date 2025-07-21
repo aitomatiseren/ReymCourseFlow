@@ -337,11 +337,11 @@ export function UserProfileTabs({ userId }: UserProfileTabsProps) {
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="active" className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4" />
-                    Active ({activeCertificates.length})
+                    Active ({activeCertificates.length || 0})
                   </TabsTrigger>
                   <TabsTrigger value="inactive" className="flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4" />
-                    Inactive ({inactiveCertificates.length})
+                    Inactive ({inactiveCertificates.length || 0})
                   </TabsTrigger>
                 </TabsList>
 

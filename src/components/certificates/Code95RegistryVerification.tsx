@@ -158,7 +158,7 @@ export function Code95RegistryVerification() {
               ) : (
                 <Activity className="h-4 w-4" />
               )}
-              Verify All Code 95 ({code95Employees.length})
+              Verify All Code 95 ({code95Employees.length || 0})
             </Button>
 
             <Button

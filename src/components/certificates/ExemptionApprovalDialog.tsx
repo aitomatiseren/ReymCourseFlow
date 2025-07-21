@@ -316,7 +316,7 @@ export const ExemptionApprovalDialog: React.FC<ExemptionApprovalDialogProps> = (
           )}
 
           {/* Previous Approval History */}
-          {exemption.approval_date && (
+          {exemption.approved_at && (
             <>
               <Separator />
               <Card>
@@ -334,7 +334,7 @@ export const ExemptionApprovalDialog: React.FC<ExemptionApprovalDialogProps> = (
                     <div>
                       <p className="text-sm font-medium">Decision Date</p>
                       <p className="text-sm text-muted-foreground">
-                        {format(new Date(exemption.approval_date), 'MMM d, yyyy HH:mm')}
+                        {format(new Date(exemption.approved_at), 'MMM d, yyyy HH:mm')}
                       </p>
                     </div>
                   </div>

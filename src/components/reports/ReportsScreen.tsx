@@ -8,9 +8,8 @@ import { CertificateExpiryReport } from "./CertificateExpiryReport";
 import { TrainingCostReport } from "./TrainingCostReport";
 import { ComplianceReport } from "./ComplianceReport";
 import { Code95Dashboard } from "@/components/certificates/Code95Dashboard";
-import { ExemptionManagementDashboard } from "@/components/certificates/ExemptionManagementDashboard";
 import { BulkCertificateProcessor } from "@/components/certificates/BulkCertificateProcessor";
-import { FileText, AlertTriangle, DollarSign, CheckCircle, Loader2, Truck, Shield, Upload } from "lucide-react";
+import { FileText, AlertTriangle, DollarSign, CheckCircle, Loader2, Truck, Upload } from "lucide-react";
 import { useCertificates } from "@/hooks/useCertificates";
 import { useTrainings } from "@/hooks/useTrainings";
 
@@ -124,7 +123,7 @@ export function ReportsScreen() {
 
       {/* Reports Tabs */}
       <Tabs defaultValue={activeTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="expiry" className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4" />
             {t('reports:screen.certificateExpiry')}
@@ -140,10 +139,6 @@ export function ReportsScreen() {
           <TabsTrigger value="code95" className="flex items-center gap-2">
             <Truck className="h-4 w-4" />
             Code 95
-          </TabsTrigger>
-          <TabsTrigger value="exemptions" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            Exemptions
           </TabsTrigger>
           <TabsTrigger value="processing" className="flex items-center gap-2">
             <Upload className="h-4 w-4" />
@@ -165,10 +160,6 @@ export function ReportsScreen() {
 
         <TabsContent value="code95">
           <Code95Dashboard />
-        </TabsContent>
-
-        <TabsContent value="exemptions">
-          <ExemptionManagementDashboard />
         </TabsContent>
 
         <TabsContent value="processing">

@@ -142,7 +142,7 @@ export function TrainingDetailsView({
             
             {training.sessions_count && training.sessions_count > 1 && training.session_dates ? (
               <div className="space-y-4">
-                <p className="font-medium">Sessions ({training.sessions_count})</p>
+                <p className="font-medium">Sessions ({training.sessions_count || 0})</p>
                 {Array.from({ length: training.sessions_count }, (_, index) => (
                   <div key={index} className="flex items-center space-x-6 py-2">
                     <span className="font-medium">Session {index + 1}</span>
@@ -302,7 +302,7 @@ export function TrainingDetailsView({
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold flex items-center">
                 <Users className="h-5 w-5 mr-2" />
-                Participants ({participants.length})
+                Participants ({participants.length || 0})
               </h2>
               <div className="flex items-center space-x-2">
                 {currentStatus === 'completed' && (

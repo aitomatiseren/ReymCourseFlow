@@ -164,7 +164,7 @@ export function SIRRegistryVerification() {
               ) : (
                 <Activity className="h-4 w-4" />
               )}
-              Verify All SIR Certificates ({employees.length})
+              Verify All SIR Certificates ({employees.length || 0})
             </Button>
 
             <Button

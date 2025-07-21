@@ -38,7 +38,15 @@ import { ExemptionRequestDialog } from './ExemptionRequestDialog';
 import { ExemptionApprovalDialog } from './ExemptionApprovalDialog';
 import { toast } from '@/hooks/use-toast';
 
-export const ExemptionManagementDashboard: React.FC = () => {
+interface ExemptionManagementDashboardProps {
+  showRequestDialog?: boolean;
+  onShowRequestDialogChange?: (show: boolean) => void;
+}
+
+export const ExemptionManagementDashboard: React.FC<ExemptionManagementDashboardProps> = ({
+  showRequestDialog: externalShowRequestDialog,
+  onShowRequestDialogChange
+}) => {
   const [filters, setFilters] = useState({
     search: '',
     employeeId: '__all__',
@@ -49,8 +57,12 @@ export const ExemptionManagementDashboard: React.FC = () => {
   });
   
   const [selectedExemption, setSelectedExemption] = useState<ExemptionWithDetails | null>(null);
-  const [showRequestDialog, setShowRequestDialog] = useState(false);
+  const [internalShowRequestDialog, setInternalShowRequestDialog] = useState(false);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
+
+  // Use external props when provided, otherwise use internal state
+  const showRequestDialog = externalShowRequestDialog ?? internalShowRequestDialog;
+  const setShowRequestDialog = onShowRequestDialogChange ?? setInternalShowRequestDialog;
 
   // Data hooks - convert __all__ values to empty strings for the API
   const apiFilters = {
@@ -134,9 +146,6 @@ export const ExemptionManagementDashboard: React.FC = () => {
         <div className="flex items-center gap-2">
           <Users className="h-4 w-4 text-muted-foreground" />
           <span className="font-medium">{exemption.employee?.name}</span>
-          <span className="text-sm text-muted-foreground">
-            ({exemption.employee?.employee_number})
-          </span>
         </div>
         
         <div className="flex items-center gap-2">
@@ -192,19 +201,6 @@ export const ExemptionManagementDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Certificate Exemptions</h2>
-          <p className="text-muted-foreground">
-            Manage certificate exemption requests and approvals
-          </p>
-        </div>
-        <Button onClick={() => setShowRequestDialog(true)} className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Request Employee Exemption
-        </Button>
-      </div>
 
       {/* Statistics Cards */}
       {statistics && (
