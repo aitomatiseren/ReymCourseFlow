@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -19,7 +22,8 @@ import {
   FileText,
   Calendar,
   BarChart3,
-  RefreshCw
+  RefreshCw,
+  UserPlus
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { 
@@ -36,6 +40,7 @@ import { useEmployees } from '@/hooks/useEmployees';
 import { useLicenses } from '@/hooks/useCertificates';
 import { ExemptionRequestDialog } from './ExemptionRequestDialog';
 import { ExemptionApprovalDialog } from './ExemptionApprovalDialog';
+import { MassExemptionDialog } from './MassExemptionDialog';
 import { toast } from '@/hooks/use-toast';
 
 interface ExemptionManagementDashboardProps {
@@ -59,6 +64,9 @@ export const ExemptionManagementDashboard: React.FC<ExemptionManagementDashboard
   const [selectedExemption, setSelectedExemption] = useState<ExemptionWithDetails | null>(null);
   const [internalShowRequestDialog, setInternalShowRequestDialog] = useState(false);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
+  const [showRevocationDialog, setShowRevocationDialog] = useState(false);
+  const [showMassExemptionDialog, setShowMassExemptionDialog] = useState(false);
+  const [revocationReason, setRevocationReason] = useState('');
 
   // Use external props when provided, otherwise use internal state
   const showRequestDialog = externalShowRequestDialog ?? internalShowRequestDialog;
@@ -84,20 +92,29 @@ export const ExemptionManagementDashboard: React.FC<ExemptionManagementDashboard
     setShowApprovalDialog(true);
   };
 
-  const handleRevokeExemption = async (exemption: ExemptionWithDetails) => {
-    const reason = prompt('Please provide a reason for revoking this exemption:');
-    if (!reason) return;
+  const handleRevokeExemption = (exemption: ExemptionWithDetails) => {
+    setSelectedExemption(exemption);
+    setRevocationReason('');
+    setShowRevocationDialog(true);
+  };
+
+  const handleConfirmRevocation = async () => {
+    if (!selectedExemption || !revocationReason.trim()) return;
 
     try {
       await revokeExemption.mutateAsync({
-        exemptionId: exemption.id,
-        revocationReason: reason
+        exemptionId: selectedExemption.id,
+        revocationReason: revocationReason.trim()
       });
 
       toast({
         title: "Exemption Revoked",
-        description: `Exemption for ${exemption.employee?.name} has been revoked.`
+        description: `Exemption for ${selectedExemption.employee?.name} has been revoked.`
       });
+
+      setShowRevocationDialog(false);
+      setRevocationReason('');
+      setSelectedExemption(null);
     } catch (error) {
       toast({
         title: "Error",
@@ -371,57 +388,77 @@ export const ExemptionManagementDashboard: React.FC<ExemptionManagementDashboard
       </Card>
 
       {/* Exemptions List */}
-      <Tabs defaultValue="all" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="all">All Exemptions</TabsTrigger>
-          <TabsTrigger value="pending">
-            Pending Approval
-            {pendingExemptions && pendingExemptions.length > 0 && (
-              <Badge variant="secondary" className="ml-2">
-                {pendingExemptions.length}
-              </Badge>
-            )}
-          </TabsTrigger>
-        </TabsList>
+      <div className="flex items-center justify-between">
+        <div className="flex-1">
+          <Tabs defaultValue="all" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="all">All Exemptions</TabsTrigger>
+              <TabsTrigger value="pending">
+                Pending Approval
+                {pendingExemptions && pendingExemptions.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {pendingExemptions.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
 
-        <TabsContent value="all" className="space-y-4">
-          {isLoading ? (
-            <div className="flex justify-center p-8">
-              <div className="text-muted-foreground">Loading exemptions...</div>
-            </div>
-          ) : filteredExemptions.length === 0 ? (
-            <Alert>
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                No exemptions found matching the current filters.
-              </AlertDescription>
-            </Alert>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredExemptions.map(exemption => (
-                <ExemptionCard key={exemption.id} exemption={exemption} />
-              ))}
-            </div>
-          )}
-        </TabsContent>
+            <TabsContent value="all" className="space-y-4">
+              {isLoading ? (
+                <div className="flex justify-center p-8">
+                  <div className="text-muted-foreground">Loading exemptions...</div>
+                </div>
+              ) : filteredExemptions.length === 0 ? (
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    No exemptions found matching the current filters.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {filteredExemptions.map(exemption => (
+                    <ExemptionCard key={exemption.id} exemption={exemption} />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
 
-        <TabsContent value="pending" className="space-y-4">
-          {pendingExemptions && pendingExemptions.length === 0 ? (
-            <Alert>
-              <CheckCircle className="h-4 w-4" />
-              <AlertDescription>
-                No exemptions pending approval.
-              </AlertDescription>
-            </Alert>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {pendingExemptions?.map(exemption => (
-                <ExemptionCard key={exemption.id} exemption={exemption} />
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+            <TabsContent value="pending" className="space-y-4">
+              {pendingExemptions && pendingExemptions.length === 0 ? (
+                <Alert>
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    No exemptions pending approval.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {pendingExemptions?.map(exemption => (
+                    <ExemptionCard key={exemption.id} exemption={exemption} />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </div>
+        
+        {/* Action Buttons */}
+        <div className="flex flex-col gap-2 ml-4">
+          <Button onClick={() => setShowRequestDialog(true)} className="whitespace-nowrap">
+            <Plus className="h-4 w-4 mr-2" />
+            Single Exemption
+          </Button>
+          <Button 
+            onClick={() => setShowMassExemptionDialog(true)} 
+            variant="outline" 
+            className="whitespace-nowrap"
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            Mass Exemption
+          </Button>
+        </div>
+      </div>
 
       {/* Dialogs */}
       <ExemptionRequestDialog
@@ -434,6 +471,65 @@ export const ExemptionManagementDashboard: React.FC<ExemptionManagementDashboard
         onOpenChange={setShowApprovalDialog}
         exemption={selectedExemption}
       />
+
+      <MassExemptionDialog
+        open={showMassExemptionDialog}
+        onOpenChange={setShowMassExemptionDialog}
+        onSuccess={() => {
+          toast({
+            title: "Mass Exemption Completed",
+            description: "All exemptions have been processed successfully."
+          });
+        }}
+      />
+
+      {/* Revocation Dialog */}
+      <Dialog open={showRevocationDialog} onOpenChange={setShowRevocationDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Revoke Exemption</DialogTitle>
+            <DialogDescription>
+              You are about to revoke the exemption for{' '}
+              <span className="font-semibold">{selectedExemption?.employee?.name}</span>{' '}
+              from the{' '}
+              <span className="font-semibold">{selectedExemption?.license?.name}</span>{' '}
+              certificate requirement.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="revocationReason">Reason for Revocation *</Label>
+              <Textarea
+                id="revocationReason"
+                placeholder="Please provide a reason for revoking this exemption..."
+                value={revocationReason}
+                onChange={(e) => setRevocationReason(e.target.value)}
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowRevocationDialog(false);
+                setRevocationReason('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmRevocation}
+              disabled={!revocationReason.trim() || revokeExemption.isPending}
+            >
+              {revokeExemption.isPending ? 'Revoking...' : 'Revoke Exemption'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

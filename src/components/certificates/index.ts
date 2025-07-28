@@ -7,6 +7,9 @@ export { ExemptionRequestDialog } from './ExemptionRequestDialog';
 export { ExemptionApprovalDialog } from './ExemptionApprovalDialog';
 export { ExemptionManagementDashboard } from './ExemptionManagementDashboard';
 export { EmployeeExemptionStatus } from './EmployeeExemptionStatus';
+export { MassExemptionDialog } from './MassExemptionDialog';
+export { CriteriaBuilder } from './CriteriaBuilder';
+export { EmployeePreview } from './EmployeePreview';
 
 // Existing certificate components
 export { CertificateExpiryDashboard } from './CertificateExpiryDashboard';

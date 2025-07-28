@@ -232,11 +232,8 @@ export type Database = {
           justification: string | null
           license_id: string
           reason: string
-          rejection_reason: string | null
           requested_by_id: string | null
           requested_by_name: string | null
-          revocation_reason: string | null
-          revoked_at: string | null
           updated_at: string | null
         }
         Insert: {
@@ -256,11 +253,8 @@ export type Database = {
           justification?: string | null
           license_id: string
           reason: string
-          rejection_reason?: string | null
           requested_by_id?: string | null
           requested_by_name?: string | null
-          revocation_reason?: string | null
-          revoked_at?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -280,11 +274,8 @@ export type Database = {
           justification?: string | null
           license_id?: string
           reason?: string
-          rejection_reason?: string | null
           requested_by_id?: string | null
           requested_by_name?: string | null
-          revocation_reason?: string | null
-          revoked_at?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -1272,6 +1263,214 @@ export type Database = {
           },
         ]
       }
+      mass_exemption_operations: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          criteria_used: Json
+          effective_date: string
+          employees_affected: number
+          employees_failed: number | null
+          employees_processed: number | null
+          employees_successful: number | null
+          error_details: Json | null
+          executed_by_id: string | null
+          executed_by_name: string
+          exemption_type: string
+          expiry_date: string | null
+          id: string
+          justification: string | null
+          license_id: string
+          reason: string
+          started_at: string
+          status: string
+          template_id: string | null
+          template_name: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          criteria_used: Json
+          effective_date: string
+          employees_affected: number
+          employees_failed?: number | null
+          employees_processed?: number | null
+          employees_successful?: number | null
+          error_details?: Json | null
+          executed_by_id?: string | null
+          executed_by_name: string
+          exemption_type: string
+          expiry_date?: string | null
+          id?: string
+          justification?: string | null
+          license_id: string
+          reason: string
+          started_at?: string
+          status?: string
+          template_id?: string | null
+          template_name: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          criteria_used?: Json
+          effective_date?: string
+          employees_affected?: number
+          employees_failed?: number | null
+          employees_processed?: number | null
+          employees_successful?: number | null
+          error_details?: Json | null
+          executed_by_id?: string | null
+          executed_by_name?: string
+          exemption_type?: string
+          expiry_date?: string | null
+          id?: string
+          justification?: string | null
+          license_id?: string
+          reason?: string
+          started_at?: string
+          status?: string
+          template_id?: string | null
+          template_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mass_exemption_operations_executed_by_id_fkey"
+            columns: ["executed_by_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mass_exemption_operations_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "licenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mass_exemption_operations_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "mass_exemption_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mass_exemption_results: {
+        Row: {
+          created_at: string
+          employee_id: string
+          error_message: string | null
+          exemption_id: string | null
+          id: string
+          operation_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          error_message?: string | null
+          exemption_id?: string | null
+          id?: string
+          operation_id: string
+          status: string
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          error_message?: string | null
+          exemption_id?: string | null
+          id?: string
+          operation_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mass_exemption_results_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mass_exemption_results_exemption_id_fkey"
+            columns: ["exemption_id"]
+            isOneToOne: false
+            referencedRelation: "certificate_exemptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mass_exemption_results_operation_id_fkey"
+            columns: ["operation_id"]
+            isOneToOne: false
+            referencedRelation: "mass_exemption_operations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mass_exemption_templates: {
+        Row: {
+          created_at: string
+          created_by_id: string | null
+          created_by_name: string
+          criteria: Json
+          default_duration_days: number | null
+          default_justification: string | null
+          default_reason: string | null
+          description: string | null
+          exemption_type: string
+          id: string
+          is_active: boolean
+          last_used_at: string | null
+          name: string
+          updated_at: string
+          usage_count: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by_id?: string | null
+          created_by_name: string
+          criteria: Json
+          default_duration_days?: number | null
+          default_justification?: string | null
+          default_reason?: string | null
+          description?: string | null
+          exemption_type: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          name: string
+          updated_at?: string
+          usage_count?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by_id?: string | null
+          created_by_name?: string
+          criteria?: Json
+          default_duration_days?: number | null
+          default_justification?: string | null
+          default_reason?: string | null
+          description?: string | null
+          exemption_type?: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          name?: string
+          updated_at?: string
+          usage_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mass_exemption_templates_created_by_id_fkey"
+            columns: ["created_by_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           action_url: string | null
@@ -2227,6 +2426,25 @@ export type Database = {
         }
         Returns: number
       }
+      create_mass_exemptions: {
+        Args: {
+          p_operation_id: string
+          p_license_id: string
+          p_criteria: Json
+          p_exemption_type: string
+          p_reason: string
+          p_justification: string
+          p_effective_date: string
+          p_expiry_date: string
+          p_executed_by_id: string
+          p_executed_by_name: string
+        }
+        Returns: {
+          success_count: number
+          error_count: number
+          total_count: number
+        }[]
+      }
       create_notification: {
         Args: {
           p_recipient_id: string
@@ -2244,6 +2462,15 @@ export type Database = {
       employee_needs_certificate: {
         Args: { employee_id_param: string; license_id_param: string }
         Returns: boolean
+      }
+      evaluate_mass_exemption_criteria: {
+        Args: { criteria_json: Json }
+        Returns: {
+          employee_id: string
+          employee_name: string
+          department: string
+          contract_type: string
+        }[]
       }
       get_certificate_expiry_analysis_for_period: {
         Args:

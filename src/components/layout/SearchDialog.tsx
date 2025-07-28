@@ -182,7 +182,7 @@ export function SearchDialog({ open, onOpenChange, initialQuery = "" }: SearchDi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] z-[100]">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Search className="h-5 w-5" />
