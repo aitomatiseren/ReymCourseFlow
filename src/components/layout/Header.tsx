@@ -319,7 +319,7 @@ export const Header: React.FC = () => {
                 )}
               </div>
               <Button
-                variant="outline"
+                variant="default"
                 size="sm"
                 onClick={handleSearchClick}
                 className="flex items-center space-x-1"

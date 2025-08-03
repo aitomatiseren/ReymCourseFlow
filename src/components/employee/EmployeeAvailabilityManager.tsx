@@ -83,7 +83,7 @@ export function EmployeeAvailabilityManager({
     
     const now = new Date();
     const startDate = startOfDay(now);
-    let endDate = endOfDay(now);
+    const endDate = endOfDay(now);
     
     switch (filters.date_range) {
       case 'current':

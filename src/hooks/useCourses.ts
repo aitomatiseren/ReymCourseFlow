@@ -15,6 +15,8 @@ export interface Course {
   has_checklist?: boolean;
   checklist_items?: any[];
   cost_breakdown?: any[];
+  level?: number;
+  level_description?: string;
   created_at: string;
   course_certificates?: Array<{
     license_id: string;
@@ -72,7 +74,20 @@ export function useCourses(enableRealTime = true) {
       const { data, error } = await supabase
         .from('courses')
         .select(`
-          *,
+          id,
+          title,
+          description,
+          duration_hours,
+          max_participants,
+          price,
+          code95_points,
+          sessions_required,
+          has_checklist,
+          checklist_items,
+          cost_breakdown,
+          level,
+          level_description,
+          created_at,
           course_certificates (
             license_id,
             licenses (

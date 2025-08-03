@@ -1,6 +1,8 @@
 {
     "addDialog": {
         "title": "Cursus Toevoegen",
+        "titleRequired": "Cursustitel is verplicht",
+        "newCourse": "Nieuwe Cursus Toevoegen",
         "courseTitle": "Cursustitel",
         "courseTitleRequired": "Cursustitel is verplicht",
         "description": "Beschrijving",
@@ -8,6 +10,7 @@
         "sessionsRequired": "Aantal Benodigde Sessies",
         "sessionsRequiredHelp": "Hoeveel sessies deze cursus vereist",
         "code95Course": "Code 95 Cursus (7 punten)",
+        "requiresApproval": "Vereist goedkeuring voor inschrijving",
         "addChecklistItems": "Checklist Items Toevoegen",
         "checklistItems": "Checklist Items",
         "addItem": "Item Toevoegen",
@@ -24,6 +27,8 @@
     },
     "editDialog": {
         "title": "Cursus Bewerken",
+        "titleRequired": "Cursustitel is verplicht",
+        "editingCourse": "Cursus Bewerken",
         "courseTitle": "Cursustitel",
         "courseTitleRequired": "Cursustitel is verplicht",
         "description": "Beschrijving",

@@ -1,6 +1,8 @@
 {
     "addDialog": {
         "title": "Add Course",
+        "titleRequired": "Course title is required",
+        "newCourse": "Add New Course",
         "courseTitle": "Course Title",
         "courseTitleRequired": "Course title is required",
         "description": "Description",
@@ -8,6 +10,7 @@
         "sessionsRequired": "Number of Sessions Required",
         "sessionsRequiredHelp": "How many sessions this course requires",
         "code95Course": "Code 95 Course (7 points)",
+        "requiresApproval": "Requires approval for enrollment",
         "addChecklistItems": "Add Checklist Items",
         "checklistItems": "Checklist Items",
         "addItem": "Add Item",
@@ -24,6 +27,8 @@
     },
     "editDialog": {
         "title": "Edit Course",
+        "titleRequired": "Course title is required",
+        "editingCourse": "Editing Course",
         "courseTitle": "Course Title",
         "courseTitleRequired": "Course title is required",
         "description": "Description",

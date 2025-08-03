@@ -535,27 +535,8 @@ export function EditEmployeeDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(newOpen) => {
-      // Prevent closing the dialog - only allow closing via Cancel/Save buttons
-      if (!newOpen) return;
-      onOpenChange(newOpen);
-    }}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto z-[50] [&>button]:hidden" onInteractOutside={(e) => {
-        // Allow interaction with dropdown menus, their overlays, and trigger buttons
-        const target = e.target as Element;
-        if (target.closest('[data-radix-popper-content-wrapper]') || 
-            target.closest('[data-radix-select-content]') || 
-            target.closest('[data-radix-popover-content]') ||
-            target.closest('[data-radix-combobox-content]') ||
-            target.closest('[data-radix-popover-trigger]') ||
-            target.closest('[role="combobox"]') ||
-            target.closest('button[role="combobox"]') ||
-            target.closest('.lucide-chevrons-up-down') ||
-            target.closest('button')) {
-          return;
-        }
-        e.preventDefault();
-      }}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl h-[98vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{t('employees:editDialog.title')}</DialogTitle>
           <DialogDescription>
@@ -564,9 +545,9 @@ export function EditEmployeeDialog({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col flex-1 min-h-0">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
+              <TabsList className="grid w-full grid-cols-5 flex-shrink-0">
                 <TabsTrigger value="basic">Basic Info</TabsTrigger>
                 <TabsTrigger value="employment">Employment</TabsTrigger>
                 <TabsTrigger value="personal">Personal</TabsTrigger>
@@ -574,7 +555,8 @@ export function EditEmployeeDialog({
                 <TabsTrigger value="licenses">Licenses</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="basic" className="space-y-4">
+              <div className="flex-1 overflow-y-auto">
+                <TabsContent value="basic" className="space-y-4">
                 {/* Employee name display */}
                 <div className="text-center py-4 border-b">
                   <h2 className="text-2xl font-bold text-gray-900">
@@ -726,7 +708,7 @@ export function EditEmployeeDialog({
                 </div>
               </TabsContent>
 
-              <TabsContent value="employment" className="space-y-4">
+                <TabsContent value="employment" className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -870,7 +852,7 @@ export function EditEmployeeDialog({
                 />
               </TabsContent>
 
-              <TabsContent value="personal" className="space-y-4">
+                <TabsContent value="personal" className="space-y-4">
                 <div className="grid grid-cols-3 gap-4">
                   <FormField
                     control={form.control}
@@ -1140,7 +1122,7 @@ export function EditEmployeeDialog({
                 />
               </TabsContent>
 
-              <TabsContent value="identity" className="space-y-4">
+                <TabsContent value="identity" className="space-y-4">
                 <div className="space-y-4">
                   <h4 className="font-medium">Identity & Identification</h4>
                   <div className="grid grid-cols-2 gap-4">
@@ -1212,7 +1194,7 @@ export function EditEmployeeDialog({
                 </div>
               </TabsContent>
 
-              <TabsContent value="licenses" className="space-y-4">
+                <TabsContent value="licenses" className="space-y-4">
                 <div className="space-y-6">
                   <h4 className="font-medium">Driving Licenses</h4>
                   
@@ -1522,11 +1504,11 @@ export function EditEmployeeDialog({
                     )}
                   </div>
                 </div>
-              </TabsContent>
+                </TabsContent>
+              </div>
             </Tabs>
 
-
-            <div className="flex justify-end space-x-2 pt-4 border-t">
+            <div className="flex justify-end space-x-2 pt-4 border-t flex-shrink-0">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 {t('employees:addDialog.cancel')}
               </Button>

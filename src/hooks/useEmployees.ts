@@ -235,3 +235,24 @@ export function useEmployee(id: string) {
     enabled: !!id
   });
 }
+
+// Hook to get distinct work locations from employees
+export function useWorkLocations() {
+  return useQuery({
+    queryKey: ['work-locations'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('employees')
+        .select('work_location')
+        .not('work_location', 'is', null)
+        .order('work_location');
+
+      if (error) throw error;
+
+      // Get unique work locations
+      const uniqueLocations = [...new Set(data.map(emp => emp.work_location))];
+      return uniqueLocations.filter(Boolean) as string[];
+    },
+    staleTime: 1000 * 60 * 10, // 10 minutes
+  });
+}

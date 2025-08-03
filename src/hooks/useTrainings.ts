@@ -22,6 +22,7 @@ export interface Training {
   participantCount: number;
   course_id?: string;
   courseName?: string;
+  providerId?: string;
   price?: number;
   cost_breakdown?: CostComponent[];
   code95_points?: number;
@@ -97,6 +98,7 @@ export function useTrainings(enableRealTime = true) {
           notes,
           checklist,
           course_id,
+          provider_id,
           courses (
             title,
             price,
@@ -158,6 +160,7 @@ export function useTrainings(enableRealTime = true) {
           participantCount: participantCounts[training.id] || 0,
           course_id: training.course_id,
           courseName: training.courses?.title,
+          providerId: training.provider_id || undefined,
           price: finalPrice,
           cost_breakdown: costBreakdown,
           code95_points: training.courses?.code95_points || undefined,

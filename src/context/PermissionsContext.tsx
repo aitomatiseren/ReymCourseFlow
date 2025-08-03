@@ -281,7 +281,7 @@ export const PermissionsProvider: React.FC<PermissionsProviderProps> = ({ childr
                 profile = null;
             }
 
-            let userProfileData = profile;
+            const userProfileData = profile;
             console.log('Profile query result:', { profile, profileError });
 
             if (profileError) {

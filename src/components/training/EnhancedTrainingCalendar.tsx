@@ -13,9 +13,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Clock, MapPin, Users, Search, Filter, Plus } from "lucide-react";
+import { Clock, MapPin, Users, User, Search, Filter } from "lucide-react";
 
 import { useTrainings, Training } from "@/hooks/useTrainings";
+import { useCourses } from "@/hooks/useCourses";
+import { useProviders } from "@/hooks/useProviders";
 import { useToast } from "@/hooks/use-toast";
 import { parseISO, format } from "date-fns";
 
@@ -37,10 +39,13 @@ export function EnhancedTrainingCalendar({
   const [currentView, setCurrentView] = useState('dayGridMonth');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [instructorFilter, setInstructorFilter] = useState<string>('all');
+  const [providerFilter, setProviderFilter] = useState<string>('all');
+  const [courseTypeFilter, setCourseTypeFilter] = useState<string>('all');
   
   // Data hooks
   const { data: trainings = [], isLoading } = useTrainings();
+  const { data: courses = [] } = useCourses();
+  const { data: providers = [] } = useProviders();
 
   // Status color mapping
   const getStatusColor = useCallback((status: Training['status']) => {
@@ -71,7 +76,14 @@ export function EnhancedTrainingCalendar({
         return;
       }
       
-      if (instructorFilter !== 'all' && training.instructor !== instructorFilter) {
+      // Filter by provider
+      if (providerFilter !== 'all' && training.providerId !== providerFilter) {
+        return;
+      }
+      
+      // Filter by course type
+      const trainingCourse = courses.find(c => c.id === training.course_id);
+      if (courseTypeFilter !== 'all' && (!trainingCourse || trainingCourse.title !== courseTypeFilter)) {
         return;
       }
 
@@ -161,18 +173,22 @@ export function EnhancedTrainingCalendar({
     console.log('Generated events for calendar:', events);
     
     return events;
-  }, [trainings, searchTerm, statusFilter, instructorFilter, getStatusColor]);
+  }, [trainings, searchTerm, statusFilter, providerFilter, courseTypeFilter, getStatusColor, providers, courses]);
 
-  // Get unique instructors for filter
-  const uniqueInstructors = useMemo(() => {
-    const instructors = new Set<string>();
-    trainings.forEach(training => {
-      if (training.instructor) {
-        instructors.add(training.instructor);
+  // Get unique course types for filter
+  const uniqueCourseTypes = useMemo(() => {
+    console.log('All courses:', courses);
+    const courseTypes = new Set<string>();
+    courses.forEach(course => {
+      console.log('Course:', course.title, 'level_description:', course.level_description);
+      // For now, let's just use the course title as the type until we figure out the right field
+      if (course.title) {
+        courseTypes.add(course.title);
       }
     });
-    return Array.from(instructors).sort();
-  }, [trainings]);
+    console.log('Unique course types:', Array.from(courseTypes));
+    return Array.from(courseTypes).sort();
+  }, [courses]);
 
   // Event handlers
   const handleEventClick = useCallback((clickInfo: EventClickArg) => {
@@ -224,7 +240,8 @@ export function EnhancedTrainingCalendar({
   const clearFilters = () => {
     setSearchTerm('');
     setStatusFilter('all');
-    setInstructorFilter('all');
+    setProviderFilter('all');
+    setCourseTypeFilter('all');
   };
 
   if (isLoading) {
@@ -247,7 +264,6 @@ export function EnhancedTrainingCalendar({
         <CardHeader>
           <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
             <div className="flex items-center space-x-2">
-              <Calendar className="h-5 w-5" />
               <CardTitle>{t('training:scheduler.calendar.title', 'Training Calendar')}</CardTitle>
             </div>
             
@@ -280,16 +296,31 @@ export function EnhancedTrainingCalendar({
                   </SelectContent>
                 </Select>
 
-                {/* Instructor Filter */}
-                <Select value={instructorFilter} onValueChange={setInstructorFilter}>
+                {/* Provider Filter */}
+                <Select value={providerFilter} onValueChange={setProviderFilter}>
                   <SelectTrigger className="w-full sm:w-40">
-                    <SelectValue placeholder="Instructor" />
+                    <SelectValue placeholder="Provider" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Instructors</SelectItem>
-                    {uniqueInstructors.map((instructor) => (
-                      <SelectItem key={instructor} value={instructor}>
-                        {instructor}
+                    <SelectItem value="all">All Providers</SelectItem>
+                    {providers.map((provider) => (
+                      <SelectItem key={provider.id} value={provider.id}>
+                        {provider.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Course Type Filter */}
+                <Select value={courseTypeFilter} onValueChange={setCourseTypeFilter}>
+                  <SelectTrigger className="w-full sm:w-40">
+                    <SelectValue placeholder="Course Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Courses</SelectItem>
+                    {uniqueCourseTypes.map((courseType) => (
+                      <SelectItem key={courseType} value={courseType}>
+                        {courseType}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -303,15 +334,6 @@ export function EnhancedTrainingCalendar({
                   <Filter className="h-4 w-4 mr-2" />
                   Clear
                 </Button>
-
-                {/* Create Training */}
-                {onCreateTraining && (
-                  <Button onClick={() => onCreateTraining()} className="w-full sm:w-auto">
-                    <Plus className="h-4 w-4 mr-2" />
-                    <span className="sm:hidden">New</span>
-                    <span className="hidden sm:inline">{t('training:scheduler.calendar.createTraining', 'New Training')}</span>
-                  </Button>
-                )}
               </div>
             </div>
           </div>
@@ -347,6 +369,11 @@ export function EnhancedTrainingCalendar({
             eventMinHeight={14}
             slotEventOverlap={false}
             
+            // List view specific settings
+            listDayFormat={{ weekday: 'long', month: 'long', day: 'numeric' }}
+            listDaySideFormat={false}
+            noEventsText="No training sessions scheduled"
+            
             // Event handlers
             eventClick={handleEventClick}
             select={handleDateSelect}
@@ -367,6 +394,36 @@ export function EnhancedTrainingCalendar({
               const isMonthView = currentView === 'dayGridMonth';
               const isWeekView = currentView === 'timeGridWeek';
               const isDayView = currentView === 'timeGridDay';
+              const isListView = currentView === 'listWeek';
+              
+              // For list view, create custom content to force title display
+              if (isListView) {
+                return (
+                  <div className="w-full py-1">
+                    <div className="font-medium text-gray-900 text-sm leading-tight">
+                      {eventInfo.event.title}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1 space-y-1">
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {startTime}{endTime ? ` - ${endTime}` : ''}
+                      </div>
+                      {extendedProps.location && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {extendedProps.location}
+                        </div>
+                      )}
+                      {extendedProps.instructor && (
+                        <div className="flex items-center gap-1">
+                          <User className="h-3 w-3" />
+                          {extendedProps.instructor}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
               
               // Simplified rendering for month view
               if (isMonthView) {

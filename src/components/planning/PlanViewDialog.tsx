@@ -17,6 +17,7 @@ import {
 import { PreliminaryPlan, usePreliminaryPlanGroups, usePreliminaryPlanTrainings, usePreliminaryPlanningMutations } from "@/hooks/usePreliminaryPlanning";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { logger } from "@/utils/logger";
 
 interface PlanViewDialogProps {
   open: boolean;
@@ -50,7 +51,7 @@ export function PlanViewDialog({
           description: `Group "${groupName}" has been successfully deleted.`,
         });
       } catch (error) {
-        console.error('Error deleting group:', error);
+        logger.error('Error deleting group', error);
         toast({
           title: "Error",
           description: "Failed to delete the group. Please try again.",

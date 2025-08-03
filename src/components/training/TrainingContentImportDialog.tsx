@@ -3,7 +3,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -11,13 +10,9 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Upload, 
   FileText, 
-  Image, 
-  Calendar, 
   Loader2, 
   CheckCircle, 
-  AlertCircle,
-  Copy,
-  Download
+  AlertCircle
 } from "lucide-react";
 import { TrainingContentExtractor, TrainingContentInput, ExtractedTrainingData } from "@/services/ai/training-content-extractor";
 
@@ -34,17 +29,49 @@ export function TrainingContentImportDialog({
   onImport,
   title = "Import Training Content"
 }: TrainingContentImportDialogProps) {
-  const [activeTab, setActiveTab] = useState("text");
   const [textContent, setTextContent] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [extractedData, setExtractedData] = useState<ExtractedTrainingData | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [processingMessage, setProcessingMessage] = useState("Processing content...");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   
   const extractor = new TrainingContentExtractor();
+
+  const handleContentExtraction = useCallback(async (inputType: 'text' | 'image' | 'outlook' | 'file', content: string, fileName?: string, fileType?: string) => {
+    setIsProcessing(true);
+    setProcessingMessage(
+      inputType === 'text' ? "Analyzing text content..." :
+      inputType === 'image' ? "Processing image with AI vision..." :
+      inputType === 'outlook' ? "Extracting calendar information..." :
+      "Reading document content..."
+    );
+
+    try {
+      const input: TrainingContentInput = {
+        type: inputType,
+        content,
+        fileName,
+        fileType
+      };
+      
+      const data = await extractor.extractTrainingContent(input);
+      console.log('TrainingContentImportDialog - Extracted data from AI:', data);
+      setExtractedData(data);
+      setPreviewMode(true);
+    } catch (error) {
+      console.error(`Error extracting from ${inputType}:`, error);
+      toast({
+        title: "Extraction Failed",
+        description: `Failed to extract training information from ${inputType === 'text' ? 'text' : fileName || 'content'}. Please try again.`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [extractor, toast]);
 
   const handleTextExtraction = useCallback(async () => {
     if (!textContent.trim()) {
@@ -56,83 +83,34 @@ export function TrainingContentImportDialog({
       return;
     }
 
-    setIsProcessing(true);
-    try {
-      const input: TrainingContentInput = {
-        type: 'text',
-        content: textContent
-      };
-      
-      const data = await extractor.extractTrainingContent(input);
-      setExtractedData(data);
-      setPreviewMode(true);
-    } catch (error) {
-      console.error('Error extracting from text:', error);
-      toast({
-        title: "Extraction Failed",
-        description: "Failed to extract training information from text. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [textContent, extractor, toast]);
+    await handleContentExtraction('text', textContent);
+  }, [textContent, handleContentExtraction, toast]);
 
-  const handleFileUpload = useCallback(async (file: File, type: 'outlook' | 'file') => {
+  const handleFileUpload = useCallback(async (file: File) => {
     if (!file) return;
 
-    setIsProcessing(true);
     try {
-      const content = await readFileContent(file);
-      const input: TrainingContentInput = {
-        type,
-        content,
-        fileName: file.name,
-        fileType: file.type
-      };
-      
-      const data = await extractor.extractTrainingContent(input);
-      setExtractedData(data);
-      setPreviewMode(true);
+      // Determine file type and processing method
+      if (file.type.startsWith('image/')) {
+        const base64Content = await readFileAsBase64(file);
+        await handleContentExtraction('image', base64Content, file.name, file.type);
+      } else if (file.type === 'text/calendar' || file.name.endsWith('.ics') || 
+                 file.name.endsWith('.msg') || file.name.endsWith('.eml')) {
+        const content = await readFileContent(file);
+        await handleContentExtraction('outlook', content, file.name, file.type);
+      } else {
+        const content = await readFileContent(file);
+        await handleContentExtraction('file', content, file.name, file.type);
+      }
     } catch (error) {
-      console.error('Error extracting from file:', error);
+      console.error('Error processing file:', error);
       toast({
-        title: "Extraction Failed",
-        description: `Failed to extract training information from ${file.name}. Please try again.`,
+        title: "Upload Failed",
+        description: `Failed to process ${file.name}. Please try again.`,
         variant: "destructive",
       });
-    } finally {
-      setIsProcessing(false);
     }
-  }, [extractor, toast]);
-
-  const handleImageUpload = useCallback(async (file: File) => {
-    if (!file) return;
-
-    setIsProcessing(true);
-    try {
-      const base64Content = await readFileAsBase64(file);
-      const input: TrainingContentInput = {
-        type: 'image',
-        content: base64Content,
-        fileName: file.name,
-        fileType: file.type
-      };
-      
-      const data = await extractor.extractTrainingContent(input);
-      setExtractedData(data);
-      setPreviewMode(true);
-    } catch (error) {
-      console.error('Error extracting from image:', error);
-      toast({
-        title: "Extraction Failed",
-        description: `Failed to extract training information from image. Please try again.`,
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [extractor, toast]);
+  }, [handleContentExtraction, toast]);
 
   // Drag and drop handlers
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -161,17 +139,8 @@ export function TrainingContentImportDialog({
     if (files.length === 0) return;
 
     const file = files[0];
-    
-    // Determine file type and handle accordingly
-    if (file.type.startsWith('image/')) {
-      await handleImageUpload(file);
-    } else if (file.type === 'text/calendar' || file.name.endsWith('.ics') || 
-               file.name.endsWith('.msg') || file.name.endsWith('.eml')) {
-      await handleFileUpload(file, 'outlook');
-    } else {
-      await handleFileUpload(file, 'file');
-    }
-  }, [handleImageUpload, handleFileUpload]);
+    await handleFileUpload(file);
+  }, [handleFileUpload]);
 
   const readFileContent = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -192,11 +161,14 @@ export function TrainingContentImportDialog({
   };
 
   const handleImport = () => {
+    console.log('TrainingContentImportDialog - handleImport called with data:', extractedData);
     if (extractedData) {
+      console.log('TrainingContentImportDialog - Calling onImport callback with data:', extractedData);
       onImport(extractedData);
       
       // Close the dialog after a brief delay to let user see the import happened
       setTimeout(() => {
+        console.log('TrainingContentImportDialog - Closing dialog and resetting state');
         onOpenChange(false);
         setExtractedData(null);
         setPreviewMode(false);
@@ -207,6 +179,8 @@ export function TrainingContentImportDialog({
         title: "Training Content Imported",
         description: "Training information has been successfully imported and pre-filled. Check the training form to see the imported data.",
       });
+    } else {
+      console.error('TrainingContentImportDialog - No extracted data available for import');
     }
   };
 
@@ -215,6 +189,7 @@ export function TrainingContentImportDialog({
     setPreviewMode(false);
     setTextContent("");
     setDragActive(false);
+    setProcessingMessage("Processing content...");
   };
 
   const getConfidenceColor = (confidence: number) => {
@@ -400,6 +375,109 @@ export function TrainingContentImportDialog({
               </Card>
             </div>
 
+            {/* Sessions Information */}
+            {extractedData.sessions && extractedData.sessions.length > 0 && (() => {
+              // Group sessions by date for preview (same logic as in CreateTrainingDialog)
+              const sessionsByDate = new Map<string, {
+                formattedDate: string;
+                startTime: string;
+                endTime: string;
+                details: string[];
+                instructor?: string;
+                location?: string;
+              }>();
+              
+              extractedData.sessions.forEach((session, index) => {
+                if (session.date) {
+                  // Parse and format date
+                  let formattedDate = session.date;
+                  
+                  if (formattedDate.includes('-') && formattedDate.split('-').length === 3) {
+                    const parts = formattedDate.split('-');
+                    if (parts[2].length === 4) {
+                      // DD-MM-YYYY format -> YYYY-MM-DD 
+                      formattedDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                    }
+                  }
+                  
+                  const startTime = session.startTime ? (session.startTime.length === 5 ? session.startTime : session.startTime.substring(0, 5)) : '';
+                  const endTime = session.endTime ? (session.endTime.length === 5 ? session.endTime : session.endTime.substring(0, 5)) : '';
+                  
+                  const sessionDetail = session.title || `Session ${index + 1}`;
+                  const timeDetail = startTime && endTime ? ` (${startTime}-${endTime})` : startTime ? ` (${startTime})` : '';
+                  const fullDetail = sessionDetail + timeDetail;
+                  
+                  if (sessionsByDate.has(formattedDate)) {
+                    const existing = sessionsByDate.get(formattedDate)!;
+                    existing.details.push(fullDetail);
+                    
+                    // Update start time to earliest
+                    if (startTime && (!existing.startTime || startTime < existing.startTime)) {
+                      existing.startTime = startTime;
+                    }
+                    
+                    // Update end time to latest  
+                    if (endTime && (!existing.endTime || endTime > existing.endTime)) {
+                      existing.endTime = endTime;
+                    }
+                  } else {
+                    sessionsByDate.set(formattedDate, {
+                      formattedDate,
+                      startTime: startTime || '',
+                      endTime: endTime || '',
+                      details: [fullDetail],
+                      instructor: session.instructor,
+                      location: session.location
+                    });
+                  }
+                }
+              });
+              
+              const groupedSessions = Array.from(sessionsByDate.values());
+              
+              return (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">
+                      Training Sessions ({groupedSessions.length} grouped from {extractedData.sessions.length} original)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {groupedSessions.map((groupedSession, index) => (
+                      <div key={index} className="border rounded-lg p-3 bg-gray-50">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                          <div className="md:col-span-3">
+                            <Label className="text-xs font-medium text-gray-600">Session Details</Label>
+                            <p className="mt-1 font-medium">{groupedSession.details.join(', ')}</p>
+                          </div>
+                          <div>
+                            <Label className="text-xs font-medium text-gray-600">Date</Label>
+                            <p className="mt-1">{groupedSession.formattedDate}</p>
+                          </div>
+                          <div>
+                            <Label className="text-xs font-medium text-gray-600">Time</Label>
+                            <p className="mt-1">{groupedSession.startTime}{groupedSession.endTime ? ` - ${groupedSession.endTime}` : ''}</p>
+                          </div>
+                          {groupedSession.instructor && (
+                            <div>
+                              <Label className="text-xs font-medium text-gray-600">Instructor</Label>
+                              <p className="mt-1">{groupedSession.instructor}</p>
+                            </div>
+                          )}
+                          {groupedSession.location && (
+                            <div className="md:col-span-3">
+                              <Label className="text-xs font-medium text-gray-600">Location</Label>
+                              <p className="mt-1">{groupedSession.location}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              );
+            })()}
+
             {/* Action Buttons */}
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={handleReset}>
@@ -425,192 +503,112 @@ export function TrainingContentImportDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="text">Text</TabsTrigger>
-            <TabsTrigger value="image">Image</TabsTrigger>
-            <TabsTrigger value="outlook">Outlook</TabsTrigger>
-            <TabsTrigger value="file">File</TabsTrigger>
-          </TabsList>
+        <div className="space-y-6">
+          {/* Text Input Section */}
+          <div className="space-y-3">
+            <Label htmlFor="text-content" className="text-base font-semibold">
+              Paste Training Content
+            </Label>
+            <p className="text-sm text-gray-600">
+              Paste training information, meeting details, course descriptions, or any text content
+            </p>
+            <Textarea
+              id="text-content"
+              placeholder="Paste your training content here...
 
-          <TabsContent value="text" className="space-y-4">
-            <div className="space-y-3">
-              <Label htmlFor="text-content">
-                Paste training information, meeting details, or course descriptions
-              </Label>
-              <Textarea
-                id="text-content"
-                placeholder="Paste your training content here..."
-                value={textContent}
-                onChange={(e) => setTextContent(e.target.value)}
-                className="min-h-[200px] resize-none"
-              />
-              <div className="flex justify-end">
-                <Button 
-                  onClick={handleTextExtraction}
-                  disabled={isProcessing || !textContent.trim()}
-                  className="bg-blue-600 hover:bg-blue-700"
+Examples:
+• Meeting invitations or calendar items
+• Course descriptions or training announcements
+• Email content about training sessions
+• Any text containing training information"
+              value={textContent}
+              onChange={(e) => setTextContent(e.target.value)}
+              className="min-h-[150px] resize-none"
+              disabled={isProcessing}
+            />
+            <div className="flex justify-end">
+              <Button 
+                onClick={handleTextExtraction}
+                disabled={isProcessing || !textContent.trim()}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="mr-2 h-4 w-4" />
+                    Extract Training Info
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* File Upload Section */}
+          <div className="space-y-3">
+            <Label className="text-base font-semibold">
+              Upload Files
+            </Label>
+            <p className="text-sm text-gray-600">
+              Upload any file type - images, documents, calendar items, or Outlook files. AI will automatically detect and process the content.
+            </p>
+            <div 
+              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                dragActive 
+                  ? 'border-blue-500 bg-blue-50' 
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+            >
+              <div className="flex justify-center mb-4">
+                <Upload className={`h-12 w-12 ${dragActive ? 'text-blue-500' : 'text-gray-400'}`} />
+              </div>
+              <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isProcessing}
+                  className="mx-auto"
                 >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <FileText className="mr-2 h-4 w-4" />
-                      Extract Training Info
-                    </>
-                  )}
+                  <Upload className="mr-2 h-4 w-4" />
+                  Choose File
                 </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,.ics,.msg,.eml,.txt,.pdf,.doc,.docx,.rtf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileUpload(file);
+                  }}
+                  className="hidden"
+                />
               </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="image" className="space-y-4">
-            <div className="space-y-3">
-              <Label>Upload training screenshots, course schedules, or meeting invitations</Label>
-              <div 
-                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                  dragActive 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}
-                onDragEnter={handleDragEnter}
-                onDragLeave={handleDragLeave}
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
-              >
-                <Image className={`mx-auto h-12 w-12 ${dragActive ? 'text-blue-500' : 'text-gray-400'}`} />
-                <div className="mt-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => imageInputRef.current?.click()}
-                    disabled={isProcessing}
-                    className="mx-auto"
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload Image
-                  </Button>
-                  <input
-                    ref={imageInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleImageUpload(file);
-                    }}
-                    className="hidden"
-                  />
-                </div>
-                <p className="text-sm text-gray-500 mt-2">
-                  PNG, JPG, GIF up to 10MB
+              <div className="mt-4 space-y-2">
+                <p className="text-sm text-gray-500">
+                  Supported: Images (PNG, JPG, GIF), Documents (PDF, DOC, TXT), Calendar files (ICS, MSG, EML)
                 </p>
-                <p className={`text-xs mt-1 ${dragActive ? 'text-blue-500 font-medium' : 'text-gray-400'}`}>
-                  {dragActive ? 'Drop image files here' : 'Or drag and drop image files here'}
+                <p className={`text-xs ${dragActive ? 'text-blue-500 font-medium' : 'text-gray-400'}`}>
+                  {dragActive ? 'Drop files here to upload' : 'Or drag and drop files here'}
                 </p>
               </div>
             </div>
-          </TabsContent>
-
-          <TabsContent value="outlook" className="space-y-4">
-            <div className="space-y-3">
-              <Label>Upload Outlook calendar items or meeting invitations</Label>
-              <div 
-                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                  dragActive 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}
-                onDragEnter={handleDragEnter}
-                onDragLeave={handleDragLeave}
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
-              >
-                <Calendar className={`mx-auto h-12 w-12 ${dragActive ? 'text-blue-500' : 'text-gray-400'}`} />
-                <div className="mt-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isProcessing}
-                    className="mx-auto"
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload Outlook Item
-                  </Button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".ics,.msg,.eml,.txt"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleFileUpload(file, 'outlook');
-                    }}
-                    className="hidden"
-                  />
-                </div>
-                <p className="text-sm text-gray-500 mt-2">
-                  .ics, .msg, .eml, or .txt files
-                </p>
-                <p className={`text-xs mt-1 ${dragActive ? 'text-blue-500 font-medium' : 'text-gray-400'}`}>
-                  {dragActive ? 'Drop calendar files here' : 'Or drag and drop calendar files here'}
-                </p>
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="file" className="space-y-4">
-            <div className="space-y-3">
-              <Label>Upload training documents or course materials</Label>
-              <div 
-                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                  dragActive 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}
-                onDragEnter={handleDragEnter}
-                onDragLeave={handleDragLeave}
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
-              >
-                <FileText className={`mx-auto h-12 w-12 ${dragActive ? 'text-blue-500' : 'text-gray-400'}`} />
-                <div className="mt-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isProcessing}
-                    className="mx-auto"
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload File
-                  </Button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".txt,.pdf,.doc,.docx,.rtf"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleFileUpload(file, 'file');
-                    }}
-                    className="hidden"
-                  />
-                </div>
-                <p className="text-sm text-gray-500 mt-2">
-                  .txt, .pdf, .doc, .docx, .rtf files
-                </p>
-                <p className={`text-xs mt-1 ${dragActive ? 'text-blue-500 font-medium' : 'text-gray-400'}`}>
-                  {dragActive ? 'Drop document files here' : 'Or drag and drop document files here'}
-                </p>
-              </div>
-            </div>
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
 
         {isProcessing && (
           <div className="flex items-center justify-center py-8">
             <div className="text-center">
               <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
-              <p className="text-sm text-gray-600">Processing content...</p>
+              <p className="text-sm text-gray-600">{processingMessage}</p>
             </div>
           </div>
         )}

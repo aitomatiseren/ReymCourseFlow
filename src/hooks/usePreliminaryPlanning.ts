@@ -45,7 +45,7 @@ export interface PreliminaryPlanGroup {
   licenses?: {
     id: string;
     name: string;
-    category: string;
+    description: string;
   };
 }
 
@@ -326,7 +326,7 @@ export function usePreliminaryPlanGroups(planId: string) {
           licenses (
             id,
             name,
-            category
+            description
           ),
           preliminary_plan_group_employees (
             *,

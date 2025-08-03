@@ -432,7 +432,7 @@ export default function CertificateDefinitions() {
                           <BookOpen className="h-5 w-5 text-blue-600" />
                           <div>
                             <p className="font-medium">{mapping.courses?.title}</p>
-                            <p className="text-sm text-muted-foreground">{mapping.courses?.category}</p>
+                            <p className="text-sm text-muted-foreground">{mapping.courses?.description}</p>
                           </div>
                         </div>
                         

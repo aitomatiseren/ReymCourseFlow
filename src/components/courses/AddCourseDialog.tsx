@@ -23,7 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { useCreateCourse } from "@/hooks/useCourses";
-import { Plus, Trash2, Award, Sparkles } from "lucide-react";
+import { Plus, Trash2, Award } from "lucide-react";
 
 // Comprehensive schema matching pattern
 const createCourseSchema = (t: any) => z.object({
@@ -285,25 +285,6 @@ export function AddCourseDialog({ open, onOpenChange }: AddCourseDialogProps) {
                   </Button>
                 </div>
               ))}
-            </div>
-
-            {/* AI Enhancement Button */}
-            <div className="flex justify-center pt-4">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => {
-                  // AI-powered course enhancement feature
-                  toast({
-                    title: "AI Enhancement",
-                    description: "AI-powered course optimization coming soon!",
-                  });
-                }}
-                className="flex items-center gap-2"
-              >
-                <Sparkles className="w-4 h-4" />
-                Enhance with AI
-              </Button>
             </div>
 
             <div className="flex justify-end space-x-2 pt-4 border-t">

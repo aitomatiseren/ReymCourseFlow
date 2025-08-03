@@ -20,7 +20,7 @@ interface ChecklistManagementSectionProps {
 }
 
 export function ChecklistManagementSection({
-  checklistItems,
+  checklistItems = [],
   onChecklistChange
 }: ChecklistManagementSectionProps) {
   const [newItemText, setNewItemText] = useState("");
@@ -79,7 +79,7 @@ export function ChecklistManagementSection({
 
         {/* Checklist items */}
         <div className="space-y-2">
-          {checklistItems.map((item) => (
+          {checklistItems?.map((item) => (
             <div key={item.id} className="flex items-center gap-2 p-2 border rounded">
               <Checkbox
                 checked={item.completed}
@@ -108,7 +108,7 @@ export function ChecklistManagementSection({
           ))}
         </div>
 
-        {checklistItems.length === 0 && (
+        {(!checklistItems || checklistItems.length === 0) && (
           <p className="text-gray-500 text-center py-4">
             No checklist items yet. Add one above.
           </p>

@@ -1,7 +1,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Heart, Plane, Home, CheckCircle, XCircle } from "lucide-react";
-import { EmployeeStatus, getStatusColor, getStatusLabel } from "@/constants/employeeStatus";
+import { EmployeeStatus, getStatusLabel } from "@/constants/employeeStatus";
 
 interface EmployeeStatusBadgeProps {
   status: EmployeeStatus;
@@ -30,12 +30,36 @@ export function EmployeeStatusBadge({ status, className }: EmployeeStatusBadgePr
     }
   };
 
+  // Map employee status to badge variant
+  const getStatusVariant = (status: EmployeeStatus) => {
+    switch (status) {
+      case 'active':
+        return 'active';
+      case 'inactive':
+        return 'inactive';
+      case 'on_leave':
+        return 'onLeave';
+      case 'sick_short':
+        return 'sickShort';
+      case 'sick_long':
+        return 'sickLong';
+      case 'vacation':
+        return 'vacation';
+      case 'unavailable':
+        return 'unavailable';
+      case 'terminated':
+        return 'terminated';
+      default:
+        return 'default';
+    }
+  };
+
   const IconComponent = getStatusIcon(status);
-  const statusColor = getStatusColor(status);
   const statusLabel = getStatusLabel(status);
+  const variant = getStatusVariant(status);
 
   return (
-    <Badge className={`${statusColor} hover:${statusColor} ${className}`}>
+    <Badge variant={variant as 'active' | 'inactive' | 'onLeave' | 'sickShort' | 'sickLong' | 'vacation' | 'unavailable' | 'terminated' | 'default'} className={className}>
       {IconComponent && <IconComponent className="h-3 w-3 mr-1" />}
       {statusLabel}
     </Badge>

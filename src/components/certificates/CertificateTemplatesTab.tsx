@@ -63,13 +63,15 @@ export function CertificateTemplatesTab({
   const [internalShowLicenseDialog, setInternalShowLicenseDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [selectedLicense, setSelectedLicense] = useState<any>(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [internalViewMode, setInternalViewMode] = useViewMode('certificates');
   const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc' | 'desc'} | null>(null);
 
   // Use external props when available, fallback to internal state
   const viewMode = externalViewMode || internalViewMode;
   const setViewMode = externalOnViewModeChange || setInternalViewMode;
-  const showLicenseDialog = externalShowAddDialog ?? internalShowLicenseDialog;
+  // For edit operations, prioritize internal state to avoid conflicts
+  const showLicenseDialog = isEditing ? internalShowLicenseDialog : (externalShowAddDialog ?? internalShowLicenseDialog);
   const setShowLicenseDialog = externalOnShowAddDialogChange || setInternalShowLicenseDialog;
 
 
@@ -302,9 +304,14 @@ export function CertificateTemplatesTab({
           }
         }
       }
-      setShowLicenseDialog(false);
+      if (isEditing) {
+        setInternalShowLicenseDialog(false);
+      } else {
+        setShowLicenseDialog(false);
+      }
       resetLicenseForm();
       setSelectedLicense(null);
+      setIsEditing(false);
     } catch (error) {
       console.error('Certificate creation/update error:', error);
       let errorMessage = selectedLicense ? "Failed to update certificate. Please try again." : "Failed to create certificate. Please try again.";
@@ -349,11 +356,15 @@ export function CertificateTemplatesTab({
 
   // Handle external dialog trigger
   useEffect(() => {
-    if (externalShowAddDialog && externalShowAddDialog !== internalShowLicenseDialog) {
+    console.log('useEffect triggered - externalShowAddDialog:', externalShowAddDialog, 'internalShowLicenseDialog:', internalShowLicenseDialog, 'isEditing:', isEditing);
+    // Only reset if it's a new external request for adding (not editing)
+    if (externalShowAddDialog && externalShowAddDialog !== internalShowLicenseDialog && !isEditing) {
+      console.log('Resetting form due to external add dialog trigger');
       setSelectedLicense(null);
+      setIsEditing(false);
       resetLicenseForm();
     }
-  }, [externalShowAddDialog, internalShowLicenseDialog]);
+  }, [externalShowAddDialog, internalShowLicenseDialog, isEditing]);
 
   const openLicenseDetails = (license: any) => {
     // Get the license with full hierarchy data
@@ -363,6 +374,7 @@ export function CertificateTemplatesTab({
   };
 
   const openEditLicense = (license: any) => {
+    console.log('openEditLicense called with:', license);
     // Get the license with full hierarchy data AND course certificates
     const licenseWithHierarchy = licensesWithHierarchy?.find(l => l.id === license.id) || license;
     const licenseWithCourses = licenses?.find(l => l.id === license.id) || license;
@@ -372,6 +384,7 @@ export function CertificateTemplatesTab({
       ...licenseWithHierarchy,
       course_certificates: licenseWithCourses.course_certificates || []
     };
+    console.log('Setting selectedLicense to:', fullLicenseData);
     
     setLicenseForm({
       name: fullLicenseData.name,
@@ -398,8 +411,14 @@ export function CertificateTemplatesTab({
     setLinkedCourses(existingCourseLinks);
     
     setSelectedLicense(fullLicenseData);
+    setIsEditing(true);
     setShowDetailsDialog(false);
-    setShowLicenseDialog(true);
+    console.log('About to set showLicenseDialog to true, current external props:', {
+      externalShowAddDialog,
+      internalShowLicenseDialog
+    });
+    // For editing, always use internal state to avoid external interference
+    setInternalShowLicenseDialog(true);
   };
 
 
@@ -705,12 +724,30 @@ export function CertificateTemplatesTab({
 
 
       {/* New Certificate Dialog */}
-      <Dialog open={showLicenseDialog} onOpenChange={setShowLicenseDialog}>
-        <DialogContent className="max-w-2xl">
+      <Dialog open={showLicenseDialog} onOpenChange={(open) => {
+        console.log('Dialog onOpenChange called with:', open, 'isEditing:', isEditing);
+        if (isEditing) {
+          setInternalShowLicenseDialog(open);
+        } else {
+          setShowLicenseDialog(open);
+        }
+        if (!open) {
+          // Only reset when dialog is actually closed by user, not when opening for edit
+          setTimeout(() => {
+            setSelectedLicense(null);
+            setIsEditing(false);
+            resetLicenseForm();
+          }, 100);
+        }
+      }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{selectedLicense ? 'Edit Certificate' : 'Create New Certificate'}</DialogTitle>
+            <DialogTitle>
+              {console.log('Dialog rendering - isEditing:', isEditing, 'selectedLicense:', selectedLicense) || ''}
+              {isEditing ? 'Edit Certificate' : 'Create New Certificate'}
+            </DialogTitle>
             <DialogDescription>
-              {selectedLicense ? 'Update certificate information and settings.' : 'Define a new certificate type that employees can earn through training.'}
+              {isEditing ? 'Update certificate information and settings.' : 'Define a new certificate type that employees can earn through training.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -1000,13 +1037,16 @@ export function CertificateTemplatesTab({
 
           <DialogFooter>
             <Button variant="outline" onClick={() => {
-              setShowLicenseDialog(false);
-              resetLicenseForm();
+              if (isEditing) {
+                setInternalShowLicenseDialog(false);
+              } else {
+                setShowLicenseDialog(false);
+              }
             }}>
               Cancel
             </Button>
             <Button onClick={handleCreateLicense}>
-              {selectedLicense ? 'Update Certificate' : 'Create Certificate'}
+              {isEditing ? 'Update Certificate' : 'Create Certificate'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1129,7 +1169,7 @@ export function CertificateTemplatesTab({
                           <BookOpen className="h-5 w-5 text-blue-600" />
                           <div>
                             <p className="font-medium">{cc.courses?.title}</p>
-                            <p className="text-sm text-muted-foreground">{cc.courses?.category}</p>
+                            <p className="text-sm text-muted-foreground">{cc.courses?.description}</p>
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">

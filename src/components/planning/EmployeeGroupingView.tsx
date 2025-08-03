@@ -27,6 +27,7 @@ import {
   Trash2
 } from "lucide-react";
 import { CertificateExpiryAnalysis, usePreliminaryPlanningMutations } from "@/hooks/usePreliminaryPlanning";
+import { useWorkLocations, useEmployees } from "@/hooks/useEmployees";
 import { useTrainings } from "@/hooks/useTrainings";
 import { useProviders } from "@/hooks/useProviders";
 import { useCourses } from "@/hooks/useCourses";
@@ -38,6 +39,7 @@ import { CreateGroupDialog } from "./CreateGroupDialog";
 import { InteractivePlanningDialog } from "./InteractivePlanningDialog";
 import { usePreliminaryPlans, usePreliminaryPlanGroups } from "@/hooks/usePreliminaryPlanning";
 import { useToast } from "@/hooks/use-toast";
+import { logger } from "@/utils/logger";
 
 interface EmployeeGroupingViewProps {
   selectedLicenseId: string;
@@ -71,7 +73,7 @@ function ExistingGroupsView({
           description: `Group "${groupName}" has been successfully deleted.`,
         });
       } catch (error) {
-        console.error('Error deleting group:', error);
+        logger.error('Error deleting group', error);
         toast({
           title: "Error",
           description: "Failed to delete the group. Please try again.",
@@ -100,8 +102,8 @@ function ExistingGroupsView({
 
   return (
     <div className="space-y-4">
-      {relevantGroups.map((group) => (
-        <Card key={group.id} className="border-l-4 border-l-blue-500">
+      {relevantGroups.map((group, index) => (
+        <Card key={`${group.id}-${index}`} className="border-l-4 border-l-blue-500">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">{group.name}</CardTitle>
@@ -317,10 +319,51 @@ export function EmployeeGroupingView({
 
   const selectedLicense = licenses.find(license => license.id === selectedLicenseId);
   
-  // Get available work locations from expiry data
-  const availableWorkLocations = Array.from(new Set(
-    expiryData.map(emp => emp.work_location).filter(Boolean)
-  )).sort();
+  // Get available work locations from employee data (not expiry data)
+  const { data: availableWorkLocations = [] } = useWorkLocations();
+  
+  // Get employee data to match work locations for filtering
+  const { data: employees = [] } = useEmployees();
+  
+  logger.debug('EmployeeGroupingView - component initialization', {
+    availableWorkLocations,
+    selectedWorkLocations,
+    expiryDataSample: expiryData.slice(0, 2).map(emp => ({
+      id: emp.employee_id,
+      name: `${emp.first_name} ${emp.last_name}`,
+      work_location: emp.work_location,
+      allFields: Object.keys(emp)
+    }))
+  });
+
+  // Helper function to suggest the best location based on employee work locations
+  const suggestLocationForEmployees = (employeeIds: string[]): string => {
+    const selectedEmployees = employees.filter(emp => employeeIds.includes(emp.id));
+    logger.debug('suggestLocationForEmployees - analyzing selected employees', {
+      selectedEmployees: selectedEmployees.map(emp => ({ 
+        id: emp.id, 
+        name: `${emp.firstName} ${emp.lastName}`, 
+        work_location: emp.workLocation 
+      }))
+    });
+    
+    const workLocationCounts = selectedEmployees.reduce((acc, emp) => {
+      const location = emp.workLocation || 'Unknown';
+      acc[location] = (acc[location] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    logger.debug('suggestLocationForEmployees - location counts calculated', { workLocationCounts });
+
+    // Return the most common work location, or empty if no location data
+    const mostCommonLocation = Object.entries(workLocationCounts)
+      .sort(([,a], [,b]) => b - a)[0]?.[0];
+
+    const result = mostCommonLocation === 'Unknown' ? '' : (mostCommonLocation || '');
+    logger.debug('suggestLocationForEmployees - location suggestion result', { suggestedLocation: result });
+    
+    return result;
+  };
 
   const getStatusBadge = (status: string, daysUntilExpiry?: number) => {
     switch (status) {
@@ -409,7 +452,7 @@ export function EmployeeGroupingView({
       suggestedName: `${selectedLicense?.name || 'Certificate'} Group - ${new Date().toLocaleDateString()}`,
       suggestedType: determinedGroupType,
       suggestedCertificateId: selectedLicenseId !== 'all' ? selectedLicenseId : undefined,
-      suggestedLocation: '',
+      suggestedLocation: suggestLocationForEmployees(selectedEmployeeIds),
       suggestedPriority: 3,
       suggestedDescription: `New training group for ${selectedLicense?.name || 'certificate'} certification`,
       suggestedTargetDate: targetCompletionDate,
@@ -426,13 +469,13 @@ export function EmployeeGroupingView({
   };
 
   const handlePreviewGroup = (suggestion: any) => {
-    console.log('Previewing group:', suggestion);
+    logger.debug('Previewing group', { suggestion });
     // TODO: Implement group preview dialog
     alert(`Preview group: ${suggestion.name}\nEmployees: ${suggestion.employees.length}\nDepartment: ${suggestion.department}`);
   };
 
   const handleCreateGroup = (suggestion: any) => {
-    console.log('Creating group from suggestion:', suggestion);
+    logger.debug('Creating group from suggestion', { suggestion });
     
     // Determine group type based on employee statuses
     const suggestionEmployeeIds = suggestion.employees.map((emp: any) => emp.employee_id);
@@ -466,7 +509,7 @@ export function EmployeeGroupingView({
       suggestedName: suggestion.name,
       suggestedType: determinedGroupType,
       suggestedCertificateId: selectedLicenseId !== 'all' ? selectedLicenseId : undefined,
-      suggestedLocation: suggestion.department || '',
+      suggestedLocation: suggestLocationForEmployees(suggestionEmployeeIds),
       suggestedPriority: suggestion.priority || 3,
       suggestedDescription: `Training group from suggested selection: ${suggestion.name}`,
       suggestedTargetDate: targetCompletionDate,
@@ -483,7 +526,7 @@ export function EmployeeGroupingView({
   };
 
   const handleCreateAIGroup = (group: any) => {
-    console.log('Creating AI-suggested group:', group);
+    logger.debug('Creating AI-suggested group', { group });
     
     // Parse employee data from AI result
     const employeeNames = group.employees || [];
@@ -495,7 +538,7 @@ export function EmployeeGroupingView({
       });
       
       if (!employee) {
-        console.warn(`Employee not found for name: ${name}`);
+        logger.warn('Employee not found for name', { name });
         return null;
       }
       
@@ -504,7 +547,7 @@ export function EmployeeGroupingView({
     
     // Validate that we have valid employee IDs
     if (employeeIds.length === 0) {
-      console.error('No valid employee IDs found for group:', group);
+      logger.error('No valid employee IDs found for group', null, { group });
       alert('Unable to create group: No valid employees found. Please check the employee names.');
       return;
     }
@@ -518,13 +561,28 @@ export function EmployeeGroupingView({
       return employee != null;
     });
     
-    // Determine priority based on AI reasoning
-    const determinePriority = (reasoning: string) => {
-      if (reasoning.toLowerCase().includes('critical') || reasoning.toLowerCase().includes('expired')) return 5;
-      if (reasoning.toLowerCase().includes('urgent') || reasoning.toLowerCase().includes('high')) return 4;
-      if (reasoning.toLowerCase().includes('medium')) return 3;
-      if (reasoning.toLowerCase().includes('low')) return 2;
-      return 3; // default
+    // Determine priority based on actual employee needs for consistency
+    const determinePriority = (employeeIds: string[], reasoning: string) => {
+      const groupEmployees = employeeIds.map(id => expiryData.find(emp => emp.employee_id === id)).filter(Boolean);
+      
+      const hasExpired = groupEmployees.some(emp => emp.employee_status === 'expired');
+      const hasRenewalDue = groupEmployees.some(emp => emp.employee_status === 'renewal_due');
+      const hasRenewalApproaching = groupEmployees.some(emp => emp.employee_status === 'renewal_approaching');
+      const hasUrgentExpiry = groupEmployees.some(emp => emp.days_until_expiry !== null && emp.days_until_expiry <= 30);
+      const allNewEmployees = groupEmployees.every(emp => emp.employee_status === 'new');
+      
+      // Assign priority based on actual urgency
+      if (hasExpired) {
+        return 5; // Critical - expired certificates
+      } else if (hasRenewalDue || hasUrgentExpiry) {
+        return 4; // High - renewal due or expiring within 30 days
+      } else if (hasRenewalApproaching) {
+        return 3; // Medium - renewal approaching
+      } else if (allNewEmployees) {
+        return 2; // Below normal - new employees (can be scheduled flexibly)
+      } else {
+        return 3; // Normal - mixed groups
+      }
     };
     
     // Parse suggested dates if available
@@ -567,8 +625,8 @@ export function EmployeeGroupingView({
       suggestedName: group.name,
       suggestedType: determinedGroupType,
       suggestedCertificateId: selectedLicenseId !== 'all' ? selectedLicenseId : undefined,
-      suggestedLocation: group.location || '',
-      suggestedPriority: determinePriority(group.reasoning || ''),
+      suggestedLocation: group.location || suggestLocationForEmployees(employeeIds),
+      suggestedPriority: determinePriority(employeeIds, group.reasoning || ''),
       suggestedDescription: group.reasoning || `Training group with ${employeeIds.length} employees`,
       suggestedTargetDate: targetCompletionDate,
       suggestedMaxParticipants: employeeIds.length,
@@ -591,7 +649,7 @@ export function EmployeeGroupingView({
       const invalidIds = employeeIds.filter(id => !uuidRegex.test(id));
       
       if (invalidIds.length > 0) {
-        console.error('Invalid employee IDs detected:', invalidIds);
+        logger.error('Invalid employee IDs detected', null, { invalidIds });
         alert(`Unable to create group: Invalid employee identifiers found. Please try again.`);
         return;
       }
@@ -604,7 +662,7 @@ export function EmployeeGroupingView({
         const selectedPlan = preliminaryPlans.find(plan => plan.id === selectedPlanId);
         if (selectedPlan && (selectedPlan.status === 'draft' || selectedPlan.status === 'review')) {
           planId = selectedPlanId;
-          console.log(`✅ Using selected plan: ${selectedPlan.name} (${selectedPlanId})`);
+          logger.debug('Using selected plan', { planName: selectedPlan.name, planId: selectedPlanId });
         }
       }
       
@@ -616,7 +674,7 @@ export function EmployeeGroupingView({
         
         if (activePlan) {
           planId = activePlan.id;
-          console.log(`✅ Using existing active plan: ${activePlan.name} (${activePlan.id})`);
+          logger.debug('Using existing active plan', { planName: activePlan.name, planId: activePlan.id });
         } else {
           // Create a new preliminary plan
           const newPlan = await createPreliminaryPlan.mutateAsync({
@@ -632,7 +690,7 @@ export function EmployeeGroupingView({
             }
           });
           planId = newPlan.id;
-          console.log(`✅ Created new plan: ${newPlan.name} (${newPlan.id})`);
+          logger.debug('Created new plan', { planName: newPlan.name, planId: newPlan.id });
         }
       }
 
@@ -667,13 +725,15 @@ export function EmployeeGroupingView({
       });
 
       // Add employees to the group
-      console.log('🔍 Adding employees to group:', newGroup.id);
-      console.log('🔍 Employee IDs to add:', employeeIds);
-      console.log('🔍 Available employee data:', expiryData.map(emp => ({ id: emp.employee_id, name: `${emp.first_name} ${emp.last_name}` })));
+      logger.debug('Adding employees to group', {
+        groupId: newGroup.id,
+        employeeIds,
+        availableEmployeeData: expiryData.map(emp => ({ id: emp.employee_id, name: `${emp.first_name} ${emp.last_name}` }))
+      });
       
       const employeePromises = employeeIds.map(employeeId => {
         const employee = expiryData.find(emp => emp.employee_id === employeeId);
-        console.log(`🔍 Processing employee ${employeeId}:`, employee);
+        logger.debug('Processing employee for group addition', { employeeId, employee });
         
         const employeeData = {
           group_id: newGroup.id,
@@ -684,14 +744,14 @@ export function EmployeeGroupingView({
           notes: `Added from employee grouping view on ${new Date().toLocaleDateString()}`,
         };
         
-        console.log('🔍 Employee data to insert:', employeeData);
+        logger.debug('Employee data prepared for insertion', { employeeData });
         
         return addEmployeeToGroup.mutateAsync(employeeData);
       });
 
-      console.log('🔍 Executing employee promises...');
+      logger.debug('Executing employee promises');
       const results = await Promise.all(employeePromises);
-      console.log('🔍 Employee addition results:', results);
+      logger.debug('Employee addition results', { results });
 
       // Clear selected employees
       setSelectedEmployees(new Set());
@@ -710,7 +770,7 @@ export function EmployeeGroupingView({
       queryClient.invalidateQueries({ queryKey: ['preliminary-plan-groups'] });
 
     } catch (error) {
-      console.error('Error creating group:', error);
+      logger.error('Error creating group', error);
       toast({
         title: "Error Creating Group",
         description: error instanceof Error ? error.message : "Failed to create group",
@@ -719,12 +779,200 @@ export function EmployeeGroupingView({
     }
   };
 
-  const handleCreateAllGroups = () => {
+  const handleCreateAllGroups = async () => {
     if (!aiPlanningResult?.groups) return;
     
-    console.log('Creating all AI-suggested groups:', aiPlanningResult.groups);
-    // TODO: Implement bulk group creation
-    alert(`Create All Groups\nThis will create ${aiPlanningResult.groups.length} groups with a total of ${aiPlanningResult.groups.reduce((sum: number, group: any) => sum + (group.employees?.length || 0), 0)} employees.`);
+    const groups = aiPlanningResult.groups;
+    const totalEmployees = groups.reduce((sum: number, group: any) => sum + (group.employees?.length || 0), 0);
+    
+    logger.debug('Creating all AI-suggested groups', { groups, totalEmployees });
+    
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      `Create All Groups?\n\nThis will create ${groups.length} groups with a total of ${totalEmployees} employees.\n\nClick OK to proceed or Cancel to abort.`
+    );
+    
+    if (!confirmed) return;
+    
+    setIsProcessingRequest(true);
+    
+    try {
+      let successCount = 0;
+      let errorCount = 0;
+      const errors: string[] = [];
+      
+      // Process each group sequentially to avoid conflicts
+      for (const group of groups) {
+        try {
+          // Parse employee data from AI result
+          const employeeNames = group.employees || [];
+          const employeeIds = employeeNames.map((name: string) => {
+            // Find employee ID by name - check both full name formats
+            const employee = expiryData.find(emp => {
+              const fullName = `${emp.first_name} ${emp.last_name}`;
+              return fullName === name || emp.employee_name === name;
+            });
+            return employee?.employee_id;
+          }).filter(Boolean); // Remove null/undefined values
+          
+          // Validate that we have valid employee IDs
+          if (employeeIds.length === 0) {
+            logger.error('No valid employee IDs found for group during bulk creation', null, { group });
+            errors.push(`${group.name}: No valid employees found`);
+            errorCount++;
+            continue;
+          }
+          
+          // Filter employee names to only include those with valid IDs
+          const validEmployeeNames = employeeNames.filter((name: string) => {
+            const employee = expiryData.find(emp => {
+              const fullName = `${emp.first_name} ${emp.last_name}`;
+              return fullName === name || emp.employee_name === name;
+            });
+            return employee?.employee_id;
+          });
+          
+          // Determine group type based on employee statuses
+          const groupEmployees = employeeIds.map(id => expiryData.find(emp => emp.employee_id === id)).filter(Boolean);
+          const newEmployees = groupEmployees.filter(emp => emp.employee_status === 'new');
+          const renewalEmployees = groupEmployees.filter(emp => emp.employee_status !== 'new');
+          
+          let determinedGroupType: 'new' | 'renewal' | 'mixed' = 'mixed';
+          if (newEmployees.length === groupEmployees.length) {
+            determinedGroupType = 'new';
+          } else if (renewalEmployees.length === groupEmployees.length) {
+            determinedGroupType = 'renewal';
+          }
+          
+          // Calculate target dates
+          const employeeExpiryDates = groupEmployees
+            .map(emp => emp.expiry_date ? new Date(emp.expiry_date) : null)
+            .filter(Boolean) as Date[];
+          
+          const earliestExpiry = employeeExpiryDates.length > 0 
+            ? new Date(Math.min(...employeeExpiryDates.map(d => d.getTime())))
+            : null;
+          
+          const suggestedStartDate = group.start_date ? new Date(group.start_date) : undefined;
+          const suggestedEndDate = group.end_date ? new Date(group.end_date) : undefined;
+          
+          const planEndDate = selectedPlanId !== 'all' 
+            ? preliminaryPlans.find(p => p.id === selectedPlanId)?.planning_period_end
+            : undefined;
+          
+          const targetCompletionDate = earliestExpiry || (planEndDate ? new Date(planEndDate) : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000));
+          
+          // Determine priority based on employee types and urgency
+          let priorityValue = 3; // default
+          
+          // Calculate priority based on actual employee needs rather than AI's inconsistent assignment
+          const hasExpired = groupEmployees.some(emp => emp.employee_status === 'expired');
+          const hasRenewalDue = groupEmployees.some(emp => emp.employee_status === 'renewal_due');
+          const hasRenewalApproaching = groupEmployees.some(emp => emp.employee_status === 'renewal_approaching');
+          const hasUrgentExpiry = groupEmployees.some(emp => emp.days_until_expiry !== null && emp.days_until_expiry <= 30);
+          const allNewEmployees = groupEmployees.every(emp => emp.employee_status === 'new');
+          
+          // Assign priority based on actual urgency
+          if (hasExpired) {
+            priorityValue = 5; // Critical - expired certificates
+          } else if (hasRenewalDue || hasUrgentExpiry) {
+            priorityValue = 4; // High - renewal due or expiring within 30 days
+          } else if (hasRenewalApproaching) {
+            priorityValue = 3; // Medium - renewal approaching
+          } else if (allNewEmployees) {
+            priorityValue = 2; // Below normal - new employees (can be scheduled flexibly)
+          } else {
+            priorityValue = 3; // Normal - mixed groups
+          }
+          
+          // Override with AI priority if it provided a reasonable number
+          if (group.priority && typeof group.priority === 'number' && group.priority >= 1 && group.priority <= 5) {
+            // Only use AI priority if it's reasonable, otherwise stick with calculated priority
+            const aiPriority = group.priority;
+            // For consistency, don't let AI override logical priority for similar groups
+            if (!allNewEmployees || aiPriority === priorityValue) {
+              priorityValue = aiPriority;
+            }
+          } else if (group.priority && typeof group.priority === 'string') {
+            const priorityMap: Record<string, number> = {
+              'low': 1,
+              'below normal': 2,
+              'normal': 3,
+              'medium': 3,
+              'high': 4,
+              'critical': 5,
+              'urgent': 5
+            };
+            const mappedPriority = priorityMap[group.priority.toLowerCase()];
+            // Only use mapped priority if it makes sense for this group type
+            if (mappedPriority && (!allNewEmployees || mappedPriority === priorityValue)) {
+              priorityValue = mappedPriority;
+            }
+          }
+          
+          // Create group data
+          const groupData = {
+            name: group.name,
+            description: group.reasoning || `Training group with ${employeeIds.length} employees`,
+            certificate_id: selectedLicenseId !== 'all' ? selectedLicenseId : undefined,
+            group_type: determinedGroupType,
+            location: group.location || '',
+            provider_id: undefined,
+            priority: priorityValue,
+            max_participants: employeeIds.length,
+            target_completion_date: targetCompletionDate,
+            planned_start_date: suggestedStartDate,
+            planned_end_date: suggestedEndDate,
+            sessions_required: group.sessions_required || undefined,
+            notes: group.scheduling_notes || `Auto-generated group from AI planning. Created on ${new Date().toLocaleDateString()}`,
+          };
+          
+          // Create the group using the same logic as handleCreateGroupFromDialog
+          await handleCreateGroupFromDialog(groupData, employeeIds);
+          
+          // Track the created group
+          setCreatedGroups(prev => new Set([...prev, group.name]));
+          successCount++;
+          
+          logger.debug('Successfully created group', { groupName: group.name });
+          
+        } catch (error) {
+          logger.error('Error creating group', error, { groupName: group.name });
+          errors.push(`${group.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          errorCount++;
+        }
+      }
+      
+      // Show summary message
+      if (successCount > 0 && errorCount === 0) {
+        toast({
+          title: "All Groups Created Successfully",
+          description: `Successfully created ${successCount} groups with ${totalEmployees} employees.`,
+        });
+      } else if (successCount > 0 && errorCount > 0) {
+        toast({
+          title: "Partially Completed",
+          description: `Created ${successCount} groups successfully. ${errorCount} groups failed: ${errors.join(', ')}`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Failed to Create Groups",
+          description: `All ${errorCount} groups failed: ${errors.join(', ')}`,
+          variant: "destructive",
+        });
+      }
+      
+    } catch (error) {
+      logger.error('Error in bulk group creation', error);
+      toast({
+        title: "Error Creating Groups",
+        description: error instanceof Error ? error.message : "Failed to create groups",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingRequest(false);
+    }
   };
 
   const handleRequestModification = () => {
@@ -741,7 +989,7 @@ export function EmployeeGroupingView({
       const hasEmployees = group.employees && group.employees.length > 0;
       
       if (!hasEmployees) {
-        console.log(`🗑️ Removing empty group: ${group.name}`);
+        logger.debug('Removing empty group', { groupName: group.name });
         return false;
       }
       
@@ -750,17 +998,17 @@ export function EmployeeGroupingView({
     
     const removedCount = originalCount - result.groups.length;
     if (removedCount > 0) {
-      console.log(`✅ Removed ${removedCount} empty group(s) after modifications`);
+      logger.debug('Removed empty groups after modifications', { removedCount });
     }
   };
 
   const applyPlanningModifications = (modifications: any) => {
     if (!aiPlanningResult || !modifications || modifications.action !== 'modify_existing_plan') {
-      console.error('Invalid modifications or no existing plan to modify');
+      logger.error('Invalid modifications or no existing plan to modify', null, { modifications, hasAiPlanningResult: !!aiPlanningResult });
       return;
     }
 
-    console.log('🔄 Applying planning modifications:', modifications);
+    logger.debug('Applying planning modifications', { modifications });
     
     // Create a deep copy of the existing planning result
     const modifiedResult = JSON.parse(JSON.stringify(aiPlanningResult));
@@ -795,8 +1043,35 @@ export function EmployeeGroupingView({
         case 'provider_adjustment':
           updateGroupProvider(modifiedResult, change.group_name, change.new_provider, change.reason);
           break;
+        case 'combine_groups':
+          combineGroups(modifiedResult, change.new_group_name, change.employees, change.reason);
+          break;
+        case 'merge_groups':
+          // Handle merge_groups which can create multiple new groups
+          if (change.new_groups && Array.isArray(change.new_groups)) {
+            // Clear all existing groups first
+            modifiedResult.groups = [];
+            // Add each new group
+            change.new_groups.forEach((newGroup: any) => {
+              modifiedResult.groups.push({
+                name: newGroup.name,
+                employees: newGroup.employees,
+                reasoning: newGroup.reasoning,
+                priority: 'medium',
+                sessions_required: 3,
+                location: '',
+                suggested_date: '',
+                scheduling_notes: `Merged group created from AI modifications. ${newGroup.reasoning}`
+              });
+            });
+            logger.debug('Merged into new groups', { newGroupsCount: change.new_groups.length });
+          } else {
+            // Fallback to combine_groups behavior
+            combineGroups(modifiedResult, change.new_group_name, change.employees, change.reason);
+          }
+          break;
         default:
-          console.warn('Unknown modification type:', change.type);
+          logger.warn('Unknown modification type', { modificationType: change.type });
       }
     });
 
@@ -806,7 +1081,7 @@ export function EmployeeGroupingView({
     // Update the planning result state
     setAiPlanningResult(modifiedResult);
     
-    console.log('✅ Planning modifications applied successfully');
+    logger.debug('Planning modifications applied successfully');
   };
 
   const moveEmployeeBetweenGroups = (result: any, employeeName: string, fromGroup: string, toGroup: string, reason: string) => {
@@ -820,7 +1095,7 @@ export function EmployeeGroupingView({
     );
     
     if (!targetGroup) {
-      console.error(`Target group "${toGroup}" not found`);
+      logger.error('Target group not found for employee move', null, { toGroup });
       return;
     }
     
@@ -838,7 +1113,7 @@ export function EmployeeGroupingView({
     }
     
     if (!sourceGroup || employeeIndex === -1) {
-      console.error(`Employee "${employeeName}" not found in any group`);
+      logger.error('Employee not found in any group for move operation', null, { employeeName });
       return;
     }
     
@@ -855,7 +1130,11 @@ export function EmployeeGroupingView({
     sourceGroup.reasoning = `${sourceGroup.reasoning || ''} (Updated: ${employeeName} moved to ${toGroup} - ${reason})`.trim();
     targetGroup.reasoning = `${targetGroup.reasoning || ''} (Updated: ${employeeName} added from ${sourceGroup.name} - ${reason})`.trim();
     
-    console.log(`✅ Moved ${employeeName} from ${sourceGroup.name} to ${targetGroup.name}`);
+    logger.debug('Successfully moved employee between groups', {
+      employee: employeeName,
+      fromGroup: sourceGroup.name,
+      toGroup: targetGroup.name
+    });
   };
 
   const dissolveGroup = (result: any, groupName: string, reason: string) => {
@@ -869,17 +1148,20 @@ export function EmployeeGroupingView({
     );
     
     if (groupIndex === -1) {
-      console.error(`Group "${groupName}" not found for dissolution`);
+      logger.error('Group not found for dissolution', null, { groupName });
       return;
     }
     
     const group = groups[groupIndex];
-    console.log(`🗑️ Dissolving group: ${group.name} (${group.employees?.length || 0} employees)`);
+    logger.debug('Dissolving group', {
+      groupName: group.name,
+      employeeCount: group.employees?.length || 0
+    });
     
     // Remove the group from the array
     groups.splice(groupIndex, 1);
     
-    console.log(`✅ Group ${groupName} dissolved successfully`);
+    logger.debug('Group dissolved successfully', { groupName });
   };
 
   const addEmployeeToExistingGroup = (result: any, employeeName: string, toGroup: string, reason: string) => {
@@ -1010,6 +1292,48 @@ export function EmployeeGroupingView({
     group.reasoning = `${group.reasoning || ''} (Updated: ${reason})`.trim();
     
     console.log(`✅ Updated ${groupName} with new employee list:`, newEmployees);
+  };
+
+  const combineGroups = (result: any, newGroupName: string, employees: string[], reason: string) => {
+    const groups = result.groups || [];
+    
+    console.log(`🔄 Combining groups into: ${newGroupName} with employees:`, employees);
+    
+    // Remove existing groups that contain these employees
+    const groupsToRemove: number[] = [];
+    employees.forEach(employeeName => {
+      groups.forEach((group: any, index: number) => {
+        if (group.employees && group.employees.includes(employeeName)) {
+          if (!groupsToRemove.includes(index)) {
+            groupsToRemove.push(index);
+            console.log(`🗑️ Marking group for removal: ${group.name} (contains ${employeeName})`);
+          }
+        }
+      });
+    });
+    
+    // Remove groups in reverse order to maintain correct indices
+    groupsToRemove.sort((a, b) => b - a).forEach(index => {
+      const removedGroup = groups.splice(index, 1)[0];
+      console.log(`🗑️ Removed group: ${removedGroup.name}`);
+    });
+    
+    // Create the new combined group
+    const newGroup = {
+      name: newGroupName,
+      employees: employees,
+      reasoning: reason,
+      priority: 'medium', // Default priority for combined groups
+      sessions_required: 3, // Default sessions required
+      location: '', // Will be determined during creation
+      suggested_date: '', // Will be determined during creation
+      scheduling_notes: `Combined group created from AI modifications. ${reason}`
+    };
+    
+    // Add the new group
+    groups.push(newGroup);
+    
+    console.log(`✅ Created combined group: ${newGroupName} with ${employees.length} employees`);
   };
 
   const handleNaturalLanguagePlanning = async () => {
@@ -1177,8 +1501,10 @@ export function EmployeeGroupingView({
 
       // Filter employees based on selected work locations and status
       const filteredEmployees = expiryData.filter(emp => {
-        // Filter by work location
-        const locationMatch = selectedWorkLocations.length === 0 || selectedWorkLocations.includes(emp.work_location || '');
+        // Filter by work location - get work location from employee data
+        const employee = employees.find(e => e.id === emp.employee_id);
+        const empWorkLocation = employee?.workLocation || '';
+        const locationMatch = selectedWorkLocations.length === 0 || selectedWorkLocations.includes(empWorkLocation);
         
         // Filter by employee status would need additional data - for now we'll include all
         const statusMatch = selectedEmployeeStatus === 'all' || true; // TODO: Add actual status filtering
@@ -1340,9 +1666,11 @@ ${licenses.map(license => {
 }
 
 EMPLOYEES AVAILABLE FOR GROUPING (${filteredEmployees.length} total after filtering):
-${filteredEmployees.slice(0, 25).map(emp => 
-  `• ${emp.first_name} ${emp.last_name} (${emp.department || 'Unknown'}, ${emp.work_location || 'Unknown Location'}) - Status: ${emp.employee_status}${selectedLicenseId === 'all' ? ` - Certificate: ${emp.license_name || 'Unknown'}` : ''} - Expires in: ${emp.days_until_expiry || 'N/A'} days`
-).join('\n')}
+${filteredEmployees.slice(0, 25).map(emp => {
+  const employee = employees.find(e => e.id === emp.employee_id);
+  const workLocation = employee?.workLocation || 'Unknown Location';
+  return `• ${emp.first_name} ${emp.last_name} (${emp.department || 'Unknown'}, ${workLocation}) - Status: ${emp.employee_status}${selectedLicenseId === 'all' ? ` - Certificate: ${emp.license_name || 'Unknown'}` : ''} - Expires in: ${emp.days_until_expiry || 'N/A'} days`;
+}).join('\n')}
 
 WORK LOCATION ANALYSIS:
 ${selectedWorkLocations.length > 0 ? 
@@ -1352,7 +1680,8 @@ ${selectedWorkLocations.length > 0 ?
 
 EMPLOYEE WORK LOCATION DISTRIBUTION:
 ${Object.entries(filteredEmployees.reduce((acc, emp) => {
-  const location = emp.work_location || 'Unknown';
+  const employee = employees.find(e => e.id === emp.employee_id);
+  const location = employee?.workLocation || 'Unknown';
   acc[location] = (acc[location] || 0) + 1;
   return acc;
 }, {} as Record<string, number>)).map(([location, count]) => 
@@ -1423,7 +1752,11 @@ AVAILABLE PROVIDER NAMES TO USE:
 ${relevantProviders.map(p => `- ${p.name}`).join('\n') || 'No providers available for this certificate type'}
 
 EMPLOYEE STATUS AND AVAILABILITY:
-${filteredEmployees.map(emp => `${emp.first_name} ${emp.last_name}: Work Location: ${emp.work_location || 'Unknown'}, Status: ${selectedEmployeeStatus}, Department: ${emp.department || 'Unknown'}`).join('\n')}
+${filteredEmployees.map(emp => {
+  const employee = employees.find(e => e.id === emp.employee_id);
+  const workLocation = employee?.workLocation || 'Unknown';
+  return `${emp.first_name} ${emp.last_name}: Work Location: ${workLocation}, Status: ${selectedEmployeeStatus}, Department: ${emp.department || 'Unknown'}`;
+}).join('\n')}
 
 EXISTING TRAININGS WITH AVAILABLE CAPACITY:
 ${existingTrainings.filter(t => t.participantCount < t.maxParticipants).map(training => {
@@ -1731,7 +2064,18 @@ FINAL VALIDATION BEFORE RESPONDING:
     }
   };
 
-  const departmentStats = expiryData.reduce((acc, employee) => {
+  // Filter expiry data by selected work locations for department stats
+  const filteredExpiryDataForStats = expiryData.filter(emp => {
+    // If no work locations selected, include all employees
+    if (selectedWorkLocations.length === 0) return true;
+    
+    // Get work location from employee data
+    const employee = employees.find(e => e.id === emp.employee_id);
+    const empWorkLocation = employee?.workLocation || '';
+    return selectedWorkLocations.includes(empWorkLocation);
+  });
+
+  const departmentStats = filteredExpiryDataForStats.reduce((acc, employee) => {
     const dept = employee.department || 'Unknown';
     if (!acc[dept]) {
       acc[dept] = { total: 0, new: 0, renewal: 0, urgent: 0 };
@@ -1821,16 +2165,22 @@ FINAL VALIDATION BEFORE RESPONDING:
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Work Locations</label>
-              <div className="border rounded-md p-2 max-h-32 overflow-y-auto">
+              <div className="border rounded-md p-2 max-h-32 overflow-y-auto relative z-10">
                 <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
+                  <div 
+                    className="flex items-center space-x-2 cursor-pointer p-1" 
+                    onClick={() => console.log('All Locations div clicked')}
+                  >
                     <Checkbox
                       id="select-all-locations"
                       checked={selectedWorkLocations.length === availableWorkLocations.length}
                       onCheckedChange={(checked) => {
+                        console.log('All Locations checkbox clicked, checked:', checked);
                         if (checked) {
+                          console.log('Setting all locations:', availableWorkLocations);
                           setSelectedWorkLocations(availableWorkLocations);
                         } else {
+                          console.log('Clearing all locations');
                           setSelectedWorkLocations([]);
                         }
                       }}
@@ -1840,14 +2190,21 @@ FINAL VALIDATION BEFORE RESPONDING:
                     </label>
                   </div>
                   {availableWorkLocations.map((location) => (
-                    <div key={location} className="flex items-center space-x-2">
+                    <div 
+                      key={location} 
+                      className="flex items-center space-x-2 cursor-pointer p-1" 
+                      onClick={() => console.log(`Location ${location} div clicked`)}
+                    >
                       <Checkbox
                         id={`location-${location}`}
                         checked={selectedWorkLocations.includes(location)}
                         onCheckedChange={(checked) => {
+                          console.log(`Location ${location} checkbox clicked, checked:`, checked);
                           if (checked) {
+                            console.log('Adding location:', location);
                             setSelectedWorkLocations([...selectedWorkLocations, location]);
                           } else {
+                            console.log('Removing location:', location);
                             setSelectedWorkLocations(selectedWorkLocations.filter(l => l !== location));
                           }
                         }}
@@ -2254,7 +2611,7 @@ FINAL VALIDATION BEFORE RESPONDING:
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {expiryData.map((employee, index) => (
                 <div 
-                  key={employee.employee_id || `manual-employee-${employee.first_name}-${employee.last_name}-${index}`}
+                  key={`employee-${employee.employee_id}-${index}` || `manual-employee-${employee.first_name}-${employee.last_name}-${index}`}
                   className={`flex items-center justify-between p-3 border rounded cursor-pointer hover:bg-gray-50 ${selectedEmployees.has(employee.employee_id) ? 'bg-blue-50 border-blue-200' : ''}`}
                   onClick={() => toggleEmployeeSelection(employee.employee_id)}
                 >

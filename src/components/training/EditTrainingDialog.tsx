@@ -42,8 +42,8 @@ import { Plus, Upload, Sparkles, Euro } from "lucide-react";
 
 // Comprehensive schema matching create dialog pattern
 const editTrainingSchema = (t: any) => z.object({
-  title: z.string().min(1, t('training:editDialog.titleRequired')),
-  courseId: z.string().optional(),
+  title: z.string().min(1, t('training:createDialog.titleRequired')),
+  courseId: z.string().min(1, t('training:createDialog.courseRequired')),
   providerId: z.string().optional(),
   instructor: z.string().optional(),
   location: z.string().optional(),
@@ -109,8 +109,8 @@ export function EditTrainingDialog({ open, onOpenChange, training }: EditTrainin
   const [selectedProvider, setSelectedProvider] = useState<any>(null);
 
   // Hooks
-  const { data: courses = [] } = useCourses();
-  const { data: providers = [] } = useProviders();
+  const { data: courses = [], isLoading: coursesLoading } = useCourses();
+  const { data: providers = [], isLoading: providersLoading } = useProviders();
   const updateTraining = useUpdateTraining();
 
   const form = useForm<TrainingFormData>({
@@ -208,24 +208,103 @@ export function EditTrainingDialog({ open, onOpenChange, training }: EditTrainin
   }, [training, form]);
 
   const handleAIImport = (data: ExtractedTrainingData) => {
-    if (data.title) form.setValue('title', data.title);
-    if (data.instructor) form.setValue('instructor', data.instructor);
-    if (data.location) form.setValue('location', data.location);
-    if (data.maxParticipants) form.setValue('maxParticipants', data.maxParticipants.toString());
-    if (data.checklist?.length > 0) {
-      const formattedChecklist = data.checklist.map((item, index) => ({
-        id: `imported-${index}`,
+    const importedFields: string[] = [];
+    
+    if (data.title) {
+      form.setValue('title', data.title);
+      importedFields.push('title');
+    }
+    if (data.instructor) {
+      form.setValue('instructor', data.instructor);
+      importedFields.push('instructor');
+    }
+    if (data.location) {
+      form.setValue('location', data.location);
+      importedFields.push('location');
+    }
+    if (data.maxParticipants) {
+      form.setValue('maxParticipants', data.maxParticipants.toString());
+      importedFields.push('max participants');
+    }
+    
+    // Handle session dates and times
+    if (data.startDate || data.startTime || data.endDate || data.endTime) {
+      const sessionDates: string[] = [];
+      const sessionTimes: string[] = [];
+      const sessionEndTimes: string[] = [];
+      
+      // Convert extracted date/time to form format
+      if (data.startDate) {
+        const formattedDate = data.startDate;
+        sessionDates.push(formattedDate);
+        importedFields.push('start date');
+      }
+      
+      if (data.startTime) {
+        sessionTimes.push(data.startTime);
+        importedFields.push('start time');
+      }
+      
+      if (data.endTime) {
+        sessionEndTimes.push(data.endTime);
+        importedFields.push('end time');
+      }
+      
+      // If we have session data, set it
+      if (sessionDates.length > 0) {
+        form.setValue('sessionDates', sessionDates);
+        form.setValue('sessions', sessionDates.length);
+      }
+      if (sessionTimes.length > 0) {
+        form.setValue('sessionTimes', sessionTimes);
+      }
+      if (sessionEndTimes.length > 0) {
+        form.setValue('sessionEndTimes', sessionEndTimes);
+      }
+    }
+    
+    // Handle requirements as checklist items
+    if (data.requirements && data.requirements.length > 0) {
+      const formattedChecklist = data.requirements.map((item, index) => ({
+        id: `imported-req-${index}`,
         text: item,
         completed: false
       }));
       form.setValue('checklist', formattedChecklist);
+      importedFields.push('requirements (as checklist)');
     }
-    if (data.notes) form.setValue('notes', data.notes);
+    
+    // Handle materials as additional notes
+    if (data.materials && data.materials.length > 0) {
+      const materialsText = `Materials needed:\n${data.materials.map(m => `• ${m}`).join('\n')}`;
+      const existingNotes = form.getValues('notes') || '';
+      const combinedNotes = existingNotes ? `${existingNotes}\n\n${materialsText}` : materialsText;
+      form.setValue('notes', combinedNotes);
+      importedFields.push('materials (as notes)');
+    }
+    
+    if (data.notes) {
+      const existingNotes = form.getValues('notes') || '';
+      const combinedNotes = existingNotes ? `${existingNotes}\n\n${data.notes}` : data.notes;
+      form.setValue('notes', combinedNotes);
+      importedFields.push('notes');
+    }
+    
+    // Handle cost information
+    if (data.costs?.amount) {
+      form.setValue('price', data.costs.amount);
+      importedFields.push('price');
+    }
     
     setIsImportDialogOpen(false);
+    
     toast({
-      title: "Training data imported",
-      description: "Training information has been imported from the document.",
+      title: t('training:createDialog.fieldsAutoPopulated'),
+      description: importedFields.length > 0 
+        ? t('training:createDialog.fieldsAutoPopulatedDesc', { 
+            fields: importedFields.join(', ') 
+          })
+        : "Training information has been imported from the document.",
     });
   };
 
@@ -312,16 +391,16 @@ export function EditTrainingDialog({ open, onOpenChange, training }: EditTrainin
                     name="courseId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('training:editDialog.course')}</FormLabel>
+                        <FormLabel>{t('training:createDialog.course')} *</FormLabel>
                         <FormControl>
-                          <Select value={field.value} onValueChange={field.onChange}>
+                          <Select value={field.value} onValueChange={field.onChange} disabled={coursesLoading}>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select course" />
+                              <SelectValue placeholder={coursesLoading ? "Loading courses..." : t('training:createDialog.selectCourse')} />
                             </SelectTrigger>
                             <SelectContent>
                               {courses.map((course) => (
                                 <SelectItem key={course.id} value={course.id}>
-                                  {course.name}
+                                  {course.title}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -393,11 +472,11 @@ export function EditTrainingDialog({ open, onOpenChange, training }: EditTrainin
                     name="providerId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('training:editDialog.provider')}</FormLabel>
+                        <FormLabel>{t('training:createDialog.provider')}</FormLabel>
                         <FormControl>
-                          <Select value={field.value} onValueChange={field.onChange}>
+                          <Select value={field.value} onValueChange={field.onChange} disabled={providersLoading}>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select provider" />
+                              <SelectValue placeholder={providersLoading ? "Loading providers..." : t('training:createDialog.selectProvider')} />
                             </SelectTrigger>
                             <SelectContent>
                               {providers.map((provider) => (
@@ -444,7 +523,7 @@ export function EditTrainingDialog({ open, onOpenChange, training }: EditTrainin
                   >
                     <Upload className="w-4 h-4" />
                     <Sparkles className="w-4 h-4" />
-                    {t('training:editDialog.importFromDocument')}
+                    {t('training:createDialog.importFromDocument')}
                   </Button>
                 </div>
               </TabsContent>

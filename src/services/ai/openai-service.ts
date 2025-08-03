@@ -6,6 +6,7 @@ import { EnhancedDatabaseService } from './enhanced-database-service';
 import { UIInteractionService } from './ui-interaction-service';
 import { SecureDatabaseService } from './secure-database-service';
 import { TOOL_DEFINITIONS } from './tools-definitions';
+import { logger } from '@/utils/logger';
 
 interface OpenAIMessage {
   role: 'system' | 'user' | 'assistant';
@@ -58,16 +59,14 @@ export class OpenAIService {
       throw new Error('OpenAI API key not configured');
     }
 
-    // Get fresh database context with enhanced debugging
-    console.log('🔍 AI Service: Getting database context...');
+    // Get fresh database context
+    logger.ai('Getting database context...');
     const dbContext = await this.dbService.getPlatformContext();
     
-    // Additional debugging: Try to get specific data
-    console.log('🔍 AI Service: Database context summary:', {
+    logger.ai('Database context summary', {
       employeeCount: dbContext.employees?.length || 0,
       courseCount: dbContext.courses?.length || 0,
-      trainingCount: dbContext.trainings?.length || 0,
-      sampleEmployee: dbContext.employees?.[0] || 'No employees'
+      trainingCount: dbContext.trainings?.length || 0
     });
     
     const systemPrompt = this.buildSystemPrompt(context, dbContext);
@@ -117,7 +116,7 @@ export class OpenAIService {
 
       const message = data.choices[0].message;
 
-      console.log('🤖 AI Response:', {
+      logger.ai('AI Response', {
         hasContent: !!message.content,
         hasFunctionCall: !!message.function_call,
         hasToolCalls: !!message.tool_calls,
@@ -144,7 +143,7 @@ export class OpenAIService {
       };
 
     } catch (error) {
-      console.error('OpenAI Service Error:', error);
+      logger.error('OpenAI Service Error:', error);
       throw error;
     }
   }
@@ -281,7 +280,7 @@ ${dbContext.recentActivity.slice(0, 3).map(activity =>
 
   private async handleFunctionCall(functionCall: { name: string; arguments: string }, content: string): Promise<AIResponse> {
     try {
-      console.log('🤖 AI Function Call:', {
+      logger.ai('Function Call', {
         functionName: functionCall.name,
         arguments: functionCall.arguments
       });
@@ -303,7 +302,7 @@ ${dbContext.recentActivity.slice(0, 3).map(activity =>
 
         case 'update_employee_by_name':
           try {
-            console.log('🎯 Processing update_employee_by_name:', {
+            logger.ai('Processing update_employee_by_name', {
               searchTerm: args.searchTerm,
               updates: args.updates
             });
@@ -339,7 +338,7 @@ ${dbContext.recentActivity.slice(0, 3).map(activity =>
               };
             }
           } catch (error) {
-            console.error('Error updating employee by name:', error);
+            logger.error('Error updating employee by name:', error);
             return {
               content: "I encountered an error while updating the employee data.",
               suggestions: ["Try again", "Check permissions", "Contact administrator"]
@@ -370,7 +369,7 @@ ${dbContext.recentActivity.slice(0, 3).map(activity =>
               };
             }
           } catch (error) {
-            console.error('Error creating training:', error);
+            logger.error('Error creating training:', error);
             return {
               content: "I encountered an error while creating the training.",
               suggestions: ["Try again", "Check permissions", "Contact administrator"]
@@ -393,7 +392,7 @@ ${dbContext.recentActivity.slice(0, 3).map(activity =>
               };
             }
           } catch (error) {
-            console.error('Error adding training participant:', error);
+            logger.error('Error adding training participant:', error);
             return {
               content: "I encountered an error while adding the participant.",
               suggestions: ["Try again", "Check permissions", "Contact administrator"]
@@ -416,7 +415,7 @@ ${dbContext.recentActivity.slice(0, 3).map(activity =>
               };
             }
           } catch (error) {
-            console.error('Error updating certificate:', error);
+            logger.error('Error updating certificate:', error);
             return {
               content: "I encountered an error while updating the certificate.",
               suggestions: ["Try again", "Check permissions", "Contact administrator"]
@@ -425,7 +424,7 @@ ${dbContext.recentActivity.slice(0, 3).map(activity =>
 
         case 'search_employees':
           try {
-            console.log('🔍 Processing search_employees:', args);
+            logger.ai('Processing search_employees', args);
             
             // Use the enhanced database service to search employees
             const searchResults = await this.enhancedDbService.searchEmployees(args.query, args.filters || {});
@@ -482,7 +481,7 @@ ${dbContext.recentActivity.slice(0, 3).map(activity =>
               }] : undefined
             };
           } catch (error) {
-            console.error('Error searching employees:', error);
+            logger.error('Error searching employees:', error);
             return {
               content: "I encountered an error while searching for employee information.",
               suggestions: ["Try again", "Search with different terms", "Contact support"]
@@ -491,7 +490,7 @@ ${dbContext.recentActivity.slice(0, 3).map(activity =>
 
         case 'navigate_to_employee':
           try {
-            console.log('🧭 Processing navigate_to_employee:', args);
+            logger.ai('Processing navigate_to_employee', args);
             
             // Use search functionality to find the employee
             const searchResults = await this.enhancedDbService.searchEmployees(args.searchTerm, {});
@@ -525,7 +524,7 @@ ${dbContext.recentActivity.slice(0, 3).map(activity =>
               suggestions: ["View training history", "Check certificates", "Update information", "Search for others"]
             };
           } catch (error) {
-            console.error('Error navigating to employee:', error);
+            logger.error('Error navigating to employee:', error);
             return {
               content: `I had trouble finding that employee. Let me take you to the participants page where you can search and browse all employees.`,
               actions: [{
@@ -557,7 +556,7 @@ ${dbContext.recentActivity.slice(0, 3).map(activity =>
           };
       }
     } catch (error) {
-      console.error('Error handling function call:', error);
+      logger.error('Error handling function call:', error);
       return {
         content: content || "I can help you with that. What would you like to do?"
       };
@@ -600,7 +599,7 @@ ${dbContext.recentActivity.slice(0, 3).map(activity =>
         content: data.choices[0].message.content
       };
     } catch (error) {
-      console.error('OpenAI Text Processing Error:', error);
+      logger.error('OpenAI Text Processing Error:', error);
       throw error;
     }
   }
@@ -644,7 +643,7 @@ ${dbContext.recentActivity.slice(0, 3).map(activity =>
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('OpenAI Vision API error response:', errorText);
+        logger.error('OpenAI Vision API error response:', errorText);
         throw new Error(`OpenAI Vision API error: ${response.status} - ${errorText}`);
       }
 
@@ -658,7 +657,7 @@ ${dbContext.recentActivity.slice(0, 3).map(activity =>
         content: data.choices[0].message.content
       };
     } catch (error) {
-      console.error('OpenAI Vision Processing Error:', error);
+      logger.error('OpenAI Vision Processing Error:', error);
       throw error;
     }
   }

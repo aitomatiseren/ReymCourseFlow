@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
 
 export interface DatabaseContext {
   employees: Array<{
@@ -76,7 +77,7 @@ export class DatabaseService {
   }
 
   async getPlatformContext(): Promise<DatabaseContext> {
-    console.log('🚀 Starting getPlatformContext...');
+    logger.info('Starting getPlatformContext...');
     
     // Use Promise.allSettled to get partial data even if some queries fail
     const results = await Promise.allSettled([
@@ -95,7 +96,7 @@ export class DatabaseService {
     results.forEach((result, index) => {
       if (result.status === 'rejected') {
         const queryNames = ['employees', 'courses', 'trainings', 'certificates'];
-        console.error(`Failed to fetch ${queryNames[index]}:`, result.reason);
+        logger.error(`Failed to fetch ${queryNames[index]}`, { error: result.reason });
       }
     });
 
@@ -107,7 +108,7 @@ export class DatabaseService {
       expiringCertificates: certificates
     };
 
-    console.log('🎯 Platform context loaded:', {
+    logger.db('Platform context loaded', {
       employeeCount: employees.length,
       courseCount: courses.length,
       trainingCount: trainings.length,
@@ -116,10 +117,10 @@ export class DatabaseService {
 
     // Additional debug - show actual data structure
     if (employees.length > 0) {
-      console.log('👤 Sample employee:', employees[0]);
+      logger.debug('Sample employee', { employee: employees[0] });
     }
     if (courses.length > 0) {
-      console.log('📚 Sample course:', courses[0]);
+      logger.debug('Sample course', { course: courses[0] });
     }
 
     return context;
@@ -127,14 +128,14 @@ export class DatabaseService {
 
   async getEmployeesSummary() {
     try {
-      console.log('🔍 Querying employees table with ALL fields...');
+      logger.debug('Querying employees table with ALL fields...');
       
       // First, try a simple count to see if table exists and has data
       const countQuery = await supabase
         .from('employees')
         .select('*', { count: 'exact', head: true });
       
-      console.log('📊 Employee count query result:', {
+      logger.db('Employee count query result', {
         count: countQuery.count,
         error: countQuery.error?.message
       });
@@ -145,7 +146,7 @@ export class DatabaseService {
         .select('*')
         .limit(50);
 
-      console.log('📋 Full employee query result:', {
+      logger.db('Full employee query result', {
         dataLength: data?.length || 0,
         error: error?.message,
         sampleFields: data?.[0] ? Object.keys(data[0]).join(', ') : 'No data',
@@ -154,16 +155,16 @@ export class DatabaseService {
       });
 
       if (error) {
-        console.error('❌ Employee query error:', error);
+        logger.error('Employee query error', { error });
         return [];
       }
 
       if (!data || data.length === 0) {
-        console.log('⚠️ No employees found in database');
+        logger.debug('No employees found in database');
         return [];
       }
 
-      console.log('✅ Successfully fetched ALL employee data:', {
+      logger.info('Successfully fetched ALL employee data', {
         count: data.length,
         sample: data[0] ? `${data[0].name} (${data[0].employee_number}) - Hired: ${data[0].hire_date || 'N/A'}` : 'None',
         allFields: data[0] ? Object.keys(data[0]).length : 0
@@ -171,21 +172,21 @@ export class DatabaseService {
 
       return data;
     } catch (err) {
-      console.error('💥 Employee query crashed:', err);
+      logger.error('Employee query crashed', { error: err });
       return [];
     }
   }
 
   async getCoursesSummary() {
     try {
-      console.log('🔍 Querying courses table...');
+      logger.debug('Querying courses table...');
       
       // First, try a simple count
       const countQuery = await supabase
         .from('courses')
         .select('*', { count: 'exact', head: true });
       
-      console.log('📊 Course count query result:', {
+      logger.db('Course count query result', {
         count: countQuery.count,
         error: countQuery.error?.message
       });
@@ -196,30 +197,30 @@ export class DatabaseService {
         .select('*')
         .limit(10);
 
-      console.log('📋 Basic course query result:', {
+      logger.db('Basic course query result', {
         dataLength: data?.length || 0,
         error: error?.message,
         sampleData: data?.[0] || 'No data'
       });
 
       if (error) {
-        console.error('❌ Course query error:', error);
+        logger.error('Course query error', { error });
         return [];
       }
 
       if (!data || data.length === 0) {
-        console.log('⚠️ No courses found in database');
+        logger.debug('No courses found in database');
         return [];
       }
 
-      console.log('✅ Successfully fetched courses:', {
+      logger.info('Successfully fetched courses', {
         count: data?.length || 0,
         sample: data?.[0] ? data[0].title : 'None'
       });
 
       return data.slice(0, 20);
     } catch (err) {
-      console.error('💥 Course query crashed:', err);
+      logger.error('Course query crashed', { error: err });
       return [];
     }
   }
@@ -362,7 +363,7 @@ export class DatabaseService {
 
   // New function to get newest hires
   async getNewestHires(limit = 5) {
-    console.log('🔍 Finding newest hires...');
+    logger.debug('Finding newest hires...');
     
     const { data, error } = await supabase
       .from('employees')
@@ -372,11 +373,11 @@ export class DatabaseService {
       .limit(limit);
 
     if (error) {
-      console.error('❌ Error fetching newest hires:', error);
+      logger.error('Error fetching newest hires', { error });
       throw error;
     }
 
-    console.log('✅ Found newest hires:', {
+    logger.info('Found newest hires', {
       count: data?.length || 0,
       newest: data?.[0] ? `${data[0].name} hired on ${data[0].hire_date}` : 'None'
     });

@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
+import { logger } from '@/utils/logger';
 
 export interface FieldMapping {
   fieldName: string;
@@ -136,7 +137,7 @@ export class EnhancedDatabaseService {
 
   // Enhanced search across all searchable fields
   async smartSearch(query: string, tables: string[] = ['employees', 'courses', 'trainings'], limit = 10) {
-    console.log(`🔍 Smart search for "${query}" across tables:`, tables);
+    logger.debug(`Smart search for "${query}" across tables`, { tables });
     
     const results: { [tableName: string]: unknown[] } = {};
     
@@ -162,14 +163,14 @@ export class EnhancedDatabaseService {
           .limit(limit);
         
         if (error) {
-          console.error(`❌ Error searching ${tableName}:`, error);
+          logger.error(`Error searching ${tableName}`, { error, tableName });
           continue;
         }
         
         results[tableName] = data || [];
-        console.log(`✅ Found ${data?.length || 0} results in ${tableName}`);
+        logger.info(`Found ${data?.length || 0} results in ${tableName}`, { tableName, resultCount: data?.length || 0 });
       } catch (err) {
-        console.error(`💥 Search crashed for ${tableName}:`, err);
+        logger.error(`Search crashed for ${tableName}`, { error: err, tableName });
       }
     }
     
@@ -244,7 +245,7 @@ export class EnhancedDatabaseService {
 
   // Search employees with complete field access
   async searchEmployees(query: string, filters: any = {}): Promise<Tables<'employees'>[]> {
-    console.log(`🔍 Enhanced search for employees: "${query}" with filters:`, filters);
+    logger.debug(`Enhanced search for employees: "${query}" with filters`, { query, filters });
     
     try {
       let dbQuery = supabase
@@ -292,15 +293,15 @@ export class EnhancedDatabaseService {
       const { data, error } = await dbQuery.limit(20);
       
       if (error) {
-        console.error('❌ Error searching employees:', error);
+        logger.error('Error searching employees', { error });
         return [];
       }
       
-      console.log(`✅ Found ${data?.length || 0} employees with full field access`);
+      logger.info('Found employees with full field access', { count: data?.length || 0 });
       return data || [];
       
     } catch (err) {
-      console.error('💥 Employee search crashed:', err);
+      logger.error('Employee search crashed', { error: err });
       return [];
     }
   }

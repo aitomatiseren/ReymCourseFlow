@@ -21,7 +21,6 @@ export function useCoursesForCertificate(certificateId: string) {
             id,
             title,
             description,
-            category,
             duration_hours,
             max_participants,
             created_at
@@ -84,8 +83,7 @@ export function useProvidersForCertificate(certificateId: string) {
           courses (
             id,
             title,
-            description,
-            category
+            description
           ),
           course_providers (
             id,

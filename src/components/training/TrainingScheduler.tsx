@@ -138,9 +138,9 @@ export function TrainingScheduler() {
   return (
     <div className="space-y-6">
       <TrainingSchedulerHeader
-        onCreateTraining={() => setShowCreateForm(true)}
         viewMode={displayMode}
         onViewModeChange={handleDisplayModeChange}
+        onCreateTraining={() => setShowCreateForm(true)}
       />
 
       {displayMode === 'list' && (

@@ -2,7 +2,7 @@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Copy, Clock } from "lucide-react";
+import { Copy } from "lucide-react";
 
 interface SmartMultiSessionSectionProps {
   selectedCourse: any;
@@ -54,34 +54,11 @@ export function SmartMultiSessionSection({
     }
   };
 
-  const generateWeeklyDates = (startDate: string) => {
-    if (!startDate) return;
-    
-    const start = new Date(startDate);
-    for (let i = 1; i < sessions; i++) {
-      const nextDate = new Date(start);
-      nextDate.setDate(start.getDate() + (i * 7)); // Add weeks
-      onSessionDateChange(i, nextDate.toISOString().split('T')[0]);
-    }
-  };
 
   return (
     <div className="space-y-4 p-4 bg-blue-50 rounded-lg">
       <div className="flex items-center justify-between">
         <h4 className="font-medium">Multi-Session Training</h4>
-        <div className="flex gap-2">
-          {sessionDates[0] && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => generateWeeklyDates(sessionDates[0])}
-            >
-              <Clock className="h-4 w-4 mr-1" />
-              Weekly Schedule
-            </Button>
-          )}
-        </div>
       </div>
       
       <div className="space-y-2">

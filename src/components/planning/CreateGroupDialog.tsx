@@ -29,12 +29,15 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useLicenses } from "@/hooks/useCertificates";
 import { useProviders } from "@/hooks/useProviders";
+import { useWorkLocations } from "@/hooks/useEmployees";
+import { logger } from "@/utils/logger";
 
 const groupSchema = z.object({
   name: z.string().min(1, "Group name is required"),
   description: z.string().optional(),
   certificate_id: z.string().optional(),
   group_type: z.enum(['new', 'renewal', 'mixed']),
+  location: z.string().optional(),
   provider_id: z.string().optional(),
   priority: z.number().min(1).max(5).default(3),
   max_participants: z.number().min(1).max(50).optional(),
@@ -98,6 +101,9 @@ export function CreateGroupDialog({
   const [endDate, setEndDate] = useState<Date | undefined>();
   const { data: licenses = [] } = useLicenses();
   const { data: providers = [] } = useProviders();
+  const { data: workLocations = [], isLoading: workLocationsLoading } = useWorkLocations();
+  
+  logger.debug('CreateGroupDialog: Available work locations', { workLocations });
 
   const form = useForm<GroupFormData>({
     resolver: zodResolver(groupSchema),
@@ -106,6 +112,7 @@ export function CreateGroupDialog({
       description: "",
       certificate_id: "",
       group_type: "mixed",
+      location: "",
       provider_id: "",
       priority: 3,
       max_participants: undefined,
@@ -119,11 +126,13 @@ export function CreateGroupDialog({
   useEffect(() => {
     if (open) {
       setIsSuccess(false);
+      logger.debug('CreateGroupDialog: Setting form values', { suggestedLocation });
       form.reset({
         name: suggestedName || "",
         description: suggestedDescription || `Training group with ${employeeIds.length} employees`,
         certificate_id: suggestedCertificateId || "",
         group_type: suggestedType || "mixed",
+        location: suggestedLocation || "",
         provider_id: suggestedProviderRecommendation || "none",
         priority: suggestedPriority || 3,
         max_participants: suggestedMaxParticipants || employeeIds.length,
@@ -134,11 +143,12 @@ export function CreateGroupDialog({
       setStartDate(suggestedStartDate);
       setEndDate(suggestedEndDate);
     }
-  }, [open, suggestedName, suggestedDescription, suggestedCertificateId, suggestedType, suggestedProviderRecommendation, suggestedPriority, suggestedMaxParticipants, suggestedEstimatedCost, suggestedSessionsRequired, suggestedSchedulingNotes, suggestedTargetDate, suggestedStartDate, suggestedEndDate, employeeIds.length, form]);
+  }, [open, suggestedName, suggestedDescription, suggestedCertificateId, suggestedType, suggestedLocation, suggestedProviderRecommendation, suggestedPriority, suggestedMaxParticipants, suggestedEstimatedCost, suggestedSessionsRequired, suggestedSchedulingNotes, suggestedTargetDate, suggestedStartDate, suggestedEndDate, employeeIds.length, form]);
 
   const handleSubmit = async (data: GroupFormData) => {
     setIsSubmitting(true);
     try {
+      logger.debug('CreateGroupDialog: Form submission data', { data });
       const submissionData = {
         ...data,
         provider_id: data.provider_id === "none" ? undefined : data.provider_id,
@@ -146,6 +156,7 @@ export function CreateGroupDialog({
         planned_start_date: startDate,
         planned_end_date: endDate,
       };
+      logger.debug('CreateGroupDialog: Final submission data', { submissionData });
       await onCreateGroup(submissionData, employeeIds);
       setIsSuccess(true);
       
@@ -159,7 +170,7 @@ export function CreateGroupDialog({
         setIsSuccess(false);
       }, 2000);
     } catch (error) {
-      console.error("Error creating group:", error);
+      logger.error('Error creating group', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -216,6 +227,47 @@ export function CreateGroupDialog({
               )}
             />
 
+            {/* Location */}
+            <FormField
+              control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-1">
+                    <MapPin className="h-4 w-4" />
+                    Location (current: "{field.value || 'empty'}")
+                  </FormLabel>
+                  <Select 
+                    onValueChange={(value) => {
+                      logger.debug('Location select changed', { value });
+                      field.onChange(value);
+                    }} 
+                    value={field.value || ""}
+                    defaultValue=""
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select work location (optional)" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="">No specific location</SelectItem>
+                      {workLocationsLoading ? (
+                        <SelectItem value="loading" disabled>Loading locations...</SelectItem>
+                      ) : (
+                        workLocations.map((location) => (
+                          <SelectItem key={location} value={location}>
+                            {location}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             {/* Certificate and Group Type */}
             <div className="grid grid-cols-2 gap-4">
               <FormField
@@ -237,7 +289,7 @@ export function CreateGroupDialog({
                         <SelectItem value="none">No specific certificate</SelectItem>
                         {licenses.map((license) => (
                           <SelectItem key={license.id} value={license.id}>
-                            {license.name} - {license.category}
+                            {license.name} - {license.description}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -519,7 +571,6 @@ export function CreateGroupDialog({
                 </div>
                 <div className="text-sm text-blue-800">
                   <div><strong>Name:</strong> {selectedCertificate.name}</div>
-                  <div><strong>Category:</strong> {selectedCertificate.category}</div>
                   {selectedCertificate.description && (
                     <div><strong>Description:</strong> {selectedCertificate.description}</div>
                   )}

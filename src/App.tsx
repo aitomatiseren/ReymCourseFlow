@@ -1,4 +1,5 @@
 
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,31 +11,55 @@ import { PermissionsProvider } from "./context/PermissionsContext";
 import { LanguageProvider } from "./context/LanguageContext";
 import { AuthGuard } from "./components/auth/AuthGuard";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { ComponentErrorBoundary } from "./components/error-boundaries/ComponentErrorBoundary";
+
+// Lazy load components for better bundle splitting
+// Core pages (loaded immediately)
 import Dashboard from "./pages/Dashboard";
-import Courses from "./pages/Courses";
-import CourseDetail from "./pages/CourseDetail";
-import CourseProviders from "./pages/CourseProviders";
-import TrainingSchedulerPage from "./pages/TrainingScheduler";
-import TrainingDetail from "./pages/TrainingDetail";
-import EmployeeDashboard from "./pages/EmployeeDashboard";
-import EmployeePortal from "./pages/EmployeePortal";
-import Notifications from "./pages/Notifications";
-import Participants from "./pages/Participants";
-import UserProfile from "./pages/UserProfile";
-import Settings from "./pages/Settings";
-import Reports from "./pages/Reports";
-import Providers from "./pages/Providers";
-import ProviderProfile from "./pages/ProviderProfile";
-import TrainingSetup from "./pages/TrainingSetup";
-import CertificateDefinitions from "./pages/CertificateDefinitions";
-import { CoursesRedirect } from "./components/redirects/CoursesRedirect";
-import { ProvidersRedirect } from "./components/redirects/ProvidersRedirect";
-import { CertificationsRedirect } from "./components/redirects/CertificationsRedirect";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
-import CertificateExpiry from "./pages/CertificateExpiry";
-import PreliminaryPlanning from "./pages/PreliminaryPlanning";
-import PersonalNotes from "./pages/PersonalNotes";
+
+// Feature pages (lazy loaded)
+const Courses = lazy(() => import("./pages/Courses"));
+const CourseDetail = lazy(() => import("./pages/CourseDetail"));
+const CourseProviders = lazy(() => import("./pages/CourseProviders"));
+const TrainingSchedulerPage = lazy(() => import("./pages/TrainingScheduler"));
+const TrainingDetail = lazy(() => import("./pages/TrainingDetail"));
+const EmployeeDashboard = lazy(() => import("./pages/EmployeeDashboard"));
+const EmployeePortal = lazy(() => import("./pages/EmployeePortal"));
+const Notifications = lazy(() => import("./pages/Notifications"));
+const Participants = lazy(() => import("./pages/Participants"));
+const UserProfile = lazy(() => import("./pages/UserProfile"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Reports = lazy(() => import("./pages/Reports"));
+const Providers = lazy(() => import("./pages/Providers"));
+const ProviderProfile = lazy(() => import("./pages/ProviderProfile"));
+const TrainingSetup = lazy(() => import("./pages/TrainingSetup"));
+const CertificateDefinitions = lazy(() => import("./pages/CertificateDefinitions"));
+const CertificateExpiry = lazy(() => import("./pages/CertificateExpiry"));
+const PreliminaryPlanning = lazy(() => import("./pages/PreliminaryPlanning"));
+const PersonalNotes = lazy(() => import("./pages/PersonalNotes"));
+
+// Redirect components (smaller, can be lazy loaded)
+const CoursesRedirect = lazy(() => import("./components/redirects/CoursesRedirect").then(m => ({ default: m.CoursesRedirect })));
+const ProvidersRedirect = lazy(() => import("./components/redirects/ProvidersRedirect").then(m => ({ default: m.ProvidersRedirect })));
+const CertificationsRedirect = lazy(() => import("./components/redirects/CertificationsRedirect").then(m => ({ default: m.CertificationsRedirect })));
+
+// Loading component for lazy-loaded routes
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-[400px]">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  </div>
+);
+
+// HOC for lazy-loaded pages with error boundaries
+const withLazyLoading = (Component: React.ComponentType) => (
+  <ComponentErrorBoundary componentName="LazyPage">
+    <Suspense fallback={<PageLoader />}>
+      <Component />
+    </Suspense>
+  </ComponentErrorBoundary>
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -75,36 +100,44 @@ const App = () => (
                   <Sonner />
                   <BrowserRouter>
                     <Routes>
-                      {/* Protected Routes */}
+                      {/* Core Routes (not lazy loaded for immediate access) */}
                       <Route path="/" element={<AuthGuard><Dashboard /></AuthGuard>} />
-                      <Route path="/training-setup" element={<AuthGuard><TrainingSetup /></AuthGuard>} />
+                      <Route path="/login" element={<Login />} />
+                      
+                      {/* Feature Routes (lazy loaded) */}
+                      <Route path="/training-setup" element={<AuthGuard>{withLazyLoading(TrainingSetup)}</AuthGuard>} />
                       
                       {/* Backward compatibility redirects */}
-                      <Route path="/courses" element={<AuthGuard><CoursesRedirect /></AuthGuard>} />
-                      <Route path="/providers" element={<AuthGuard><ProvidersRedirect /></AuthGuard>} />
+                      <Route path="/courses" element={<AuthGuard>{withLazyLoading(CoursesRedirect)}</AuthGuard>} />
+                      <Route path="/providers" element={<AuthGuard>{withLazyLoading(ProvidersRedirect)}</AuthGuard>} />
                       
-                      {/* Keep detail pages for deep linking */}
-                      <Route path="/courses/:id" element={<AuthGuard><CourseDetail /></AuthGuard>} />
-                      <Route path="/providers/:id" element={<AuthGuard><ProviderProfile /></AuthGuard>} />
+                      {/* Detail pages */}
+                      <Route path="/courses/:id" element={<AuthGuard>{withLazyLoading(CourseDetail)}</AuthGuard>} />
+                      <Route path="/providers/:id" element={<AuthGuard>{withLazyLoading(ProviderProfile)}</AuthGuard>} />
                       
-                      <Route path="/participants" element={<AuthGuard><Participants /></AuthGuard>} />
-                      <Route path="/participants/:id" element={<AuthGuard><UserProfile /></AuthGuard>} />
-                      {/* Backward compatibility redirect */}
-                      <Route path="/certifications" element={<AuthGuard><CertificationsRedirect /></AuthGuard>} />
-                      <Route path="/certificate-definitions" element={<AuthGuard><CertificateDefinitions /></AuthGuard>} />
-                      <Route path="/certificate-expiry" element={<AuthGuard><CertificateExpiry /></AuthGuard>} />
-                      <Route path="/scheduling" element={<AuthGuard><TrainingSchedulerPage /></AuthGuard>} />
-                      <Route path="/scheduling/:id" element={<AuthGuard><TrainingDetail /></AuthGuard>} />
-                      <Route path="/preliminary-planning" element={<AuthGuard><PreliminaryPlanning /></AuthGuard>} />
-                      <Route path="/employee-dashboard" element={<AuthGuard><EmployeeDashboard /></AuthGuard>} />
-                      <Route path="/employee-portal" element={<AuthGuard><EmployeePortal /></AuthGuard>} />
-                      <Route path="/communications" element={<AuthGuard><Notifications /></AuthGuard>} />
-                      <Route path="/reports" element={<AuthGuard><Reports /></AuthGuard>} />
-                      <Route path="/personal-notes" element={<AuthGuard><PersonalNotes /></AuthGuard>} />
-                      <Route path="/settings" element={<AuthGuard><Settings /></AuthGuard>} />
+                      {/* User Management */}
+                      <Route path="/participants" element={<AuthGuard>{withLazyLoading(Participants)}</AuthGuard>} />
+                      <Route path="/participants/:id" element={<AuthGuard>{withLazyLoading(UserProfile)}</AuthGuard>} />
+                      
+                      {/* Certificates */}
+                      <Route path="/certifications" element={<AuthGuard>{withLazyLoading(CertificationsRedirect)}</AuthGuard>} />
+                      <Route path="/certificate-definitions" element={<AuthGuard>{withLazyLoading(CertificateDefinitions)}</AuthGuard>} />
+                      <Route path="/certificate-expiry" element={<AuthGuard>{withLazyLoading(CertificateExpiry)}</AuthGuard>} />
+                      
+                      {/* Training & Scheduling */}
+                      <Route path="/scheduling" element={<AuthGuard>{withLazyLoading(TrainingSchedulerPage)}</AuthGuard>} />
+                      <Route path="/scheduling/:id" element={<AuthGuard>{withLazyLoading(TrainingDetail)}</AuthGuard>} />
+                      <Route path="/preliminary-planning" element={<AuthGuard>{withLazyLoading(PreliminaryPlanning)}</AuthGuard>} />
+                      
+                      {/* Employee Features */}
+                      <Route path="/employee-dashboard" element={<AuthGuard>{withLazyLoading(EmployeeDashboard)}</AuthGuard>} />
+                      <Route path="/employee-portal" element={<AuthGuard>{withLazyLoading(EmployeePortal)}</AuthGuard>} />
+                      <Route path="/communications" element={<AuthGuard>{withLazyLoading(Notifications)}</AuthGuard>} />
+                      <Route path="/reports" element={<AuthGuard>{withLazyLoading(Reports)}</AuthGuard>} />
+                      <Route path="/personal-notes" element={<AuthGuard>{withLazyLoading(PersonalNotes)}</AuthGuard>} />
+                      <Route path="/settings" element={<AuthGuard>{withLazyLoading(Settings)}</AuthGuard>} />
 
                       {/* Public Routes */}
-                      <Route path="/login" element={<Login />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </BrowserRouter>

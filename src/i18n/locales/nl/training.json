@@ -36,13 +36,21 @@
         "completed": "Voltooid",
         "cancelled": "Geannuleerd",
         "draft": "Concept",
-        "loadingData": "Gegevens laden...",
+        "loadingData": "Gegevens laden..."
+    },
+    "scheduler": {
         "calendar": {
             "title": "Training Kalender",
             "searchPlaceholder": "Zoek trainingen...",
             "createTraining": "Nieuwe Training",
             "legend": "Status Legenda"
-        }
+        },
+        "loadingData": "Trainingsgegevens laden...",
+        "errorLoading": "Fout bij laden van trainingen:",
+        "notificationsSent": "Meldingen Verzonden",
+        "notificationsSentDesc": "Alle deelnemers zijn op de hoogte gesteld",
+        "attendanceListGenerated": "Aanwezigheidslijst Gegenereerd",
+        "attendanceListDesc": "De aanwezigheidslijst is voorbereid"
     },
     "participants": {
         "title": "Deelnemers",
@@ -148,15 +156,32 @@
         "fieldsAutoPopulated": "Velden Automatisch Ingevuld",
         "fieldsAutoPopulatedDesc": "De volgende velden zijn ingevuld vanuit de potloodplanning: {fields}",
         "selectCourse": "Selecteer eerst een cursus",
-        "selectProvider": "Selecteer eerst een trainingsaanbieder"
-    },
-    "scheduler": {
-        "loadingData": "Trainingsgegevens laden...",
-        "errorLoading": "Fout bij laden trainingen:",
-        "notificationsSent": "Meldingen Verzonden",
-        "notificationsSentDesc": "Alle deelnemers zijn op de hoogte gesteld",
-        "attendanceListGenerated": "Aanwezigheidslijst Gegenereerd",
-        "attendanceListDesc": "De aanwezigheidslijst is voorbereid"
+        "selectProvider": "Selecteer eerst een trainingsaanbieder",
+        "newTraining": "Nieuwe Training Aanmaken",
+        "course": "Cursus",
+        "instructor": "Instructeur",
+        "location": "Locatie",
+        "status": "Status",
+        "provider": "Aanbieder",
+        "titleRequired": "Trainingtitel is verplicht",
+        "courseRequired": "Cursus selectie is verplicht",
+        "trainingCreatedSuccess": "Training '{title}' succesvol aangemaakt",
+        "createError": "Aanmaken training mislukt",
+        "importFromDocument": "Importeren uit Document",
+        "minParticipants": "Min Deelnemers",
+        "maxParticipants": "Max Deelnemers",
+        "selectStatus": "Selecteer status",
+        "placeholders": {
+            "enterTitle": "Voer trainingtitel in",
+            "enterInstructor": "Voer instructeur naam in",
+            "enterLocation": "Voer trainingslocatie in",
+            "minParticipants": "Min deelnemers",
+            "maxParticipants": "Max deelnemers",
+            "overallLimit": "Totaal limiet",
+            "prerequisites": "Lijst eventuele vereisten voor deze training",
+            "additionalNotes": "Eventuele aanvullende opmerkingen over deze training",
+            "price": "0,00"
+        }
     },
     "detail": {
         "trainingDetail": "Training Detail",
@@ -213,5 +238,66 @@
             "materialsPrepared": "Materialen voorbereid",
             "participantsNotified": "Deelnemers geïnformeerd"
         }
+    },
+    "createDialog": {
+        "title": "Training Aanmaken",
+        "newTraining": "Nieuwe Training",
+        "course": "Cursus",
+        "provider": "Aanbieder",
+        "instructor": "Instructeur",
+        "location": "Locatie",
+        "titleRequired": "Training titel is verplicht",
+        "courseRequired": "Cursus selectie is verplicht",
+        "selectCourse": "Selecteer een cursus",
+        "selectProvider": "Selecteer een aanbieder",
+        "selectStatus": "Selecteer status",
+        "minParticipants": "Min Deelnemers",
+        "maxParticipants": "Max Deelnemers",
+        "status": "Status",
+        "importFromDocument": "Importeren uit Document",
+        "trainingCreated": "Training Aangemaakt",
+        "trainingCreatedSuccess": "Training '{{title}}' succesvol aangemaakt",
+        "participantLimit": "Deelnemers Limiet",
+        "enableWaitingList": "Wachtlijst Inschakelen",
+        "prerequisites": "Vereisten",
+        "additionalNotes": "Aanvullende Notities",
+        "certificateRequired": "Certificaat Vereist",
+        "certificateSettings": "Certificaat Instellingen",
+        "costManagement": "Kostenbeheer",
+        "totalPrice": "Totale Prijs",
+        "baseCost": "Basiskosten",
+        "automaticReminders": "Automatische Herinneringen",
+        "createCourse": "Cursus Aanmaken",
+        "createProvider": "Aanbieder Aanmaken",
+        "cancel": "Annuleren",
+        "creating": "Aanmaken...",
+        "createTraining": "Training Aanmaken",
+        "aiApprovalIntelligence": "AI-Versterkte Goedkeuring Intelligentie",
+        "approvalDetectionDescription": "Het systeem detecteert automatisch vereiste goedkeuringen op basis van:",
+        "approvalDetectionItems": {
+            "workLocations": "Werklocaties deelnemers → Planning afdeling goedkeuringen",
+            "courseTypeCost": "Cursustype en kosten → Manager goedkeuringsvereisten",
+            "providerAvailability": "Trainingsaanbieder beschikbaarheid → Schema optimalisatie",
+            "employeeSchedules": "Werknemerschema's en prioriteiten → Conflictoplossing"
+        },
+        "placeholders": {
+            "enterTitle": "Voer training titel in",
+            "enterInstructor": "Voer instructeur naam in",
+            "enterLocation": "Voer trainingslocatie in",
+            "selectLocation": "Selecteer trainingslocatie",
+            "minParticipants": "Minimum deelnemers",
+            "maxParticipants": "Maximum deelnemers",
+            "overallLimit": "Totaal deelnemers limiet",
+            "prerequisites": "Voer vereisten in...",
+            "additionalNotes": "Voer aanvullende notities in...",
+            "price": "Voer prijs in..."
+        },
+        "customLocation": "Aangepaste Locatie"
+    },
+    "status": {
+        "scheduled": "Gepland",
+        "confirmed": "Bevestigd", 
+        "cancelled": "Geannuleerd",
+        "completed": "Voltooid"
     }
 }

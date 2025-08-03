@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { CacheInvalidationService } from './cache-invalidation';
+import { logger } from '@/utils/logger';
 
 type Employee = Database['public']['Tables']['employees']['Row'];
 type EmployeeUpdate = Database['public']['Tables']['employees']['Update'];
@@ -57,7 +58,7 @@ export class SecureDatabaseService {
         .rpc('get_user_permissions', { user_id: user.id });
 
       if (error) {
-        console.error('Error fetching user permissions:', error);
+        logger.error('Error fetching user permissions', { error });
         throw error;
       }
 
@@ -90,7 +91,7 @@ export class SecureDatabaseService {
         isAdmin
       };
     } catch (error) {
-      console.error('Error checking permissions:', error);
+      logger.error('Error checking permissions', { error });
       return {
         canEditEmployees: false,
         canCreateTrainings: false,
@@ -109,7 +110,7 @@ export class SecureDatabaseService {
       const user = await this.getCurrentUser();
 
       // Insert audit log - you might want to create an audit_logs table
-      console.log('🔍 AI Operation:', {
+      logger.db('AI Operation', {
         userId: user.id,
         userEmail: user.email,
         operation,
@@ -122,7 +123,7 @@ export class SecureDatabaseService {
 
       // TODO: Insert into actual audit_logs table when created
     } catch (error) {
-      console.error('Failed to log AI operation:', error);
+      logger.error('Failed to log AI operation', { error });
     }
   }
 
@@ -187,7 +188,7 @@ export class SecureDatabaseService {
         name: employee.name
       };
     } catch (error) {
-      console.error('Error finding employee:', error);
+      logger.error('Error finding employee', { error });
       return null;
     }
   }

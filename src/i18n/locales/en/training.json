@@ -36,13 +36,21 @@
         "completed": "Completed",
         "cancelled": "Cancelled",
         "draft": "Draft",
-        "loadingData": "Loading data...",
+        "loadingData": "Loading data..."
+    },
+    "scheduler": {
         "calendar": {
             "title": "Training Calendar",
             "searchPlaceholder": "Search trainings...",
             "createTraining": "New Training",
             "legend": "Status Legend"
-        }
+        },
+        "loadingData": "Loading training data...",
+        "errorLoading": "Error loading trainings:",
+        "notificationsSent": "Notifications Sent",
+        "notificationsSentDesc": "All participants have been notified",
+        "attendanceListGenerated": "Attendance List Generated",
+        "attendanceListDesc": "The attendance list has been prepared"
     },
     "participants": {
         "title": "Participants",
@@ -107,6 +115,12 @@
     },
     "createDialog": {
         "title": "Create New Training",
+        "newTraining": "Create New Training", 
+        "course": "Course",
+        "instructor": "Instructor",
+        "location": "Location",
+        "status": "Status",
+        "provider": "Provider",
         "description": "Set up a new training session. Fill in all the details below.",
         "pricingCostBreakdown": "Pricing & Cost Breakdown",
         "addCostComponent": "Add Cost Component",
@@ -148,15 +162,26 @@
         "fieldsAutoPopulated": "Fields Auto-populated",
         "fieldsAutoPopulatedDesc": "The following fields have been filled from the preliminary plan: {fields}",
         "selectCourse": "Please select a course first",
-        "selectProvider": "Please select a training provider first"
-    },
-    "scheduler": {
-        "loadingData": "Loading training data...",
-        "errorLoading": "Error loading trainings:",
-        "notificationsSent": "Notifications Sent",
-        "notificationsSentDesc": "All participants have been notified",
-        "attendanceListGenerated": "Attendance List Generated",
-        "attendanceListDesc": "The attendance list has been prepared"
+        "selectProvider": "Please select a training provider first",
+        "titleRequired": "Training title is required",
+        "courseRequired": "Course selection is required",
+        "trainingCreatedSuccess": "Training '{title}' created successfully",
+        "createError": "Failed to create training",
+        "importFromDocument": "Import from Document",
+        "minParticipants": "Min Participants",
+        "maxParticipants": "Max Participants",
+        "selectStatus": "Select status",
+        "placeholders": {
+            "enterTitle": "Enter training title",
+            "enterInstructor": "Enter instructor name",
+            "enterLocation": "Enter training location",
+            "minParticipants": "Min participants",
+            "maxParticipants": "Max participants",
+            "overallLimit": "Overall limit",
+            "prerequisites": "List any prerequisites for this training",
+            "additionalNotes": "Any additional notes about this training",
+            "price": "0.00"
+        }
     },
     "detail": {
         "trainingDetail": "Training Detail",
@@ -213,5 +238,66 @@
             "materialsPrepared": "Materials prepared",
             "participantsNotified": "Participants notified"
         }
+    },
+    "createDialog": {
+        "title": "Create Training",
+        "newTraining": "New Training",
+        "course": "Course",
+        "provider": "Provider",
+        "instructor": "Instructor",
+        "location": "Location",
+        "titleRequired": "Training title is required",
+        "courseRequired": "Course selection is required",
+        "selectCourse": "Select a course",
+        "selectProvider": "Select a provider",
+        "selectStatus": "Select status",
+        "minParticipants": "Min Participants",
+        "maxParticipants": "Max Participants",
+        "status": "Status",
+        "importFromDocument": "Import from Document",
+        "trainingCreated": "Training Created",
+        "trainingCreatedSuccess": "Training '{{title}}' created successfully",
+        "participantLimit": "Participant Limit",
+        "enableWaitingList": "Enable Waiting List",
+        "prerequisites": "Prerequisites",
+        "additionalNotes": "Additional Notes",
+        "certificateRequired": "Certificate Required",
+        "certificateSettings": "Certificate Settings",
+        "costManagement": "Cost Management",
+        "totalPrice": "Total Price",
+        "baseCost": "Base Cost",
+        "automaticReminders": "Automatic Reminders",
+        "createCourse": "Create Course",
+        "createProvider": "Create Provider",
+        "cancel": "Cancel",
+        "creating": "Creating...",
+        "createTraining": "Create Training",
+        "aiApprovalIntelligence": "AI-Enhanced Approval Intelligence",
+        "approvalDetectionDescription": "The system automatically detects required approvals based on:",
+        "approvalDetectionItems": {
+            "workLocations": "Participant work locations → Planning department approvals",
+            "courseTypeCost": "Course type and cost → Manager approval requirements",
+            "providerAvailability": "Training provider availability → Schedule optimization",
+            "employeeSchedules": "Employee schedules and priorities → Conflict resolution"
+        },
+        "placeholders": {
+            "enterTitle": "Enter training title",
+            "enterInstructor": "Enter instructor name",
+            "enterLocation": "Enter training location",
+            "selectLocation": "Select training location",
+            "minParticipants": "Minimum participants",
+            "maxParticipants": "Maximum participants",
+            "overallLimit": "Overall participant limit",
+            "prerequisites": "Enter prerequisites...",
+            "additionalNotes": "Enter additional notes...",
+            "price": "Enter price..."
+        },
+        "customLocation": "Custom Location"
+    },
+    "status": {
+        "scheduled": "Scheduled",
+        "confirmed": "Confirmed", 
+        "cancelled": "Cancelled",
+        "completed": "Completed"
     }
 }

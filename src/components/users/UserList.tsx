@@ -17,7 +17,10 @@ import {
   Eye,
   User,
   Building2,
-  Loader2
+  Loader2,
+  Hash,
+  Award,
+  Globe
 } from "lucide-react";
 import { useEmployees } from "@/hooks/useEmployees";
 import { EmployeeStatus, ALL_STATUSES, getStatusLabel } from "@/constants/employeeStatus";
@@ -157,7 +160,10 @@ export function UserList() {
                     {employee.roepnaam && employee.roepnaam !== employee.firstName && (
                       <p className="text-xs text-blue-600">{t('employees:userList.roepnaam')} {getNickname(employee)}</p>
                     )}
-                    <p className="text-sm text-gray-500">#{employee.employeeNumber}</p>
+                    <div className="flex items-center text-sm text-gray-500">
+                      <Hash className="h-3 w-3 mr-1" />
+                      {employee.employeeNumber}
+                    </div>
                   </div>
                 </div>
                 <EmployeeStatusBadge status={employee.status as EmployeeStatus} />
@@ -170,18 +176,44 @@ export function UserList() {
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <Mail className="h-4 w-4 mr-2" />
-                  {employee.email}
+                  <a 
+                    href={`mailto:${employee.email}`}
+                    className="hover:text-blue-600 hover:underline transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {employee.email}
+                  </a>
                 </div>
                 {employee.phone && (
                   <div className="flex items-center text-sm text-gray-600">
                     <Phone className="h-4 w-4 mr-2" />
-                    {employee.phone}
+                    <a 
+                      href={`tel:${employee.phone}`}
+                      className="hover:text-blue-600 hover:underline transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {employee.phone}
+                    </a>
                   </div>
                 )}
                 {employee.city && (
                   <div className="flex items-center text-sm text-gray-600">
                     <MapPin className="h-4 w-4 mr-2" />
-                    {employee.city}, {employee.country}
+                    {employee.city}{employee.country && `, ${employee.country}`}
+                  </div>
+                )}
+                {employee.website && (
+                  <div className="flex items-center text-sm text-gray-600">
+                    <Globe className="h-4 w-4 mr-2" />
+                    <a 
+                      href={employee.website.startsWith('http') ? employee.website : `https://${employee.website}`}
+                      className="hover:text-blue-600 hover:underline transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {employee.website.replace(/^https?:\/\//, '')}
+                    </a>
                   </div>
                 )}
                 {employee.hireDate && (
@@ -194,7 +226,10 @@ export function UserList() {
 
               {employee.licenses.length > 0 && (
                 <div className="mb-4">
-                  <p className="text-xs font-medium text-gray-500 mb-2">{t('employees:userList.licenses')}</p>
+                  <div className="flex items-center mb-2">
+                    <Award className="h-3 w-3 mr-1" />
+                    <p className="text-xs font-medium text-gray-500">{t('employees:userList.licenses')}</p>
+                  </div>
                   <div className="flex flex-wrap gap-1">
                     {employee.licenses.map((license, index) => (
                       <Badge key={index} variant="outline" className="text-xs">

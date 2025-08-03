@@ -18,7 +18,9 @@ import {
   Globe,
   AlertTriangle,
   Award,
-  Clock
+  Clock,
+  FileText,
+  Users
 } from "lucide-react";
 import { useEmployee } from "@/hooks/useEmployees";
 import { useQuery } from "@tanstack/react-query";
@@ -183,7 +185,13 @@ export function UserProfileHeader({ userId }: UserProfileHeaderProps) {
                 {employee.phone && (
                   <div className={`flex items-center ${isValidPhone(employee.phone) ? 'text-gray-600' : 'text-red-600'}`}>
                     <Phone className="h-3 w-3 mr-2" />
-                    {employee.phone} (Work)
+                    <a 
+                      href={`tel:${employee.phone}`}
+                      className="hover:text-blue-600 hover:underline transition-colors"
+                    >
+                      {employee.phone}
+                    </a>
+                    <span className="ml-1">(Work)</span>
                     {!isValidPhone(employee.phone) && (
                       <AlertTriangle className="h-3 w-3 ml-2 text-red-500" title="Invalid phone format" />
                     )}
@@ -192,7 +200,13 @@ export function UserProfileHeader({ userId }: UserProfileHeaderProps) {
                 {employee.mobilePhone && (
                   <div className={`flex items-center ${isValidPhone(employee.mobilePhone) ? 'text-gray-600' : 'text-red-600'}`}>
                     <Phone className="h-3 w-3 mr-2" />
-                    {employee.mobilePhone} (Private)
+                    <a 
+                      href={`tel:${employee.mobilePhone}`}
+                      className="hover:text-blue-600 hover:underline transition-colors"
+                    >
+                      {employee.mobilePhone}
+                    </a>
+                    <span className="ml-1">(Private)</span>
                     {!isValidPhone(employee.mobilePhone) && (
                       <AlertTriangle className="h-3 w-3 ml-2 text-red-500" title="Invalid phone format" />
                     )}
@@ -200,7 +214,13 @@ export function UserProfileHeader({ userId }: UserProfileHeaderProps) {
                 )}
                 <div className={`flex items-center ${isValidEmail(employee.email) ? 'text-gray-600' : 'text-red-600'}`}>
                   <Mail className="h-3 w-3 mr-2" />
-                  {employee.email} (Work)
+                  <a 
+                    href={`mailto:${employee.email}`}
+                    className="hover:text-blue-600 hover:underline transition-colors"
+                  >
+                    {employee.email}
+                  </a>
+                  <span className="ml-1">(Work)</span>
                   {!isValidEmail(employee.email) && (
                     <AlertTriangle className="h-3 w-3 ml-2 text-red-500" title="Invalid email format" />
                   )}
@@ -208,7 +228,13 @@ export function UserProfileHeader({ userId }: UserProfileHeaderProps) {
                 {employee.privateEmail && (
                   <div className={`flex items-center ${isValidEmail(employee.privateEmail) ? 'text-gray-600' : 'text-red-600'}`}>
                     <Mail className="h-3 w-3 mr-2" />
-                    {employee.privateEmail} (Private)
+                    <a 
+                      href={`mailto:${employee.privateEmail}`}
+                      className="hover:text-blue-600 hover:underline transition-colors"
+                    >
+                      {employee.privateEmail}
+                    </a>
+                    <span className="ml-1">(Private)</span>
                     {!isValidEmail(employee.privateEmail) && (
                       <AlertTriangle className="h-3 w-3 ml-2 text-red-500" title="Invalid email format" />
                     )}
@@ -250,15 +276,10 @@ export function UserProfileHeader({ userId }: UserProfileHeaderProps) {
                 <div>{employee.department}</div>
                 {employee.workLocation && <div>Work Site: {employee.workLocation}</div>}
                 {employee.hireDate && (
-                  <div className="flex items-center">
-                    <Calendar className="h-3 w-3 mr-2" />
-                    Since {new Date(employee.hireDate).toLocaleDateString()}
-                  </div>
+                  <div>Since {new Date(employee.hireDate).toLocaleDateString()}</div>
                 )}
                 {employee.contractType && (
-                  <Badge variant="outline" className="text-xs">
-                    {employee.contractType}
-                  </Badge>
+                  <div>Contract: {employee.contractType}</div>
                 )}
                 {employee.workingHours && (
                   <div>{employee.workingHours} hours/week</div>
@@ -286,10 +307,7 @@ export function UserProfileHeader({ userId }: UserProfileHeaderProps) {
                   <div>Birth Place: {employee.birthPlace}</div>
                 )}
                 {employee.birthCountry && (
-                  <div className="flex items-center">
-                    <Globe className="h-3 w-3 mr-2" />
-                    Birth Country: {employee.birthCountry}
-                  </div>
+                  <div>Birth Country: {employee.birthCountry}</div>
                 )}
                 {employee.nationality && (
                   <div>Nationality: {employee.nationality}</div>
@@ -307,10 +325,7 @@ export function UserProfileHeader({ userId }: UserProfileHeaderProps) {
                   <div className="text-red-600">Death Date: {new Date(employee.deathDate).toLocaleDateString()}</div>
                 )}
                 {employee.personalId && (
-                  <div className="flex items-center">
-                    <IdCard className="h-3 w-3 mr-2" />
-                    BSN: {employee.personalId}
-                  </div>
+                  <div>BSN: {employee.personalId}</div>
                 )}
               </div>
             </div>
@@ -506,7 +521,13 @@ export function UserProfileHeader({ userId }: UserProfileHeaderProps) {
                 {employee.emergencyContact.phone && (
                   <div className={`flex items-center ${isValidPhone(employee.emergencyContact.phone) ? 'text-gray-600' : 'text-red-600'}`}>
                     <Phone className="h-3 w-3 mr-2" />
-                    <span className="font-medium">Phone: </span>{employee.emergencyContact.phone}
+                    <span className="font-medium">Phone: </span>
+                    <a 
+                      href={`tel:${employee.emergencyContact.phone}`}
+                      className="hover:text-blue-600 hover:underline transition-colors"
+                    >
+                      {employee.emergencyContact.phone}
+                    </a>
                     {!isValidPhone(employee.emergencyContact.phone) && (
                       <AlertTriangle className="h-3 w-3 ml-2 text-red-500" title="Invalid phone format" />
                     )}

@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OpenAIService } from "@/services/ai";
+import { logger } from "@/utils/logger";
 
 interface ChatMessage {
   id: string;
@@ -232,7 +233,7 @@ Please tell me what changes you'd like to make, and I'll ask follow-up questions
 
       // If AI suggests direct planning modifications, apply them
       if (aiResponse.planningModifications && onPlanningModifications) {
-        console.log('🎯 AI provided planning modifications:', aiResponse.planningModifications);
+        logger.debug('AI provided planning modifications', { modifications: aiResponse.planningModifications });
         setTimeout(() => {
           onPlanningModifications(aiResponse.planningModifications);
           onOpenChange(false);
@@ -244,7 +245,7 @@ Please tell me what changes you'd like to make, and I'll ask follow-up questions
       }
 
     } catch (error) {
-      console.error('Error processing message:', error);
+      logger.error('Error processing message', error);
       const errorMessage: ChatMessage = {
         id: `msg-${Date.now()}-error`,
         role: 'assistant',
@@ -586,7 +587,18 @@ ${conversationSummary || 'This is the first message in the conversation.'}
 - For targeted updates: When user wants to apply changes, end with "PLANNING_MODIFICATIONS:" followed by specific changes to make to the existing plan
 
 **PLANNING_MODIFICATIONS FORMAT:**
-When providing modifications, specify exactly what to change:
+When providing modifications, specify exactly what to change using these EXACT modification types:
+
+**SUPPORTED MODIFICATION TYPES (use these exact strings):**
+- **move_employee**: Move an employee from one group to another
+- **add_employee**: Add an employee to an existing group
+- **dissolve_group**: Remove/delete a group entirely
+- **reschedule_group**: Change the date/timing of a group
+- **update_group_details**: Update the employee list of a group
+- **update_cost_analysis**: Update cost information for a group
+- **provider_adjustment**: Change the training provider for a group
+- **combine_groups**: Combine multiple groups into one new group
+- **merge_groups**: Merge all existing groups into new groups (complete restructure)
 
 PLANNING_MODIFICATIONS:
 {
@@ -600,10 +612,25 @@ PLANNING_MODIFICATIONS:
       "reason": "Employee availability constraint"
     },
     {
-      "type": "reschedule_group",
-      "group_name": "Group 3",
-      "new_date": "2025-03-15",
-      "reason": "Accommodate employee availability"
+      "type": "combine_groups",
+      "new_group_name": "Combined Group A",
+      "employees": ["John Doe", "Jane Smith", "Bob Wilson"],
+      "reason": "Combine departments for efficiency"
+    },
+    {
+      "type": "merge_groups",
+      "new_groups": [
+        {
+          "name": "Group 1 - Administration",
+          "employees": ["Emma Berg", "Maria Santos"],
+          "reasoning": "Administrative staff grouped together"
+        },
+        {
+          "name": "Group 2 - Operations", 
+          "employees": ["John Doe", "Robert Smit"],
+          "reasoning": "Operations staff grouped together"
+        }
+      ]
     }
   ]
 }
@@ -641,23 +668,22 @@ ${userMessage}
 
     const aiContent = response.content || 'I apologize, but I encountered an error generating a response.';
     
-    console.log('🤖 AI Response content:', aiContent);
+    logger.ai('Response content received', { contentPreview: aiContent.substring(0, 200) });
     
     // Check if the AI provided targeted planning modifications
     const modificationsMatch = aiContent.match(/PLANNING_MODIFICATIONS:\s*```json\s*(\{[\s\S]*?\})\s*```/s) || 
                               aiContent.match(/PLANNING_MODIFICATIONS:\s*(\{[\s\S]*?\})/s);
     if (modificationsMatch) {
       try {
-        console.log('🔍 Found modifications match:', modificationsMatch[1]);
+        logger.debug('Found modifications match', { rawMatch: modificationsMatch[1] });
         const modifications = JSON.parse(modificationsMatch[1]);
-        console.log('✅ Parsed modifications:', modifications);
+        logger.debug('Parsed modifications successfully', { modifications });
         return {
           content: aiContent.replace(/PLANNING_MODIFICATIONS:[\s\S]*?(\}|\}\s*```)/s, '').trim(),
           planningModifications: modifications
         };
       } catch (error) {
-        console.error('Error parsing planning modifications:', error);
-        console.error('Raw modification text:', modificationsMatch[1]);
+        logger.error('Error parsing planning modifications', error, { rawText: modificationsMatch[1] });
       }
     }
     
@@ -672,7 +698,7 @@ ${userMessage}
 
     return { content: aiContent };
   } catch (error) {
-    console.error('Error calling OpenAI API:', error);
+    logger.error('Error calling OpenAI API', error);
     return {
       content: `I apologize, but I encountered an error processing your request. Please try again or contact support if the issue persists.\n\nError: ${error instanceof Error ? error.message : 'Unknown error'}`
     };

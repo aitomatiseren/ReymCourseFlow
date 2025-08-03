@@ -27,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, Sparkles } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { EnhancedPhoneInput } from "@/components/users/EnhancedPhoneInput";
 import { AddressLookup } from "@/components/users/AddressLookup";
 
@@ -1092,23 +1092,6 @@ export function EditProviderDialog({
                   )}
                 />
 
-                {/* AI Enhancement Button */}
-                <div className="flex justify-center pt-4">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => {
-                      toast({
-                        title: "AI Enhancement",
-                        description: "AI-powered provider optimization coming soon!",
-                      });
-                    }}
-                    className="flex items-center gap-2"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    Enhance with AI
-                  </Button>
-                </div>
               </TabsContent>
             </Tabs>
 

@@ -1,4 +1,5 @@
 // Employee Status Constants and Types
+import { DesignTokens } from '@/lib/design-tokens';
 
 export type EmployeeStatus = 
   | 'active'
@@ -24,21 +25,21 @@ export const EMPLOYEE_STATUS_OPTIONS: StatusOption[] = [
   {
     value: 'active',
     label: 'Active',
-    color: 'bg-green-100 text-green-800',
+    color: DesignTokens.status.active.css,
     description: 'Employee is actively working',
     allowedTransitions: ['inactive', 'on_leave', 'sick_short', 'sick_long', 'vacation', 'unavailable', 'terminated']
   },
   {
     value: 'inactive',
     label: 'Inactive',
-    color: 'bg-gray-100 text-gray-800',
+    color: DesignTokens.status.inactive.css,
     description: 'Employee is temporarily not working',
     allowedTransitions: ['active', 'terminated']
   },
   {
     value: 'on_leave',
     label: 'On Leave',
-    color: 'bg-yellow-100 text-yellow-800',
+    color: DesignTokens.status.onLeave.css,
     description: 'Employee is on extended leave',
     requiresEndDate: true,
     allowedTransitions: ['active', 'terminated']
@@ -46,7 +47,7 @@ export const EMPLOYEE_STATUS_OPTIONS: StatusOption[] = [
   {
     value: 'sick_short',
     label: 'Short-term Sick Leave',
-    color: 'bg-orange-100 text-orange-800',
+    color: DesignTokens.status.sickShort.css,
     description: 'Employee is on short-term sick leave (typically up to 6 weeks)',
     requiresEndDate: false, // Optional end date
     allowedTransitions: ['active', 'sick_long', 'terminated']
@@ -54,7 +55,7 @@ export const EMPLOYEE_STATUS_OPTIONS: StatusOption[] = [
   {
     value: 'sick_long',
     label: 'Long-term Sick Leave',
-    color: 'bg-red-100 text-red-800',
+    color: DesignTokens.status.sickLong.css,
     description: 'Employee is on long-term sick leave (typically 6+ weeks)',
     requiresEndDate: false, // Optional end date
     allowedTransitions: ['active', 'sick_short', 'terminated']
@@ -62,7 +63,7 @@ export const EMPLOYEE_STATUS_OPTIONS: StatusOption[] = [
   {
     value: 'vacation',
     label: 'Vacation',
-    color: 'bg-blue-100 text-blue-800',
+    color: DesignTokens.status.vacation.css,
     description: 'Employee is on vacation',
     requiresEndDate: true,
     allowedTransitions: ['active']
@@ -70,7 +71,7 @@ export const EMPLOYEE_STATUS_OPTIONS: StatusOption[] = [
   {
     value: 'unavailable',
     label: 'Unavailable',
-    color: 'bg-purple-100 text-purple-800',
+    color: DesignTokens.status.unavailable.css,
     description: 'Employee is temporarily unavailable',
     requiresEndDate: true,
     allowedTransitions: ['active', 'terminated']
@@ -78,7 +79,7 @@ export const EMPLOYEE_STATUS_OPTIONS: StatusOption[] = [
   {
     value: 'terminated',
     label: 'Terminated',
-    color: 'bg-red-100 text-red-800',
+    color: DesignTokens.status.terminated.css,
     description: 'Employee employment has ended',
     allowedTransitions: [] // Cannot transition from terminated without rehire process
   }
